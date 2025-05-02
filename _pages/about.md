@@ -12,6 +12,6 @@ I've worked on a range of projects — from real-time vision pipelines on edge d
 
 - **Recent work:** Helping build low-latency computer vision systems and generative AI tools at Indikat (remote).  
 - **Past roles:** Contributed to legal-tech NLP tools at RootCode and developed backend services for analytics platforms at OMNAIBLE.  
-- **Tools I use:** Python, PyTorch, LangGraph, YOLO, FastAPI, Docker, PostgreSQL, and more.
+- **Tools I use:** Python, PyTorch, LangGraph, Dify, YOLO, FastAPI, Docker, PostgreSQL, and more.
 
 I enjoy experimenting with small side projects, sharing code, and learning new ideas in AI and software development. This site collects some of that work.
