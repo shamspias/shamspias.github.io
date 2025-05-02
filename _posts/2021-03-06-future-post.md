@@ -154,8 +154,6 @@ print("Class:", "violating" if decrypted_score > 0 else "safe")
 1. **Try TenSEAL** – It's great for Python users who want encrypted ML.
 2. **Read up on CKKS** – It’s the HE scheme most used in AI.
 3. **Think of a use case** – How could you apply HE in healthcare, finance, or messaging?
-4. **Join OpenMined** – Their community is all about secure AI ([openmined.org](https://openmined.org)).
-
 ---
 
 ## ⚠️ Real Talk: Challenges of HE
