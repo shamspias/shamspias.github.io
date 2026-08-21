@@ -135,7 +135,7 @@ Outputs a CSV with **nDCG, Recall, Latency, Cost, Utility**—ready for your sli
 
 # 8 Sample leaderboard (FiQA‑2018)
 
-| Rank | Retriever              | nDCG@10   | Recall@50 | P95 ms | Cost $/kq | **Utility** |
+| Rank | Retriever              | nDCG@10   | Recall@50 | P95 ms | Cost USD/kq | **Utility** |
 |------|------------------------|-----------|-----------|--------|-----------|-------------|
 | 🥇 1 | Hybrid (DAT 0.55)      | **0.493** | **0.711** | 74     | 0.37      | **0.98**    |
 | 2    | Dense (E5‑L)           | 0.462     | 0.688     | 55     | 0.41      | 0.87        |

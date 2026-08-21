@@ -1,7 +1,7 @@
 ---
 title: "Math for AI Made Simple: The Linear-Algebra Lego Set Behind Every Model"
 date: 2023-01-23
-permalink: /posts/2025/04/math-for-ai-linear-algebra-basics/
+permalink: /posts/2023/01/math-for-ai-linear-algebra-basics/
 tags:
   - math
   - AI
