@@ -11,3 +11,13 @@ Gemfile.lock
 # Ingore files created by npm
 node_modules
 package-lock.json
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+
+# Private documents (contain transcripts / personal identifiers) - never publish
+shamsuddin_ahmed_resume_cv_as_at.pdf
+*_resume_cv_as_at.pdf

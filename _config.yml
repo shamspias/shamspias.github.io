@@ -9,10 +9,10 @@
 # Basic Site Settings
 locale: "en-US"
 site_theme: "single"
-title: "Shamsuddin Ahmed / AI Engineer"
+title: "Shamsuddin Ahmed"
 title_separator: "-"
 name: &name "Shamsuddin Ahmed"
-description: &description "AI Engineer & Continuous Learner"
+description: &description "Senior Software Engineer working on agent harnesses, LLM infrastructure, and machine learning for biology."
 url: https://shamspias.com # the base hostname & protocol for your site e.g. "https://[your GitHub username].github.io"
 baseurl: "" # the subpath of your site, e.g. "/blog"
 repository: "academicpages/academicpages.github.io"
@@ -26,10 +26,10 @@ author:
   avatar: "shamspias.jpeg"
   name: "Shamsuddin Ahmed"
   pronouns: # example: "she/her"
-  bio: "AI-focused software engineer who relearns the basics daily. Training models is easy, understanding how they truly work is the hard part."
+  bio: "Senior Software Engineer at Mevrik and founder of AlgolyzerLab. I build agent harnesses, LLM serving infrastructure, and ML for biology — and I write about all of it in plain language."
   location: "Dhaka, Bangladesh"
-  employer: "Indikat"
-  #  uri: "https://shamspias.com"# URL
+  employer: "Mevrik · AlgolyzerLab"
+  uri: "https://shamspias.com" # URL
   email: "info@shamspias.com"
 
   # Academic websites
@@ -60,7 +60,7 @@ author:
   keybase: # Username
   instagram: # Username
   lastfm: # Username
-  linkedin: "shamspias0"# Username
+  linkedin: "shamspias0" # Username
   mastodon: # URL
   medium: # URL
   pinterest: # Username
@@ -145,6 +145,7 @@ social:
   name: "Shamsuddin Ahmed" # If the user or organization name differs from the site's name
   links: # An array of links to social media profiles
     - https://github.com/shamspias
+    - https://www.linkedin.com/in/shamspias0
     - https://shamspias.com
 
 # Analytics
@@ -160,6 +161,8 @@ include:
   - _pages
   - files
 exclude:
+  - shamsuddin_ahmed_resume_cv_as_at.pdf
+  - "*_resume_cv_as_at.pdf"
   - "*.sublime-project"
   - "*.sublime-workspace"
   - .asset-cache

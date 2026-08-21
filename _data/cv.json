@@ -1,152 +1,268 @@
 {
   "basics": {
-    "name": "Your Sidebar Name",
-    "email": "none@example.org",
+    "name": "Shamsuddin Ahmed",
+    "label": "Senior Software Engineer",
+    "email": "info@shamspias.com",
     "phone": "",
-    "website": "https://academicpages.github.io",
-    "summary": "Currently employed at Red Brick University. Short biography for the left-hand sidebar",
+    "website": "https://shamspias.com",
+    "summary": "Senior Software Engineer at Mevrik and founder of AlgolyzerLab. Five-plus years building scalable backend systems, production ML infrastructure, and agent harnesses in Go and Python — plus research on machine learning for peptide prediction and drug discovery.",
     "location": {
       "address": "",
       "postalCode": "",
-      "city": "Earth",
-      "countryCode": "US",
-      "region": ""
+      "city": "Dhaka",
+      "countryCode": "BD",
+      "region": "Dhaka"
     },
     "profiles": [
       {
-        "network": "Google Scholar",
-        "username": "",
-        "url": "https://scholar.google.com/citations?user=PS_CX0AAAAAJ"
-      },
-      {
-        "network": "ORCID",
-        "username": "",
-        "url": "http://orcid.org/yourorcidurl"
-      },
-      {
         "network": "GitHub",
-        "username": "academicpages",
-        "url": "https://github.com/academicpages"
+        "username": "shamspias",
+        "url": "https://github.com/shamspias"
+      },
+      {
+        "network": "LinkedIn",
+        "username": "shamspias0",
+        "url": "https://www.linkedin.com/in/shamspias0"
+      },
+      {
+        "network": "Website",
+        "username": "shamspias.com",
+        "url": "https://shamspias.com"
       }
     ]
   },
-  "work": [],
-  "education": [
+  "work": [
     {
-      "institution": "GitHub University",
-      "area": "Ph.D in Version Control Theory",
-      "studyType": "",
-      "startDate": "",
-      "endDate": "2018",
-      "gpa": null,
-      "courses": []
+      "company": "Mevrik",
+      "position": "Senior Software Engineer",
+      "website": "https://mevrik.com",
+      "startDate": "2026-08-01",
+      "endDate": "",
+      "summary": "AI-powered customer-experience platform serving telecom operators and 700+ SMB customers.",
+      "highlights": [
+        "Work across the AI surface of the product: conversational agents, retrieval, and the model serving infrastructure beneath them.",
+        "Author feature specifications and technical documentation for engineering teams and leadership."
+      ]
     },
     {
-      "institution": "GitHub University",
-      "area": "M.S. in Jekyll",
-      "studyType": "",
-      "startDate": "",
-      "endDate": "2014",
-      "gpa": null,
-      "courses": []
+      "company": "AlgolyzerLab",
+      "position": "Founder",
+      "website": "",
+      "startDate": "2024-01-01",
+      "endDate": "",
+      "summary": "Applied-AI studio for sports science, healthcare, agriculture, and research engineering.",
+      "highlights": [
+        "Athlete Intelligence — multi-tenant athlete performance management for elite sport (Go, Next.js 16) with an IOC-aligned clinical domain and an RTMPose GPU pipeline that turns ordinary video into clinical movement metrics.",
+        "ChemberIQ — medical case-management platform (Go/Gin, Vue 3, offline-first Flutter doctor app) with a purpose-built in-memory search engine.",
+        "Agri Remedy — drone-based crop-disease monitoring using DINOv2 features with staff-trained linear-probe heads and bilingual treatment guidance.",
+        "Cricket Bowling Analyzer — 18-parameter biomechanical analysis from video with ICC elbow-extension compliance checks and PDF clinical reports."
+      ]
     },
     {
-      "institution": "GitHub University",
-      "area": "B.S. in GitHub",
-      "studyType": "",
-      "startDate": "",
-      "endDate": "2012",
-      "gpa": null,
-      "courses": []
+      "company": "Evoclick",
+      "position": "Senior Software Engineer",
+      "website": "",
+      "startDate": "2024-06-01",
+      "endDate": "2026-07-31",
+      "summary": "Moscow (remote).",
+      "highlights": [
+        "Deployed Qwen 3.5 27B (INT4 and FP8) on vLLM for production workloads serving 1,000+ concurrent users; tuned throughput via continuous batching, KV-cache sizing, and quantization strategy.",
+        "Built an OpenAI-compatible LLM Gateway (FastAPI, httpx) with rerank support, error enrichment, and benchmark endpoints across multi-tenant workloads.",
+        "Implemented page-index RAG combining layout-aware region extraction with vector retrieval.",
+        "Built an edge-vision pipeline with YOLO on NPU hardware for real-time anomaly detection.",
+        "Developed multi-agent services with LangGraph and Dify including human-in-the-loop review; shipped tool integrations over MCP."
+      ]
+    },
+    {
+      "company": "Evoclick",
+      "position": "Software Engineer",
+      "website": "",
+      "startDate": "2023-05-01",
+      "endDate": "2024-06-01",
+      "summary": "Moscow (remote).",
+      "highlights": [
+        "Designed legal-tech RAG systems; improved retrieval quality through chunking, embedding selection, citation prompting, and reranking.",
+        "Fine-tuned LLMs with LoRA/QLoRA (Unsloth); led the internal R&D track on agents and retrieval.",
+        "Architected a multi-tenant AI orchestration platform (FastAPI, Vue 3, PostgreSQL/pgvector, Docker) with a DAG workflow engine and SSE streaming."
+      ]
+    },
+    {
+      "company": "OMNAIBLE",
+      "position": "Software Engineer",
+      "website": "",
+      "startDate": "2022-10-01",
+      "endDate": "2023-04-01",
+      "summary": "Amsterdam (remote).",
+      "highlights": [
+        "Built ML-powered recommendation microservices in FastAPI with caching and background jobs.",
+        "Improved API responsiveness through query refactoring and pagination; added integration tests."
+      ]
+    },
+    {
+      "company": "CodeSmith Tech Ltd.",
+      "position": "Software / DevOps Engineer",
+      "website": "",
+      "startDate": "2021-03-01",
+      "endDate": "2022-08-01",
+      "summary": "Dhaka, Bangladesh.",
+      "highlights": [
+        "Automated CI/CD pipelines with Docker; hardened REST and GraphQL APIs with monitoring and structured logging.",
+        "Maintained deployments and unit tests (PyTest).",
+        "Worked on IoT-integrated backends for sensor data ingestion and device communication."
+      ]
     }
   ],
-  "skills": [],
-  "languages": [],
-  "interests": [],
+  "education": [
+    {
+      "institution": "Daffodil International University, Dhaka",
+      "area": "B.Sc. in Computer Science & Engineering",
+      "studyType": "Bachelor of Science",
+      "startDate": "2016-01",
+      "endDate": "2020-11",
+      "gpa": null,
+      "courses": [
+        "Data Structures and Algorithms",
+        "Machine Learning and Data Mining",
+        "Computer Networks and Database Systems",
+        "Software Engineering",
+        "Embedded Systems and Robotics"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "name": "Languages",
+      "level": "",
+      "keywords": ["Go", "Python", "TypeScript", "C/C++"]
+    },
+    {
+      "name": "Agents & RAG",
+      "level": "",
+      "keywords": ["LangGraph", "LangChain", "LlamaIndex", "Dify", "MCP", "function calling", "evaluation harnesses"]
+    },
+    {
+      "name": "LLM Ops",
+      "level": "",
+      "keywords": ["vLLM", "INT4/FP8 quantization", "continuous batching", "KV-cache tuning", "reranking", "benchmarking"]
+    },
+    {
+      "name": "ML / DL",
+      "level": "",
+      "keywords": ["PyTorch", "TensorFlow", "LoRA/QLoRA", "distillation", "GGUF", "linear probing", "stacking ensembles"]
+    },
+    {
+      "name": "Computer Vision",
+      "level": "",
+      "keywords": ["YOLO", "SAM", "DINOv2", "MediaPipe", "RTMPose", "OpenCV", "NPU edge inference"]
+    },
+    {
+      "name": "Computational Biology",
+      "level": "",
+      "keywords": ["RDKit", "ChemProp", "ESM-2", "molecular docking", "scaffold-aware splits", "COCONUT"]
+    },
+    {
+      "name": "Data",
+      "level": "",
+      "keywords": ["PostgreSQL + pgvector", "MongoDB", "Qdrant", "FAISS", "Pinecone", "Redis"]
+    },
+    {
+      "name": "Infrastructure",
+      "level": "",
+      "keywords": ["Docker", "Nginx", "Coolify", "CI/CD", "GPU deployment", "Linux", "S3/R2/MinIO"]
+    }
+  ],
+  "languages": [
+    {
+      "language": "Bangla",
+      "fluency": "Native"
+    },
+    {
+      "language": "English",
+      "fluency": "Fluent (professional working proficiency)"
+    }
+  ],
+  "interests": [
+    {
+      "name": "Computational biology & drug discovery",
+      "keywords": ["anti-inflammatory peptide prediction", "natural-product virtual screening", "ADMET modeling"]
+    },
+    {
+      "name": "Agent systems",
+      "keywords": ["agent harnesses", "multi-agent orchestration", "safe tool use"]
+    },
+    {
+      "name": "Efficient inference",
+      "keywords": ["quantization", "serving throughput", "edge and embedded deployment"]
+    }
+  ],
   "references": [],
   "publications": [
     {
-      "name": "Paper Title Number 1",
-      "publisher": "Journal 1",
-      "releaseDate": "2009-10-01",
-      "website": "http://academicpages.github.io/files/paper1.pdf",
-      "summary": "This paper is about the number 1. The number 2 is left for future work."
-    },
-    {
-      "name": "Paper Title Number 2",
-      "publisher": "Journal 1",
-      "releaseDate": "2010-10-01",
-      "website": "http://academicpages.github.io/files/paper2.pdf",
-      "summary": "This paper is about the number 2. The number 3 is left for future work."
-    },
-    {
-      "name": "Paper Title Number 3",
-      "publisher": "Journal 1",
-      "releaseDate": "2015-10-01",
-      "website": "http://academicpages.github.io/files/paper3.pdf",
-      "summary": "This paper is about the number 3. The number 4 is left for future work."
-    },
-    {
-      "name": "Paper Title Number 4",
-      "publisher": "GitHub Journal of Bugs",
-      "releaseDate": "2024-02-17",
-      "website": "http://academicpages.github.io/files/paper3.pdf",
-      "summary": "This paper is about fixing template issue #693."
+      "name": "AIPpred-Stack: Prediction of Anti-Inflammatory Peptides using Ensemble Learning with an Experimentally Validated Dataset",
+      "publisher": "IEEE CCECE 2026",
+      "releaseDate": "2026-01-01",
+      "website": "",
+      "summary": "A two-stage stacking ensemble combining ~2,282 hand-crafted sequence descriptors with 1,280-dimensional ESM-2 protein language model embeddings. Replaces the random-UniProt negatives used by prior work with experimentally validated negatives from IEDB T-cell assays, producing a harder and more honest benchmark. With Abdullah Al Mamun and Francis M. Bui, University of Saskatchewan."
     }
   ],
-  "presentations": [
-    {
-      "name": "Talk 1 on Relevant Topic in Your Field",
-      "event": "UC San Francisco, Department of Testing",
-      "date": "2012-03-01",
-      "location": "San Francisco, CA, USA",
-      "description": ""
-    },
-    {
-      "name": "Tutorial 1 on Relevant Topic in Your Field",
-      "event": "UC-Berkeley Institute for Testing Science",
-      "date": "2013-03-01",
-      "location": "Berkeley, CA, USA",
-      "description": ""
-    },
-    {
-      "name": "Talk 2 on Relevant Topic in Your Field",
-      "event": "London School of Testing",
-      "date": "2014-02-01",
-      "location": "London, UK",
-      "description": ""
-    },
-    {
-      "name": "Conference Proceeding talk 3 on Relevant Topic in Your Field",
-      "event": "Testing Institute of America 2014 Annual Conference",
-      "date": "2014-03-01",
-      "location": "Los Angeles, CA, USA",
-      "description": ""
-    }
-  ],
-  "teaching": [
-    {
-      "course": "Teaching experience 1",
-      "institution": "University 1, Department",
-      "date": "2014-01-01",
-      "role": "Undergraduate course",
-      "description": ""
-    },
-    {
-      "course": "Teaching experience 2",
-      "institution": "University 1, Department",
-      "date": "2015-01-01",
-      "role": "Workshop",
-      "description": ""
-    }
-  ],
+  "presentations": [],
+  "teaching": [],
   "portfolio": [
     {
-      "name": "Portfolio item number 1",
-      "category": "portfolio",
+      "name": "Reins",
+      "category": "open source",
       "date": "",
-      "url": "",
-      "description": "Short description of portfolio item number 1<br/><img src='/images/500x300.png'>"
+      "url": "https://github.com/shamspias/reins",
+      "description": "A lightweight agent harness you bolt onto an existing app: intent-named capabilities derived from your functions or ORM models, reads and writes separated in code, writes gated by policy, approval, and audit."
+    },
+    {
+      "name": "Veldra",
+      "category": "open source",
+      "date": "",
+      "url": "https://github.com/shamspias/customizable-gpt-chatbot",
+      "description": "A self-hostable, local-first agent-harness platform where an agent is data, not code — a versioned AgentSpec row interpreted by the runtime. MCP connectors, editable RAG knowledge bases, agent teams, and feedback-driven self-improvement."
+    },
+    {
+      "name": "DeepNatProtease",
+      "category": "research",
+      "date": "",
+      "url": "https://github.com/shamspias/DeepNatProtease",
+      "description": "Structure-aware virtual screening of natural products against understudied viral proteases: multi-source curation, scaffold-aware splits, per-virus models, COCONUT screening, and docking validation."
+    },
+    {
+      "name": "Fennec",
+      "category": "open source",
+      "date": "",
+      "url": "https://github.com/shamspias/fennec",
+      "description": "Zero-dependency Go library for SSIM/MS-SSIM-guided perceptual image compression. 60–90% size reduction at SSIM ≥ 0.94."
+    },
+    {
+      "name": "Clawkido",
+      "category": "open source",
+      "date": "",
+      "url": "https://github.com/shamspias/clawkido",
+      "description": "Go actor-model multi-agent swarm engine with goroutine-per-agent routing, swarm handoff, extensible skills, and provider fallback."
+    },
+    {
+      "name": "VoidMon",
+      "category": "open source",
+      "date": "",
+      "url": "https://github.com/shamspias/voidmon",
+      "description": "Go TUI system monitor with per-core CPU, cross-platform GPU support, disk I/O, network throughput, and process tracking."
+    },
+    {
+      "name": "LexSubLM-Lite",
+      "category": "research",
+      "date": "",
+      "url": "https://github.com/shamspias/lexsublm-lite",
+      "description": "Laptop-friendly lexical substitution toolkit with POS and morphological filtering, log-prob and cosine ranking, and research-grade evaluation on SWORDS, ProLex, and TSAR-2022."
+    },
+    {
+      "name": "RAG-Scout",
+      "category": "open source",
+      "date": "",
+      "url": "https://github.com/shamspias/RAG-Scout",
+      "description": "Test harness that benchmarks sparse, dense, hybrid, late-interaction, and reranked retrieval stacks on any Q/A dataset."
     }
   ]
 }
