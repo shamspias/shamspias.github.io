@@ -21,7 +21,7 @@ wrecking your database. This is the first post in a series about that missing pi
 
 Say you buy a horse.
 
-The horse is strong, fast, and — this is important — has its own opinions about where to go.
+The horse is strong, fast, and (this is important) has its own opinions about where to go.
 Left alone, it eats your neighbour's rice plants.
 
 So you don't ride a bare horse. You put on a **harness**: a bridle so it knows where you want
@@ -51,12 +51,12 @@ questions that a model, on its own, cannot:
 | What just happened? | **The audit trail** | "The AI did something" is your entire incident report |
 
 Notice that only the first two are about *capability*. The other three are about *restraint*.
-A harness is mostly restraint — and restraint is the part people leave for later, which is to
+A harness is mostly restraint, and restraint is the part people leave for later, which is to
 say, never.
 
 ---
 
-## 3. Chatbot, workflow, agent — three different animals 🦜
+## 3. Chatbot, workflow, agent: three different animals 🦜
 
 These get mixed up constantly, so let's separate them.
 
@@ -80,8 +80,8 @@ agent.run("refund order 8842 and tell the customer")
 ```
 
 The jump from 2 to 3 is where a harness stops being optional. In a workflow, *you* wrote the
-`SELECT`. In an agent, the model is choosing — and the only thing standing between its choice
-and your production database is the harness.
+`SELECT`. In an agent, the model is choosing, and the only thing standing between its choice and
+your production database is the harness.
 
 ---
 
@@ -89,7 +89,7 @@ and your production database is the harness.
 
 Let me make each part real with the smallest code that shows the idea.
 
-### 4.1 The capability surface — what the model can even see
+### 4.1 The capability surface: what the model can even see
 
 ```python
 from reins import capability
@@ -112,7 +112,7 @@ described *what your application does*.
 I'll spend the whole next post on why this framing matters more than it looks. Short version:
 a name like `refund_order` carries meaning that `UPDATE orders SET status=...` throws away.
 
-### 4.2 Descriptions and types — the model's only map
+### 4.2 Descriptions and types: the model's only map
 
 The model never sees your code. It sees this:
 
@@ -131,7 +131,7 @@ three wasted retries.
 > **Rule of thumb:** if a competent new hire couldn't use your function correctly from the
 > docstring alone, the model can't either. It just fails less politely.
 
-### 4.3 Policy — reads are not writes
+### 4.3 Policy: reads are not writes
 
 This is the single highest-value line in any harness:
 
@@ -140,7 +140,7 @@ result = agent.ask("how many orders are stuck in processing?")   # read-only, al
 agent.run("refund order 8842")                                  # may write, gated
 ```
 
-`ask()` cannot call a write capability. Not "is told not to" — *cannot*. The read/write split
+`ask()` cannot call a write capability. Not "is told not to". It *cannot*. The read/write split
 is decided when the capability is registered, and enforced in Python, not in a paragraph of
 English the model is free to reason around.
 
@@ -155,9 +155,9 @@ SYSTEM = "You must never delete data. Only read."
 
 Prompt injection isn't exotic. It's a customer typing *"ignore previous instructions"* into a
 support ticket that lands in your context window. If your only defence is a sentence in the
-system prompt, you don't have a defence — you have a polite request.
+system prompt, you don't have a defence. You have a polite request.
 
-### 4.4 The approval gate — a human in the loop that actually works
+### 4.4 The approval gate: a human in the loop that actually works
 
 ```python
 def approve(call):
@@ -169,13 +169,13 @@ agent = Agent(capabilities=[...], can_write=True, approve=approve)
 
 Three things make an approval gate good rather than theatrical:
 
-1. **It shows the resolved call**, not the intent. "Wants to refund order 8842 for ৳4,500" —
+1. **It shows the resolved call**, not the intent. "Wants to refund order 8842 for ৳4,500",
    not "wants to help the customer."
 2. **It's the last step before execution**, so nothing can slip in after approval.
 3. **Silence means no.** Default-deny, always. A gate that times out into *allow* is a gate
    made of paper.
 
-### 4.5 The audit trail — because "the AI did it" is not a post-mortem
+### 4.5 The audit trail, because "the AI did it" is not a post-mortem
 
 ```python
 result = agent.run("refund order 8842")
@@ -222,7 +222,7 @@ the difference between a five-minute fix and a five-hour archaeology expedition.
 
 Read that diagram once more and notice what is **not** there: the model never touches the
 database. It never even touches your ORM. It proposes calls into a surface you defined, and
-your own code — with all its existing validation and authorization — does the work.
+your own code, with all its existing validation and authorization, does the work.
 
 That's the whole trick. The agent inherits every safety property your application already has,
 for free, because it goes through the same front door your human users do.
@@ -257,11 +257,11 @@ The final answer is the least interesting artifact. Log the *calls*.
 
 This is part 1. The rest goes deeper into the parts that matter most:
 
-- **Part 2 — Give the model your verbs, not your tables.** Why intent-named operations beat
+- **Part 2, Give the model your verbs, not your tables.** Why intent-named operations beat
   schemas and auto-generated OpenAPI specs, and what "meaning" actually means here.
-- **Part 3 — Safe by default.** Read/write splits, approval gates, row-level scoping, and
+- **Part 3, Safe by default.** Read/write splits, approval gates, row-level scoping, and
   sandboxing, at the level of real code.
-- **Part 4 — An agent is data, not code.** Storing agents as versioned specs so they can be
+- **Part 4, An agent is data, not code.** Storing agents as versioned specs so they can be
   edited, diffed, rolled back, and improved from feedback.
 
 ---
@@ -270,13 +270,13 @@ This is part 1. The rest goes deeper into the parts that matter most:
 
 - A model is an engine. A harness is what makes it *transport*.
 - A harness is five things: **surface, meaning, policy, approval, audit**.
-- Only the first two are about power. The other three are about restraint — and restraint is
-  the part that ships to production.
+- Only the first two are about power. The other three are about restraint, and restraint is the
+  part that ships to production.
 - Anything enforced in a prompt is a suggestion. Enforce it in code.
 - The best harness is boring, readable, and gives you a log you'd be happy to read out loud in
   an incident review.
 
 If you want to poke at a working one, [**Reins**](https://github.com/shamspias/reins) is the
-small version of these ideas — you point it at functions you already have and it does the rest.
+small version of these ideas. You point it at functions you already have and it does the rest.
 
 *Next up: why `refund_order` is worth more to a model than your entire database schema.*

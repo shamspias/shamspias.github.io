@@ -25,8 +25,8 @@ takes about 120 milliseconds, and inside it two entirely separate problems hide.
 
 **Is it legal?** Cricket's law says you may not *straighten* your elbow by more than **15
 degrees** during the delivery swing. Beyond that you're throwing, not bowling, and throwing is
-biomechanically far more efficient — which is exactly why it's banned. This is the rule that
-gets careers suspended.
+biomechanically far more efficient, which is exactly why it's banned. This is the rule that gets
+careers suspended.
 
 **Is it safe?** Fast bowling is one of the most injurious actions in sport. Lumbar stress
 fractures are so common in young fast bowlers that they're almost expected. The mechanism is
@@ -36,9 +36,9 @@ several hundred times a week.
 Both questions reduce to the same measurement problem: **what angles is this body making, and
 when?**
 
-Traditionally you answer that in a lab — reflective markers, a dozen synchronised cameras,
-force plates, a technician, a six-figure budget. Which means roughly a few hundred bowlers in
-the world get measured, and every academy player in Dhaka, Lahore, or Kandy does not.
+Traditionally you answer that in a lab: reflective markers, a dozen synchronised cameras, force
+plates, a technician, a six-figure budget. Which means roughly a few hundred bowlers in the world
+get measured, and every academy player in Dhaka, Lahore, or Kandy does not.
 
 That gap is worth closing, and pose estimation closes a useful part of it.
 
@@ -48,8 +48,8 @@ That gap is worth closing, and pose estimation closes a useful part of it.
 
 Feed a frame to a model; get back the pixel coordinates of body landmarks.
 
-**MediaPipe Pose** gives 33 landmarks per frame — eyes, ears, shoulders, elbows, wrists, hips,
-knees, ankles, heels, feet — plus a visibility score for each. It runs at 30+ FPS on a laptop
+**MediaPipe Pose** gives 33 landmarks per frame (eyes, ears, shoulders, elbows, wrists, hips,
+knees, ankles, heels, feet) plus a visibility score for each. It runs at 30+ FPS on a laptop
 CPU. No markers, no suit, no calibration rig.
 
 ```python
@@ -65,7 +65,7 @@ for i, lm in enumerate(res.pose_landmarks.landmark):
 ```
 
 For bowling analysis we need twelve of the thirty-three: shoulders, elbows, wrists, hips, knees,
-ankles — left and right.
+ankles, left and right.
 
 That's the whole input. Everything after this is geometry.
 
@@ -118,9 +118,9 @@ Then the checks are boringly simple, and that's a feature:
 
 ```python
 def assess(name, value, lo, hi):
-    if value < lo:  return f"⚠️  {name}: {value:.1f}° — too low"
-    if value > hi:  return f"⚠️  {name}: {value:.1f}° — too high"
-    return f"✅ {name}: {value:.1f}° — good"
+    if value < lo:  return f"⚠️  {name}: {value:.1f}° too low"
+    if value > hi:  return f"⚠️  {name}: {value:.1f}° too high"
+    return f"✅ {name}: {value:.1f}° good"
 ```
 
 ```
@@ -168,7 +168,7 @@ locate two events in it.
 Practical detection heuristics:
 
 **Front-foot contact.** The frame where the front ankle's vertical velocity crosses zero and its
-$y$ stops decreasing — the foot has landed.
+$y$ stops decreasing. The foot has landed.
 
 ```python
 ankle_y = np.array([f["ankle"][1] for f in frames])
@@ -178,7 +178,7 @@ ffc = np.where((v[:-1] < 0) & (v[1:] >= 0))[0]      # candidate landings
 
 **Arm horizontal.** The frame where the shoulder-to-elbow vector is closest to horizontal.
 
-**Release.** Roughly maximum wrist velocity — the ball leaves at the top of the whip.
+**Release.** Roughly maximum wrist velocity, since the ball leaves at the top of the whip.
 
 Then take the minimum and maximum elbow angle *between* arm-horizontal and release, and the
 difference is your extension:
@@ -192,14 +192,14 @@ legal = extension <= 15.0
 
 **And here is where I have to be honest about the limits.** At 30 FPS, a 120-millisecond
 delivery swing is **about four frames**. Four samples to characterise the curve whose range
-decides someone's career. That is not enough, and no amount of clever code fixes it — the
+decides someone's career. That is not enough, and no amount of clever code fixes it. The
 information isn't in the video.
 
 So:
 
 - **120–240 FPS** for any elbow-legality claim. Phone slow-motion modes are genuinely adequate
   here, which is the good news.
-- **30 FPS is fine** for coaching feedback on knee, trunk, and shoulder — those change slowly
+- **30 FPS is fine** for coaching feedback on knee, trunk, and shoulder, which change slowly
   enough.
 - **Never make a legality call from 30 FPS.** Report "insufficient frame rate" instead. Refusing
   to answer is a valid output, and building that refusal into the tool is the difference between
@@ -214,8 +214,8 @@ toward the camera, foreshortening makes the angle wrong, and nothing in the fram
 how much. MediaPipe's $z$ coordinate is a rough relative-depth estimate, not a metric
 measurement.
 
-*Mitigation:* fix the camera position — perpendicular to the crease, at hip height, marked on
-the ground with tape so every session matches. **Consistency matters more than absolute
+*Mitigation:* fix the camera position. Perpendicular to the crease, at hip height, marked on the
+ground with tape so every session matches. **Consistency matters more than absolute
 accuracy**, because the real question a coach asks is "is this better than last month?"
 
 **Occlusion.** At the top of the action the bowling arm passes across the body and the front arm
@@ -228,7 +228,7 @@ usable = [f for f in frames if all(f["vis"][j] > MIN_VIS for j in REQUIRED_JOINT
 ```
 
 **Landmark jitter.** Frame-to-frame noise of a few pixels becomes several degrees of angle noise
-on a short segment. A Savitzky–Golay filter across the trajectory helps a great deal — but filter
+on a short segment. A Savitzky–Golay filter across the trajectory helps a great deal, but filter
 the *landmarks*, not the computed angles, or you smooth a nonlinear function of noise and get
 subtly wrong peaks.
 
@@ -243,7 +243,7 @@ where the tool will actually be used.
 Because the alternative isn't a motion-capture lab. **The alternative is nothing.**
 
 A district-level academy in Bangladesh is not buying a marker-based system. Their fast bowlers
-are currently assessed by a coach's eye, and a coach's eye — however good — cannot see 8 degrees
+are currently assessed by a coach's eye, and a coach's eye, however good, cannot see 8 degrees
 of extra trunk lean, and cannot remember last month's value to the degree.
 
 What a webcam-based system realistically delivers:
@@ -255,7 +255,7 @@ What a webcam-based system realistically delivers:
 - **Coaching feedback within minutes,** with the frame attached, while the athlete still
   remembers what they felt.
 - **A written record.** A PDF report per session, per player, with player profile and bowler
-  category — so the injury conversation two years later has data behind it.
+  category, so the injury conversation two years later has data behind it.
 
 That's the design goal for the tooling I build at AlgolyzerLab: not to replace the lab, but to
 give the ninety-nine percent of bowlers who will never see one *something* rather than nothing.
@@ -269,7 +269,7 @@ give the ninety-nine percent of bowlers who will never see one *something* rathe
 - MediaPipe gives 33 landmarks per frame on CPU; you need twelve of them.
 - Every joint angle is one `arccos` of a normalised dot product. **Clip the cosine** or you'll
   ship `nan`s.
-- Keep the decision layer **simple and inspectable** — literature thresholds, not a black box.
+- Keep the decision layer **simple and inspectable**: literature thresholds, not a black box.
   Athletes ask *why*.
 - **Event detection is the hard part.** The elbow rule is about *change* between arm-horizontal
   and release, so you need the trajectory, not a frame.
@@ -279,6 +279,6 @@ give the ninety-nine percent of bowlers who will never see one *something* rathe
 
 ---
 
-*Next: [from 26 keypoints to clinical metrics](/posts/2026/06/keypoints-to-clinical-metrics/) —
-what changes when you move from a laptop demo to a system clinicians are willing to put in a
+*Next: [from 26 keypoints to clinical metrics](/posts/2026/06/keypoints-to-clinical-metrics/),
+and what changes when you move from a laptop demo to a system clinicians are willing to put in a
 medical record.*

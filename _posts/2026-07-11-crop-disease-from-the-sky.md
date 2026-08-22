@@ -14,7 +14,7 @@ math: true
 
 *A farmer in Mymensingh flies a drone over three acres of rice, uploads the clip, and gets back:
 this patch has bacterial leaf blight, it's affecting 12% of the canopy, here's what to buy. This
-is how that works — and the architectural decision that made it possible with almost no labelled
+is how that works, and the architectural decision that made it possible with almost no labelled
 data.*
 
 ---
@@ -41,7 +41,7 @@ That's your training set. Design for that number or don't ship.
 *Where* it is, and how much, decides what gets sprayed.
 
 **The answer has to be an action.** A farmer cannot use "Xanthomonas oryzae, confidence 0.87".
-They can use "spray this, this much, within three days" — in Bangla, with a photo of the packet
+They can use "spray this, this much, within three days", in Bangla, with a photo of the packet
 they'll find at the shop.
 
 So the system is a pipeline, and the classifier is one stage in it.
@@ -57,8 +57,8 @@ Instead: **use a frozen self-supervised backbone as a feature extractor, and tra
 on top.** This is **linear probing**, and it's the single highest-leverage choice in the whole
 system.
 
-We use **DINOv2-Small** — Meta's self-supervised Vision Transformer, 22M parameters, 384-dimensional
-embeddings.
+We use **DINOv2-Small**: Meta's self-supervised Vision Transformer, 22M parameters, with
+384-dimensional embeddings.
 
 ```python
 import torch
@@ -77,7 +77,7 @@ def embed(pil_image):
 ~50 ms per image on CPU. No GPU required for inference.
 
 **Why DINOv2 specifically?** It was trained with self-distillation on 142 million unlabelled
-images, and it was designed and evaluated for exactly this use — the DINOv2 paper's headline
+images, and it was designed and evaluated for exactly this use. The DINOv2 paper's headline
 result is that a *linear* classifier on frozen DINOv2 features rivals fine-tuned models. The
 representation is built to be probed.
 
@@ -88,7 +88,7 @@ ten lines.
 The key property, which is easy to miss: **DINOv2 has no disease classifier at all.** It has no
 idea what blight is. It produces a general-purpose visual representation in which "diseased tissue
 of this particular kind" happens to be linearly separable. All disease knowledge comes from
-labelled photos — which means:
+labelled photos, which means:
 
 - the backbone works for **any crop**, including ones we've never seen;
 - adding a crop means labelling photos, not retraining a network;
@@ -108,7 +108,7 @@ because the details are what produce a defensible accuracy number.
 import torch.nn as nn
 
 head = nn.Sequential(
-    nn.LayerNorm(384),          # normalise before the linear map — matters more than it looks
+    nn.LayerNorm(384),          # normalise before the linear map: matters more than it looks
     nn.Linear(384, n_classes),
 )
 
@@ -137,7 +137,7 @@ the generalisation work.
 hundred epochs is free.
 
 **Stratified 80/20 split with best-checkpoint selection.** The reported accuracy is on held-out
-data, and it's the checkpoint that was best on held-out data — not the last epoch.
+data, and it's the checkpoint that was best on held-out data, not the last epoch.
 
 **Report the real number.** When a field officer trains a model on forty photos and gets 71%, the
 console says 71%. It is *extremely* tempting to show training accuracy, because 99% makes the
@@ -222,7 +222,7 @@ Deliberately classical. It's fast, it's debuggable, it needs no training data, a
 feeds four things at once: the crop passed to the classifier, the severity number, the map pin,
 and the anomaly overlay the farmer sees.
 
-**Severity as affected canopy area.** Not a model output — a ratio:
+**Severity as affected canopy area.** Not a model output, just a ratio:
 
 $$
 \text{severity} = \frac{\text{lesion pixels}}{\text{canopy pixels}}
@@ -242,7 +242,7 @@ ffprobe -v quiet -print_format json -show_format clip.mp4 | grep -i location
 ```
 
 When present, findings get pinned on a representative aerial frame with severity-coloured
-markers. When absent, we fall back to a video timeline with one-tap jumps to each finding — which
+markers. When absent, we fall back to a video timeline with one-tap jumps to each finding, which
 is what most farmers actually get, because most phones and cheap drones strip the tags.
 
 **Design for the fallback, not the ideal.** The timeline view took longer to build than the map
@@ -276,8 +276,8 @@ mixing a spray.
 only accepts hectares, Bangladeshi farmers cannot use your software. This is a five-line change
 that decides adoption.
 
-**Show the evidence.** Every finding displays the frame it came from. When the model is wrong —
-and it is wrong sometimes — the farmer can see that it flagged a shadow, and their trust in the
+**Show the evidence.** Every finding displays the frame it came from. When the model is wrong,
+and it is wrong sometimes, the farmer can see that it flagged a shadow, and their trust in the
 *rest* of the report survives. Hiding the evidence is how you lose a user permanently on the
 first mistake.
 
@@ -297,7 +297,7 @@ click train, 10 KB output) that every region maintains its own head.
 
 **Confusable diseases.** Brown spot and blast lesions look similar early, and early is exactly
 when the diagnosis is worth money. When the top-2 margin is thin, the honest output is *both*
-with the distinguishing features described — not a coin-flip presented as an answer.
+with the distinguishing features described, not a coin-flip presented as an answer.
 
 **No labels means no ground truth.** For most deployments we have field-officer labels, not lab
 confirmation. Our accuracy numbers are "agreement with an experienced human", not "agreement with
@@ -310,14 +310,14 @@ a pathology test", and we say so.
 - Crop-disease detection is a **pipeline**; classification is the easy stage.
 - **Freeze DINOv2, train a linear probe.** With ~40 labels per class, fine-tuning is
   memorisation. A frozen self-supervised backbone plus a LayerNorm+Linear head is the right
-  shape — and the head is a 10 KB file.
+  shape, and the head is a 10 KB file.
 - The backbone knows **nothing** about disease. That's the feature: it works for any crop, and
   crop knowledge lives in labelled photos.
-- **Three-tier fallback** (probe → k-NN → zero-shot heuristic) so day one works — with the
+- **Three-tier fallback** (probe → k-NN → zero-shot heuristic) so day one works, with the
   weakest tier's **confidence capped**, always.
 - **Localise before classifying.** Classical segmentation gives you the crop, the severity, the
   map pin, and the overlay, with no training data.
-- Severity as **affected canopy area** — a physical ratio a farmer can verify by looking.
+- Severity as **affected canopy area**: a physical ratio a farmer can verify by looking.
 - The output is **advice**: packet photos, local units, authored bilingual text, and the frame as
   evidence. Design for the fallback path, because that's the one people get.
 

@@ -13,7 +13,7 @@ math: false
 ---
 
 *Part 2 of the agent-harness series. The single decision that most determines whether your
-agent is reliable is what you show it — and almost everyone shows it the wrong thing.*
+agent is reliable is what you show it, and almost everyone shows it the wrong thing.*
 
 ---
 
@@ -29,7 +29,7 @@ when it's low, how to issue a refund, how to close up at night.*
 
 Option A gives them *more* information. Option B gets the shop run correctly.
 
-The difference isn't volume — it's that Option B contains **your intent**. The ledger records
+The difference isn't volume. Option B contains **your intent**. The ledger records
 what happened; the instructions record what things *mean*.
 
 Now replace "someone" with "a language model", and you have the entire argument of this post.
@@ -55,13 +55,13 @@ Now answer, from that alone:
 
 - What are the legal values of `status`? Is it `'shipped'`, `'SHIPPED'`, or `4`?
 - To refund an order, do you set `refunded_at`, or set `status='refunded'`, or both? In what
-  order? Does anything else need to happen — a payment-provider call, an email, a stock
+  order? Does anything else need to happen: a payment-provider call, an email, a stock
   adjustment?
 - Is `total_cents` before or after discount? Does it include tax?
 - Can `user_id` be null for guest checkouts?
 - What's in `meta`? Anything at all?
 
-You can't answer any of that. Neither can the model. But — and this is the crucial bit — **the
+You can't answer any of that. Neither can the model. But, and this is the crucial bit, **the
 model will answer anyway**, because that's what models do. It will confidently write
 
 ```sql
@@ -95,7 +95,7 @@ Count what just arrived that the schema didn't have:
 
 1. **A name that states intent.** `refund_order`, not `UPDATE orders SET`.
 2. **The unit of work.** One call is one complete refund. There is no way to do half of it.
-3. **The correct sequence,** because *you* already wrote it — the provider call, the flag, the
+3. **The correct sequence,** because *you* already wrote it: the provider call, the flag, the
    restock, the email, in the right order.
 4. **The right identifier.** "Public order number", so the model asks for `8842` and not an
    internal surrogate key it has no way to know.
@@ -103,15 +103,15 @@ Count what just arrived that the schema didn't have:
 
 And the thing it *cannot* do: anything you didn't expose. The model can't `DROP TABLE`. It
 can't write a `WHERE` clause that forgets a tenant filter. It can't reach a column you never
-put in a function. That's not because you asked nicely — it's because the surface doesn't
-contain it.
+put in a function. That's not because you asked nicely. It's because the surface doesn't contain
+it.
 
 > **The rule:** hand the model your **verbs**, not your **nouns**. Verbs carry intent. Nouns
 > carry structure. The model needs intent; it can't reconstruct it from structure.
 
 ---
 
-## 4. But my ORM already has models — do I write all this by hand? 🏗️
+## 4. But my ORM already has models, do I write all this by hand? 🏗️
 
 No. This is the part people assume is laborious, and it isn't, because your ORM models already
 encode most of what's needed.
@@ -137,8 +137,8 @@ update_order(order_id=..., ...)                     [write]
 Three details in there matter more than they look:
 
 **Lookups prefer a unique natural key.** `get_user_by_email` beats `get_user(id=...)`, because
-a human — or a model reading a support ticket — knows the email. Nobody knows that Rahim is
-user `41207`. Choosing the identifier the caller can actually supply removes an entire class of
+a human, or a model reading a support ticket, knows the email. Nobody knows that Rahim is user
+`41207`. Choosing the identifier the caller can actually supply removes an entire class of
 failed call.
 
 **Read and write are classified at generation time.** Not guessed later, not asked of the
@@ -190,8 +190,8 @@ what order, and what does a "transition" do that a `PATCH` doesn't?
 
 REST endpoints are shaped for **resources and HTTP verbs**, not for **business intent**. They're
 a fine machine interface and a poor instruction sheet. Auto-generating one tool per endpoint
-feels like progress — you've "exposed the whole API!" — and in practice you've handed the model
-a jigsaw puzzle and no picture on the box.
+feels like progress (you've "exposed the whole API!") and in practice you've handed the model a
+jigsaw puzzle and no picture on the box.
 
 The fix is not to hide the API. It's to add a thin intent layer above it:
 
@@ -225,7 +225,7 @@ tool count vs. correct-selection rate  (my rough experience, not a paper)
 
 The mechanism is obvious once you see it: with sixty tools, several of them look alike.
 `update_order` vs `patch_order` vs `set_order_status` vs `transition_order`. The model isn't
-being stupid — *you* couldn't reliably choose between those either, from names alone.
+being stupid. *You* couldn't reliably choose between those either, from names alone.
 
 So:
 
@@ -272,7 +272,7 @@ reins inspect sqlite:///shop.db     # no API key needed
 
 It reflects your tables, prints the exact verbs an agent would get, and marks each one read or
 write. Read that list as if you were the model. If *you* can't tell which verb to call for a
-plausible request, the model can't either — and you've found your work.
+plausible request, the model can't either, and you've found your work.
 
 Then, still without writing a line of code:
 
@@ -281,7 +281,7 @@ reins chat sqlite:///shop.db        # interactive, read-only Q&A
 ```
 
 Read-only means read-only. It's a good way to build confidence in the surface before you ever
-turn writes on — which is where [part 3](/posts/2025/12/safe-by-default-agents/) picks up.
+turn writes on, which is where [part 3](/posts/2025/12/safe-by-default-agents/) picks up.
 
 ---
 
@@ -290,11 +290,11 @@ turn writes on — which is where [part 3](/posts/2025/12/safe-by-default-agents
 - A schema tells the model **what exists**. A verb tells it **what to do**. It needs the second.
 - Every intent-named function carries five things a table can't: intent, unit of work, correct
   sequence, the right identifier, and a boundary.
-- ORM introspection gets you most of the verbs for free — then hand-write the ones with real
-  business meaning.
+- ORM introspection gets you most of the verbs for free. Hand-write the ones with real business
+  meaning.
 - Auto-generated OpenAPI tools have the schema disease one layer up. Add a thin intent layer.
 - **Fewer, sharper verbs beat exhaustive coverage.** Delete tools nobody uses.
 - Name by intent, expose the real identifier, and put the side effects in the docstring.
 
-*Next in the series: making writes safe — read/write enforcement, approval gates, row-level
-scoping, and what a sandbox is actually for.*
+*Next in the series: making writes safe, covering read/write enforcement, approval gates,
+row-level scoping, and what a sandbox is actually for.*

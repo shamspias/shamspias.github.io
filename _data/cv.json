@@ -5,7 +5,7 @@
     "email": "info@shamspias.com",
     "phone": "",
     "website": "https://shamspias.com",
-    "summary": "Senior Software Engineer at Mevrik and founder of AlgolyzerLab. Five-plus years building scalable backend systems, production ML infrastructure, and agent harnesses in Go and Python — plus research on machine learning for peptide prediction and drug discovery.",
+    "summary": "Senior Software Engineer at Mevrik and founder of AlgolyzerLab. Five-plus years building scalable backend systems, production ML infrastructure, and agent harnesses in Go and Python, plus research on machine learning for peptide prediction and drug discovery.",
     "location": {
       "address": "",
       "postalCode": "",
@@ -52,10 +52,10 @@
       "endDate": "",
       "summary": "Applied-AI studio for sports science, healthcare, agriculture, and research engineering.",
       "highlights": [
-        "Athlete Intelligence — multi-tenant athlete performance management for elite sport (Go, Next.js 16) with an IOC-aligned clinical domain and an RTMPose GPU pipeline that turns ordinary video into clinical movement metrics.",
-        "ChemberIQ — medical case-management platform (Go/Gin, Vue 3, offline-first Flutter doctor app) with a purpose-built in-memory search engine.",
-        "Agri Remedy — drone-based crop-disease monitoring using DINOv2 features with staff-trained linear-probe heads and bilingual treatment guidance.",
-        "Cricket Bowling Analyzer — 18-parameter biomechanical analysis from video with ICC elbow-extension compliance checks and PDF clinical reports."
+        "Athlete Intelligence: multi-tenant athlete performance management for elite sport (Go, Next.js 16) with an IOC-aligned clinical domain and an RTMPose GPU pipeline that turns ordinary video into clinical movement metrics.",
+        "ChemberIQ: medical case-management platform (Go/Gin, Vue 3, offline-first Flutter doctor app) with a purpose-built in-memory search engine.",
+        "Agri Remedy: drone-based crop-disease monitoring using DINOv2 features with staff-trained linear-probe heads and bilingual treatment guidance.",
+        "Cricket Bowling Analyzer: 18-parameter biomechanical analysis from video with ICC elbow-extension compliance checks and PDF clinical reports."
       ]
     },
     {
@@ -133,42 +133,100 @@
     {
       "name": "Languages",
       "level": "",
-      "keywords": ["Go", "Python", "TypeScript", "C/C++"]
+      "keywords": [
+        "Go",
+        "Python",
+        "TypeScript",
+        "C/C++"
+      ]
     },
     {
       "name": "Agents & RAG",
       "level": "",
-      "keywords": ["LangGraph", "LangChain", "LlamaIndex", "Dify", "MCP", "function calling", "evaluation harnesses"]
+      "keywords": [
+        "LangGraph",
+        "LangChain",
+        "LlamaIndex",
+        "Dify",
+        "MCP",
+        "function calling",
+        "evaluation harnesses"
+      ]
     },
     {
       "name": "LLM Ops",
       "level": "",
-      "keywords": ["vLLM", "INT4/FP8 quantization", "continuous batching", "KV-cache tuning", "reranking", "benchmarking"]
+      "keywords": [
+        "vLLM",
+        "INT4/FP8 quantization",
+        "continuous batching",
+        "KV-cache tuning",
+        "reranking",
+        "benchmarking"
+      ]
     },
     {
       "name": "ML / DL",
       "level": "",
-      "keywords": ["PyTorch", "TensorFlow", "LoRA/QLoRA", "distillation", "GGUF", "linear probing", "stacking ensembles"]
+      "keywords": [
+        "PyTorch",
+        "TensorFlow",
+        "LoRA/QLoRA",
+        "distillation",
+        "GGUF",
+        "linear probing",
+        "stacking ensembles"
+      ]
     },
     {
       "name": "Computer Vision",
       "level": "",
-      "keywords": ["YOLO", "SAM", "DINOv2", "MediaPipe", "RTMPose", "OpenCV", "NPU edge inference"]
+      "keywords": [
+        "YOLO",
+        "SAM",
+        "DINOv2",
+        "MediaPipe",
+        "RTMPose",
+        "OpenCV",
+        "NPU edge inference"
+      ]
     },
     {
       "name": "Computational Biology",
       "level": "",
-      "keywords": ["RDKit", "ChemProp", "ESM-2", "molecular docking", "scaffold-aware splits", "COCONUT"]
+      "keywords": [
+        "RDKit",
+        "ChemProp",
+        "ESM-2",
+        "molecular docking",
+        "scaffold-aware splits",
+        "COCONUT"
+      ]
     },
     {
       "name": "Data",
       "level": "",
-      "keywords": ["PostgreSQL + pgvector", "MongoDB", "Qdrant", "FAISS", "Pinecone", "Redis"]
+      "keywords": [
+        "PostgreSQL + pgvector",
+        "MongoDB",
+        "Qdrant",
+        "FAISS",
+        "Pinecone",
+        "Redis"
+      ]
     },
     {
       "name": "Infrastructure",
       "level": "",
-      "keywords": ["Docker", "Nginx", "Coolify", "CI/CD", "GPU deployment", "Linux", "S3/R2/MinIO"]
+      "keywords": [
+        "Docker",
+        "Nginx",
+        "Coolify",
+        "CI/CD",
+        "GPU deployment",
+        "Linux",
+        "S3/R2/MinIO"
+      ]
     }
   ],
   "languages": [
@@ -184,27 +242,31 @@
   "interests": [
     {
       "name": "Computational biology & drug discovery",
-      "keywords": ["anti-inflammatory peptide prediction", "natural-product virtual screening", "ADMET modeling"]
+      "keywords": [
+        "anti-inflammatory peptide prediction",
+        "natural-product virtual screening",
+        "ADMET modeling"
+      ]
     },
     {
       "name": "Agent systems",
-      "keywords": ["agent harnesses", "multi-agent orchestration", "safe tool use"]
+      "keywords": [
+        "agent harnesses",
+        "multi-agent orchestration",
+        "safe tool use"
+      ]
     },
     {
       "name": "Efficient inference",
-      "keywords": ["quantization", "serving throughput", "edge and embedded deployment"]
+      "keywords": [
+        "quantization",
+        "serving throughput",
+        "edge and embedded deployment"
+      ]
     }
   ],
   "references": [],
-  "publications": [
-    {
-      "name": "AIPpred-Stack: Prediction of Anti-Inflammatory Peptides using Ensemble Learning with an Experimentally Validated Dataset",
-      "publisher": "IEEE CCECE 2026",
-      "releaseDate": "2026-01-01",
-      "website": "",
-      "summary": "A two-stage stacking ensemble combining ~2,282 hand-crafted sequence descriptors with 1,280-dimensional ESM-2 protein language model embeddings. Replaces the random-UniProt negatives used by prior work with experimentally validated negatives from IEDB T-cell assays, producing a harder and more honest benchmark. With Abdullah Al Mamun and Francis M. Bui, University of Saskatchewan."
-    }
-  ],
+  "publications": [],
   "presentations": [],
   "teaching": [],
   "portfolio": [
@@ -220,7 +282,14 @@
       "category": "open source",
       "date": "",
       "url": "https://github.com/shamspias/customizable-gpt-chatbot",
-      "description": "A self-hostable, local-first agent-harness platform where an agent is data, not code — a versioned AgentSpec row interpreted by the runtime. MCP connectors, editable RAG knowledge bases, agent teams, and feedback-driven self-improvement."
+      "description": "A self-hostable, local-first agent-harness platform where an agent is data, not code: a versioned AgentSpec row interpreted by the runtime. MCP connectors, editable RAG knowledge bases, agent teams, and feedback-driven self-improvement."
+    },
+    {
+      "name": "Anti-inflammatory peptide prediction",
+      "category": "research",
+      "date": "",
+      "url": "",
+      "description": "Two-stage stacking ensemble over ~2,282 hand-crafted sequence descriptors plus 1,280-dimensional ESM-2 embeddings. Replaces the random-UniProt negatives used by prior work with experimentally validated IEDB negatives, producing a harder and more honest benchmark."
     },
     {
       "name": "DeepNatProtease",

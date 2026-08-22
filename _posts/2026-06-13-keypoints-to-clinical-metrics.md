@@ -37,7 +37,7 @@ Here's the gap, laid out honestly:
 | Data model | none | tenant-isolated, soft-delete, audited |
 
 Notice how few of those rows are about computer vision. **Most of the distance between a demo
-and a clinical tool is engineering, governance, and honesty about uncertainty** — not a better
+and a clinical tool is engineering, governance, and honesty about uncertainty**, not a better
 pose model.
 
 ---
@@ -50,16 +50,16 @@ the **Halpe-26** keypoint set on GPU. Fewer points, better system. Three reasons
 **Halpe-26 includes the ones clinicians ask for.** MediaPipe's set is designed for general
 human-pose applications, so it's rich in face landmarks and thin where biomechanics needs
 resolution. Halpe-26 covers the body joints plus **head, neck, hip-centre, and both feet
-(big toe, small toe, heel)** — foot segments you need for ground-contact events and ankle
+(big toe, small toe, heel)**: the foot segments you need for ground-contact events and ankle
 kinematics.
 
 **Accuracy per millisecond is better.** RTMPose is built for the throughput/accuracy trade rather
 than for on-device CPU. Given a GPU, you get lower keypoint error at a frame rate that actually
 supports 240 FPS ingestion.
 
-**Consistency under occlusion.** For a bowling action — arm crossing body, trunk rotating — the
-difference in landmark stability is the difference between a usable trajectory and one you have
-to hand-clean.
+**Consistency under occlusion.** For a bowling action, with the arm crossing the body and the
+trunk rotating, the difference in landmark stability is the difference between a usable
+trajectory and one you have to hand-clean.
 
 The general lesson: **pick a keypoint set by the measurements you need to compute, not by
 keypoint count.** Twenty-six well-chosen points beat thirty-three generic ones.
@@ -82,9 +82,9 @@ $$
 \begin{bmatrix} u \\ v \\ 1 \end{bmatrix} \sim P \begin{bmatrix} X \\ Y \\ Z \\ 1 \end{bmatrix}
 $$
 
-One camera gives two equations for three unknowns — underdetermined, hence the ambiguity. Two
-cameras give four equations for three unknowns, and you solve the overdetermined system by least
-squares:
+One camera gives two equations for three unknowns, which is underdetermined, hence the ambiguity.
+Two cameras give four equations for three unknowns, and you solve the overdetermined system by
+least squares:
 
 ```python
 import numpy as np
@@ -103,8 +103,8 @@ def triangulate(P1, x1, P2, x2):
 ```
 
 Now your keypoints are in **millimetres in a world frame**, and joint angles computed from them
-are real 3-D angles, not projections. Trunk rotation — which is basically unmeasurable from one
-camera — becomes a direct calculation.
+are real 3-D angles, not projections. Trunk rotation, which is basically unmeasurable from one
+camera, becomes a direct calculation.
 
 ### The part that's actually hard
 
@@ -117,7 +117,7 @@ waved through the shared volume, `cv2.calibrateCamera` and `cv2.stereoCalibrate`
 What nobody warns you about:
 
 - **Calibration drifts.** A camera nudged by a millimetre changes your extrinsics. Recalibrate
-  per session and store the calibration *with the recording* — not in a config file that gets
+  per session and store the calibration *with the recording*, not in a config file that gets
   overwritten.
 - **Synchronisation is critical.** At 240 FPS, one frame of offset between cameras is 4 ms, and
   at bowling-arm speeds that's centimetres of apparent displacement, triangulated into a
@@ -150,7 +150,7 @@ Clinical metrics are almost never single-frame quantities. They're properties of
 So the pipeline is a signal-processing pipeline, and the order of operations matters:
 
 **1. Filter the landmarks, not the angles.** Savitzky–Golay over each coordinate's time series.
-Filtering computed angles smooths a nonlinear function of noise and shifts your peaks — a subtle
+Filtering computed angles smooths a nonlinear function of noise and shifts your peaks, a subtle
 bug that produces confidently wrong extrema.
 
 ```python
@@ -163,11 +163,11 @@ xyz_smooth = savgol_filter(xyz, window_length=9, polyorder=3, axis=0)
 it just spreads the guess to its neighbours. Drop it and interpolate, or mark the window
 unusable.
 
-**3. Detect events.** Front-foot contact, arm-horizontal, release — from velocity zero-crossings
-and extrema, as in the previous post, but now on metric 3-D coordinates, which makes them far
-more robust.
+**3. Detect events.** Front-foot contact, arm-horizontal, release, all from velocity
+zero-crossings and extrema, as in the previous post, but now on metric 3-D coordinates, which
+makes them far more robust.
 
-**4. Compute metrics over windows.** Peak, range, timing, and rate — `max(angle) - min(angle)`
+**4. Compute metrics over windows.** Peak, range, timing, and rate: `max(angle) - min(angle)`
 between two events, time from contact to release, angular velocity at release.
 
 **5. Attach uncertainty.** This is the step that separates a clinical output from a number.
@@ -196,7 +196,7 @@ Here's the thing that surprised me about building this properly: the vision pipe
 quarter of the system. The rest is what makes it usable by an organisation.
 
 **Tenant isolation.** A platform serving multiple clubs must guarantee that club A never sees
-club B's athletes. Enforced at the query layer, on every single query, and tested — not
+club B's athletes. Enforced at the query layer, on every single query, and tested rather than
 documented. This is the same principle as
 [principal scoping in agent harnesses](/posts/2025/12/safe-by-default-agents/): the boundary has
 to be in code, because a boundary in a convention gets crossed.
@@ -210,7 +210,7 @@ subsets. The athlete's own injury notes are not the analyst's business, and a pe
 that treats "staff" as one role will leak.
 
 **An IOC-aligned clinical domain.** Injury and illness recording follows international consensus
-statements — categories, mechanisms, severity, time-loss definitions. Inventing your own schema
+statements: categories, mechanisms, severity, time-loss definitions. Inventing your own schema
 means your data can never be compared to anyone else's, or pooled for research, or published.
 This is the least glamorous decision in the system and one of the highest-leverage.
 
@@ -233,7 +233,7 @@ first, and rebuilt.
 
 **Refusing to answer is a feature.** `quality: insufficient` with a reason is the most valuable
 output when the input can't support a claim. Frame rate too low, joint occluded, calibration
-stale — say so. A system that always produces a number teaches people to trust numbers that
+stale, then say so. A system that always produces a number teaches people to trust numbers that
 shouldn't be trusted.
 
 **Consistency beats accuracy.** A systematic 3° bias that is stable across sessions is more
@@ -252,7 +252,7 @@ arrives while it's still actionable, and whether it says something they can do s
 ## 7. The short version 📝
 
 - Halpe-26 over MediaPipe's 33 not for count but for **the joints clinicians need**, including
-  foot segments — plus better accuracy at high frame rates on GPU.
+  foot segments, plus better accuracy at high frame rates on GPU.
 - **Two calibrated cameras + DLT triangulation** turn image-plane angles into metric 3-D. The
   triangulation is twenty lines; calibration, sync, and drift are the real work.
 - Clinical metrics are properties of **trajectories**, not frames. Gate on confidence, filter

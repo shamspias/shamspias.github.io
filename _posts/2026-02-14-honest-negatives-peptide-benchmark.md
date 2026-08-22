@@ -13,8 +13,8 @@ math: true
 ---
 
 *Part 4 of the machine-learning-for-biology series, and the one I'd pick if you only read one.
-We published a model that scores 76% where competitors report 92% — and ours is the better
-model. Here's why.*
+My model scores 76% where published methods report 92%, and mine is the better model. Here's
+why.*
 
 ---
 
@@ -22,7 +22,8 @@ model. Here's why.*
 
 Suppose I claim a cat detector with 99% accuracy.
 
-Impressive — until you look at my test set: 500 photos of cats and 500 photos of **fire hydrants**.
+Impressive, until you look at my test set: 500 photos of cats and 500 photos of **fire
+hydrants**.
 
 My model doesn't detect cats. It detects *"is there fur"*. It would fail instantly on cats versus
 dogs, cats versus foxes, cats versus a cushion. The 99% is real arithmetic on a fake question.
@@ -39,7 +40,7 @@ Now let's do the same thing to a field.
 
 The task: given a peptide sequence, predict whether it has anti-inflammatory activity.
 
-Positives are straightforward — peptides experimentally shown to be anti-inflammatory. Curated
+Positives are straightforward: peptides experimentally shown to be anti-inflammatory, curated
 from the literature and from immunology databases. Real assays, real measurements.
 
 Negatives are where it gets interesting, because **nature doesn't publish a list of peptides
@@ -74,7 +75,7 @@ def state_of_the_art(seq):          # no, really
 
 That's it. On a dataset built the conventional way, this gets you most of the way to a headline
 number. And because published methods use rich feature vectors rather than a single length
-column, **length leaks in everywhere** — AAC is normalised by $L$, DDE's variance term is
+column, **length leaks in everywhere**. AAC is normalised by $L$, DDE's variance term is
 $1/(L-1)$, CTD's distribution descriptors are positional. You cannot easily *remove* length. It's
 diffused through the whole representation.
 
@@ -88,7 +89,7 @@ which is a solved problem that requires no biology whatsoever.
 
 This is **shortcut learning**, and it is the single most common failure in applied ML on
 biological data. The model isn't cheating. It's optimising exactly what you gave it. The dataset
-contained an easier path to the answer than the biology, so it took the easier path — as it
+contained an easier path to the answer than the biology, so it took the easier path, as it
 should.
 
 > **The uncomfortable generalisation:** if there is any feature that separates your classes more
@@ -97,10 +98,10 @@ should.
 
 ---
 
-## 4. What we did instead 🎯
+## 4. What I did instead 🎯
 
-For **AIPpred-Stack**, we drew negatives from the **IEDB** (Immune Epitope Database) T-cell
-assays — the *same* assays that supplied many of the positives.
+In my own work I draw negatives from the **IEDB** (Immune Epitope Database) T-cell assays, the
+*same* assays that supplied many of the positives.
 
 The distinction that makes this work:
 
@@ -112,7 +113,7 @@ CONVENTIONAL NEGATIVES
    different composition
    -> the model learns: "short vs. long"
 
-OUR NEGATIVES
+VALIDATED NEGATIVES
    peptides that WERE tested in the same T-cell assays
    and did NOT show anti-inflammatory activity
    same length distribution
@@ -121,8 +122,7 @@ OUR NEGATIVES
 ```
 
 These are peptides that went through the same experimental pipeline, in the same length range,
-with the same amino-acid statistics — and came out negative. Experimentally validated
-inactivity.
+with the same amino-acid statistics, and came out negative. Experimentally validated inactivity.
 
 Now length tells you nothing. Composition tells you very little. The only remaining signal is
 the actual biology.
@@ -135,9 +135,9 @@ the actual biology.
 |---|---|---|---|---|
 | DeepAIPs-SFLA | random UniProt | 92% | 0.85 | length, mostly |
 | NeXtMD | random UniProt | 88% | 0.75 | length, mostly |
-| **AIPpred-Stack** | **IEDB-validated** | **76%** | **0.50** | **anti-inflammatory activity** |
+| **This work** | **IEDB-validated** | **76%** | **0.50** | **anti-inflammatory activity** |
 
-Independent test set, our method:
+Independent test set, my method:
 
 | Metric | Value |
 |---|---|
@@ -150,12 +150,12 @@ Sixteen points below the "state of the art". And I would defend this result in a
 
 Two pieces of evidence that it's the harder task rather than the weaker model:
 
-**We ran the competitors on our dataset.** The repository ships
-`competitors/test_deepaips_sfla.py` and `competitors/test_nextmd.py` precisely so anyone can
-check. On IEDB-validated negatives, those methods land around **75%** — essentially where we do.
-Their 92% was never about their architecture. It was about their negatives.
+**I re-ran the other methods on this dataset.** Both are reimplementable from their papers, so
+this is checkable rather than a claim. On IEDB-validated negatives they land around **75%**,
+essentially where I do. Their 92% was never about their architecture. It was about their
+negatives.
 
-**Our MCC matches other rigorous work.** MCC ≈ 0.50 is right where careful published methods sit
+**The MCC matches other rigorous work.** MCC ≈ 0.50 is right where careful published methods sit
 on genuinely hard versions of this task. That's a sanity check, not a coincidence.
 
 **76% on a real task beats 92% on a fake one.** Only one of those numbers tells you anything
@@ -175,7 +175,7 @@ $$
 
 Range $[-1, 1]$: 1 is perfect, 0 is coin-flipping, −1 is perfectly wrong.
 
-Why it's the right metric here — the classic demonstration:
+Why it's the right metric here, by the classic demonstration:
 
 ```python
 # 900 negatives, 100 positives. Model always predicts "negative".
@@ -186,8 +186,8 @@ mcc      = 0.0                     #        ← tells the truth
 ```
 
 Ninety percent accuracy for a model that has never once said "yes". Accuracy on imbalanced data
-is a marketing metric. MCC is not fooled by it, which is why every claim in our paper leads with
-MCC and reports accuracy second.
+is a marketing metric. MCC is not fooled by it, which is why I lead with MCC and report accuracy
+second.
 
 ---
 
@@ -196,7 +196,7 @@ MCC and reports accuracy second.
 Before you train anything, run these four checks. They have saved me more time than any
 architecture I've ever tried.
 
-**Check 1 — Length.** Plot the length distribution per class. If they differ visibly, length is
+**Check 1. Length.** Plot the length distribution per class. If they differ visibly, length is
 your shortcut and your reported score is inflated.
 
 ```python
@@ -207,7 +207,7 @@ for label in (0, 1):
           f"median={np.median(lens)}  range={min(lens)}–{max(lens)}")
 ```
 
-**Check 2 — Train the dumbest possible model.** One feature: length.
+**Check 2. Train the dumbest possible model.** One feature: length.
 
 ```python
 from sklearn.tree import DecisionTreeClassifier
@@ -219,13 +219,13 @@ print(f"length-only stump: {score:.2%}")
 ```
 
 If a depth-1 stump on length alone hits 85%, **that** is your baseline, and your fancy model must
-be measured against it — not against 50%. This one line reveals more about a dataset than a
-week of modelling.
+be measured against it, not against 50%. This one line reveals more about a dataset than a week
+of modelling.
 
-**Check 3 — Composition.** Compare mean AAC per class. Big divergence in abundant residues
+**Check 3. Composition.** Compare mean AAC per class. Big divergence in abundant residues
 usually means the classes come from different sources, not different biology.
 
-**Check 4 — Provenance.** Ask, for every negative: *what experiment produced this label?* If the
+**Check 4. Provenance.** Ask, for every negative: *what experiment produced this label?* If the
 answer is "none, it was assumed", you have assumptions in your test set, and your metric measures
 your assumptions.
 
@@ -259,19 +259,19 @@ ones, and reviewers compare tables.
 
 What worked for us:
 
-**Report the shortcut baseline in the paper.** Put the length-only stump in your results table.
+**Report the shortcut baseline.** Put the length-only stump in your results table.
 It reframes the comparison from "76 vs 92" to "here is what each number measures".
 
-**Ship code that runs the competitors on your data.** Nothing settles the argument faster than
-a reproducible script showing their method also gets ~75% once the shortcut is gone.
+**Ship code that runs the other methods on your data.** Nothing settles the argument faster than
+a reproducible script showing they also get ~75% once the shortcut is gone.
 
-**State the claim precisely.** Not "our model is better" — *"our model is evaluated on a harder
-task that reflects the deployment setting; the prior numbers are not comparable."*
+**State the claim precisely.** Not "my model is better", but *"this model is evaluated on a
+harder task that reflects the deployment setting; the prior numbers are not comparable."*
 
 **Lead with MCC.** It's harder to inflate and it signals that you know what you're doing.
 
-And accept that the honest paper is sometimes the harder sell. That's a problem with the
-incentive structure, not with your result.
+And accept that the honest result is sometimes the harder sell. That's a problem with the
+incentive structure, not with your work.
 
 ---
 
@@ -279,17 +279,17 @@ incentive structure, not with your result.
 
 - Your **negatives define your task.** Change them and you've changed what you're measuring,
   regardless of the model.
-- Random-UniProt negatives turn peptide-activity prediction into **"short vs. long"** — a solved
+- Random-UniProt negatives turn peptide-activity prediction into **"short vs. long"**, a solved
   problem with no biology in it.
-- **92% on random negatives ≈ 75% on validated negatives.** We ran the competitors to check.
+- **92% on random negatives ≈ 75% on validated negatives.** I re-ran the other methods to check.
 - Length leaks into nearly every sequence descriptor. You can't just drop the length column.
 - Audit before you model: **length distributions, a length-only stump, composition, provenance.**
 - Use **MCC**, not accuracy, on imbalanced data.
-- Not a biology problem — a dataset-design problem, and it's everywhere.
+- Not a biology problem but a dataset-design problem, and it's everywhere.
 
 **76% that means something beats 92% that doesn't.**
 
 ---
 
-*Series: **Machine Learning for Biology**. Next — scaling up:
+*Series: **Machine Learning for Biology**. Next up, scaling this to a whole library:
 [from 400,000 natural products to 20 candidates](/posts/2026/03/screening-400k-natural-products/).*

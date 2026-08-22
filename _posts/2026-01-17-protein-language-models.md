@@ -22,7 +22,7 @@ math: true
 If you've read anything about how BERT was trained, you already understand ESM-2.
 
 Take a huge corpus. Hide some tokens. Ask the model to guess them. Repeat a few hundred billion
-times. No labels, no annotations — just the text predicting itself.
+times. No labels, no annotations, just the text predicting itself.
 
 ```
 English (BERT):
@@ -34,7 +34,7 @@ Protein (ESM-2):
 
 To fill in that blank correctly, a model has to learn what makes a *plausible* protein.
 Which residues co-occur. Which positions tolerate substitution and which don't. Which patterns
-recur across families. Nobody told it about α-helices or binding pockets — but you cannot get
+recur across families. Nobody told it about α-helices or binding pockets, yet you cannot get
 good at this game without internalising something that behaves a great deal like structural
 knowledge.
 
@@ -73,8 +73,8 @@ print(emb.shape)        # torch.Size([1280])
 Two decisions in there deserve more attention than they usually get.
 
 **Which layer?** The last layer is specialised for the masked-token task. Middle-to-late layers
-are often more transferable — the classic finding from NLP holds here too. Layer 33 of 33 works;
-so does layer 30. It's worth a sweep rather than an assumption.
+are often more transferable, since the classic finding from NLP holds here too. Layer 33 of 33
+works; so does layer 30. It's worth a sweep rather than an assumption.
 
 **How to pool?** You have `(length, 1280)` and you need `(1280,)`.
 
@@ -98,7 +98,7 @@ Three lines of evidence I find persuasive:
 
 **Attention maps recover contact maps.** Certain attention heads light up precisely on residue
 pairs that sit close together in the folded 3-D structure. The model was never shown a
-structure. It inferred spatial proximity from co-variation in sequences — the same signal
+structure. It inferred spatial proximity from co-variation in sequences, the same signal
 evolutionary biologists have exploited for decades, learned automatically.
 
 **Embedding space organises by function.** Project embeddings down to two dimensions and
@@ -129,7 +129,7 @@ Our anti-inflammatory peptide task, 5-fold cross-validation:
 
 The 650-million-parameter protein language model **lost** to the twenty lines of letter counting
 from [part 2](/posts/2025/11/peptide-feature-engineering/). Concatenating them gained about
-0.2 percentage points — inside the error bars.
+0.2 percentage points, which is inside the error bars.
 
 If you've only read papers, this is not what you expect. Let me give the honest reasons.
 
@@ -138,7 +138,7 @@ If you've only read papers, this is not what you expect. Let me give the honest 
 need.
 
 **ESM-2's training distribution is proteins, not peptides.** UniRef is full-length proteins,
-typically hundreds of residues. A 13-mer is out-of-distribution — a short, unusual fragment. The
+typically hundreds of residues. A 13-mer is out-of-distribution: a short, unusual fragment. The
 model handles it, but it isn't home turf.
 
 **The dataset is small.** With a few thousand labelled examples, 1,280 rich dimensions don't buy
@@ -163,13 +163,13 @@ None of the above means "skip protein language models". It means know which regi
 | Tens of thousands of labels | Either, or fine-tune |
 | Need to explain features to a reviewer | Hand-crafted |
 | Need mutation-effect prediction | ESM-2, essentially free |
-| Novel family, no homologs | ESM-2 — it generalises where alignment fails |
+| Novel family, no homologs | ESM-2; it generalises where alignment fails |
 | CPU-only inference budget | Hand-crafted (ESM-2 wants a GPU) |
 
 The row I'd underline is **"a few hundred labels"**. This is where pretrained embeddings shine
 hardest: a frozen backbone plus a small linear head is astonishingly data-efficient. It's the
-same principle behind the DINOv2 linear probe I use for crop-disease detection — freeze a
-general representation, train a tiny head on the labels you actually have.
+same principle behind the DINOv2 linear probe I use for crop-disease detection: freeze a general
+representation, train a tiny head on the labels you actually have.
 
 ```python
 from sklearn.linear_model import LogisticRegression
@@ -192,7 +192,7 @@ computations, and any per-block signal gets muddied.
 The **two-stage stacking ensemble** we ended up with treats them as separate views:
 
 ```
-STAGE 1 — base learners, each on its own view
+STAGE 1 · base learners, each on its own view
    ┌────────────────────────────┐
    │ hand-crafted (2,282 dims)  │──► XGBoost   ──► p₁
    │                            │──► RandomFor.──► p₂
@@ -202,7 +202,7 @@ STAGE 1 — base learners, each on its own view
    │                            │──► MLP       ──► p₅
    └────────────────────────────┘
                                         │
-STAGE 2 — meta learner                  ▼
+STAGE 2 · meta learner                  ▼
              logistic regression on [p₁ … p₅] ──► final probability
 ```
 
@@ -261,11 +261,11 @@ frozen transformer" is not.
   protein language model in our experiments.** Length and data size decide this, not hype.
 - Protein language models win on **long sequences**, **few labels**, **novel families**, and
   **mutation effects**.
-- Combine views with **stacking**, not concatenation — and generate the meta-learner's inputs
+- Combine views with **stacking**, not concatenation, and generate the meta-learner's inputs
   **out-of-fold** or your score is fiction.
 
 ---
 
-*Series: **Machine Learning for Biology**. Next — the post I most want people to read:
+*Series: **Machine Learning for Biology**. Next up, the post I most want people to read:
 [why your choice of negatives decides your accuracy](/posts/2026/02/honest-negatives-peptide-benchmark/)
 before your model does.*

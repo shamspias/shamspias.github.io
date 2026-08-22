@@ -19,7 +19,7 @@ product humans have catalogued and ends with a shortlist a wet lab can afford to
 
 ## 1. Why plants are a good place to look 🌱
 
-Aspirin came from willow bark. Penicillin from mould. Artemisinin — the frontline malaria drug —
+Aspirin came from willow bark. Penicillin from mould. Artemisinin, the frontline malaria drug,
 from sweet wormwood, a plant used in Chinese medicine for two thousand years. Taxol from the
 Pacific yew.
 
@@ -46,7 +46,7 @@ How do we get from one to the other without spending a decade?
 ## 2. The target: viral proteases 🎯
 
 A virus enters a cell and hijacks the ribosome to translate its genome. But it often comes out
-as **one long polyprotein** — several functional proteins fused into a single chain, useless
+as **one long polyprotein**: several functional proteins fused into a single chain, useless
 until cut apart.
 
 The scissors are a **protease**, encoded by the virus itself.
@@ -62,7 +62,7 @@ The scissors are a **protease**, encoded by the virus itself.
 ```
 
 Break the scissors and the virus assembles nothing. That's why protease inhibitors are a
-validated antiviral class — HIV protease inhibitors turned AIDS from terminal to chronic, and
+validated antiviral class. HIV protease inhibitors turned AIDS from terminal to chronic, and
 Paxlovid's active component is a SARS-CoV-2 Mpro inhibitor.
 
 Our testbed covers five:
@@ -72,7 +72,7 @@ Our testbed covers five:
 | HIV-1 | HIV-1 protease | best-studied; a sanity check for the whole pipeline |
 | Hepatitis C | NS3/4A | proven druggable target |
 | SARS-CoV-2 | Mpro (3CLpro) | huge public dataset thanks to COVID Moonshot |
-| Dengue | NS2B-NS3 | no approved antiviral — genuinely understudied |
+| Dengue | NS2B-NS3 | no approved antiviral; genuinely understudied |
 | Zika | NS2B-NS3 | same, and closely related to dengue |
 
 Those last two are the point. Dengue infects hundreds of millions of people a year and has no
@@ -104,7 +104,7 @@ record = {
     "assay_id":         "CHEMBL1613914",
     "target_id":        "CHEMBL3927",
     "measurement_type": "IC50",
-    "relation":         "=",                          # not ">" — see below
+    "relation":         "=",                          # not ">" ... see below
     "original_units":   "uM",
     "value_nM":         850.0,                        # harmonised
     "label_active":     True,                         # value_nM <= threshold
@@ -122,7 +122,7 @@ fixed dose. A single missed conversion is a 1,000× error in your labels.
 
 **The relation qualifier.** A record saying `IC50 > 10000 nM` means *"we tested up to 10 µM and
 saw nothing"*. That is a genuine negative. A record saying `IC50 = 10000 nM` is a weak binder.
-Treating `>` as `=` silently corrupts your labels — and it's a very common bug.
+Treating `>` as `=` silently corrupts your labels, and it's a very common bug.
 
 **The activity threshold.** We default to **1,000 nM** for active, relaxed to **5,000 nM** for
 sparse targets. Arbitrary, and it must be *pre-declared*. Tuning the threshold until your model
@@ -130,7 +130,7 @@ looks good is how you fool yourself.
 
 And one rule above all: **strict per-virus isolation.** Separate curation, separate splits,
 separate models, no pooling. Dengue and Zika proteases are similar enough that pooling is
-tempting — and pooling is how a "dengue model" ends up reporting Zika performance.
+tempting. Pooling is also how a "dengue model" ends up reporting Zika performance.
 
 ---
 
@@ -150,7 +150,7 @@ The model "generalises" to a molecule differing by one methyl group.
 That is memorisation with extra steps.
 ```
 
-Chemical databases are full of series — a paper publishes one scaffold with twenty
+Chemical databases are full of series, because a paper publishes one scaffold with twenty
 substituents. Random splitting scatters that series across train and test, and your model gets
 credit for interpolating within a family it has already seen.
 
@@ -169,7 +169,7 @@ def scaffold(smiles):
 
 The **Bemis–Murcko scaffold** is a molecule's structural core with decoration removed. Group
 molecules by scaffold, then cluster scaffolds that are still similar (Tanimoto > 0.6), and assign
-whole clusters to train / validation / test — 70/15/15, with **zero scaffold overlap**.
+whole clusters to train / validation / test at 70/15/15, with **zero scaffold overlap**.
 
 The honest consequence:
 
@@ -191,8 +191,8 @@ and mentally deduct fifteen points.
 There is no single best architecture for molecular property prediction, and pretending otherwise
 wastes months. So we train several families per virus and select on pre-registered metrics.
 
-**Fingerprint + classical ML.** Encode the molecule as a bit vector — ECFP4 (circular
-substructure fingerprints), MACCS keys, plus physicochemical descriptors — then RandomForest,
+**Fingerprint + classical ML.** Encode the molecule as a bit vector: ECFP4 (circular
+substructure fingerprints), MACCS keys, plus physicochemical descriptors. Then RandomForest,
 XGBoost, LightGBM, or an MLP.
 
 ```python
@@ -202,7 +202,7 @@ mol = MolFromSmiles(smiles)
 fp = AllChem.GetMorganFingerprintAsBitVect(mol, radius=2, nBits=2048)   # ECFP4
 ```
 
-Fast, robust, works with a few hundred labels, and highly competitive on small datasets — which
+Fast, robust, works with a few hundred labels, and highly competitive on small datasets, which
 describes most understudied targets.
 
 **Graph neural networks (ChemProp).** Treat the molecule as a graph: atoms are nodes, bonds are
@@ -210,7 +210,7 @@ edges, and message passing learns its own representation instead of using a fixe
 Better when you have thousands of labels; worse when you have hundreds.
 
 **Selection metrics, declared up front:** ROC-AUC and PR-AUC as primaries, with balanced
-accuracy, F1, MCC, and calibration as secondaries. PR-AUC matters because actives are rare —
+accuracy, F1, MCC, and calibration as secondaries. PR-AUC matters because actives are rare,
 which brings us to the number that governs the entire funnel.
 
 ---
@@ -218,7 +218,7 @@ which brings us to the number that governs the entire funnel.
 ## 6. Base rates, and why calibration is not optional ⚖️
 
 Suppose 1 in 1,000 COCONUT molecules is genuinely active. Your classifier is 95% sensitive and
-95% specific — respectable numbers.
+95% specific. Respectable numbers.
 
 Screen 400,000 molecules:
 
@@ -274,20 +274,20 @@ CANDIDATES for wet lab                                ~20  ▏
 Each stage deserves a note on *why it's there*, because a funnel where every filter is
 correlated with the previous one filters nothing.
 
-**Drug-likeness — permissive on purpose.** Molecular weight, logP, H-bond donors/acceptors,
+**Drug-likeness, permissive on purpose.** Molecular weight, logP, H-bond donors/acceptors,
 rotatable bonds. But natural products routinely and famously violate Lipinski's rules, and some
 of them are excellent drugs anyway. A strict filter here throws away exactly the interesting
 chemistry, so we set generous bounds and let the later stages do the discriminating.
 
 **PAINS filters.** Pan-Assay INterference compoundS: substructures that show activity in
-*everything* — reactive groups, aggregators, fluorescence artefacts, redox cyclers. They aren't
+*everything*: reactive groups, aggregators, fluorescence artefacts, redox cyclers. They aren't
 hits, they're assay noise, and they will eat your wet-lab budget with a smile.
 
 **Scaffold diversity.** Without this, the top 300 are twenty variations on three scaffolds. If
 that scaffold turns out to be a dead end, you've learned one thing from 300 tests. Capping
 molecules per scaffold buys you *information*, not just ranking.
 
-**Docking.** An orthogonal check — geometry and physics rather than statistics. The next post
+**Docking.** An orthogonal check, geometry and physics rather than statistics. The next post
 covers it properly.
 
 **Interaction analysis.** A good docking score isn't enough; the pose must contact the residues
@@ -304,13 +304,13 @@ $$
 \text{priority} = w_1 \cdot p_{\text{ML}} + w_2 \cdot \tilde{s}_{\text{dock}} + w_3 \cdot \tilde{d}_{\text{drug-like}}
 $$
 
-Not because the weighted sum is principled — it isn't especially — but because a molecule that
+Not because the weighted sum is principled (it isn't especially) but because a molecule that
 scores well on all three has passed a statistical test, a physical test, and a practical test.
 Any *one* of them can be gamed by an artefact. Agreement across three is much harder to fake.
 
 And then the honest caveat: **this produces a hypothesis list, not drugs.** Every compound on it
 needs a real assay. The pipeline's job is to make the wet lab's fifty experiments 100× more
-likely to contain something than fifty random picks. That's all — and that's a lot.
+likely to contain something than fifty random picks. That's all, and that's a lot.
 
 ---
 
@@ -354,6 +354,6 @@ BindingDB, landing in train and test. Deduplicate on standardised structure, not
 
 ---
 
-*Series: **Machine Learning for Biology**. Next —
+*Series: **Machine Learning for Biology**. Next up,
 [docking explained without the jargon](/posts/2026/04/docking-without-jargon/): what a docking
 score is, and why you shouldn't trust it as much as you want to.*

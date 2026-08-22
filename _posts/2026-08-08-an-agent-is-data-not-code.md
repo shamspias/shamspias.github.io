@@ -11,8 +11,8 @@ tags:
 math: false
 ---
 
-*Part 4 of the agent-harness series. One architectural decision — store agents as versioned rows
-instead of writing them as code — and the six capabilities you get for free once you make it.*
+*Part 4 of the agent-harness series. One architectural decision, store agents as versioned rows
+instead of writing them as code, and the six capabilities you get free once you make it.*
 
 ---
 
@@ -25,7 +25,7 @@ It worked. Then a user asked:
 
 > *"Can you make it always cite the page number?"*
 
-And the answer was: sure — I'll edit the class, run the tests, deploy, and it'll be live in
+And the answer was: sure, I'll edit the class, run the tests, deploy, and it'll be live in
 twenty minutes.
 
 That answer is wrong in every way that matters. The user's request is a *configuration change*
@@ -106,7 +106,7 @@ Two properties do the heavy lifting here.
 
 **The orchestrator's output is validated, not trusted.** It's an LLM writing a document, so it
 will occasionally invent a tool name or reference a knowledge base that doesn't exist. Validation
-catches that before storage — the same argument as the
+catches that before storage, on the same argument as the
 [safety layers](/posts/2025/12/safe-by-default-agents/): if it must be true, check it in code.
 
 **The output is inspectable.** A user can read the spec their sentence produced. When behaviour
@@ -140,7 +140,7 @@ User: "be less formal, and search the web too"
    └──────────────────────────────────────────────────┘
 ```
 
-A **diff**. Reviewable, approvable, rejectable — and reversible, because v7 still exists.
+A **diff**. Reviewable, approvable, rejectable, and reversible, because v7 still exists.
 
 Note that the *agent* did not modify itself. It **proposed** a modification, and a human accepted
 it. Self-modifying systems are terrifying precisely when the modification is opaque; a
@@ -182,7 +182,7 @@ One integer.
 question about a system where behaviour lives in prompts scattered across a codebase.
 
 **3. Audit.** Every version records who created it and from what request. The full history of an
-agent's behaviour is queryable — and that's a compliance answer, not just a nice-to-have.
+agent's behaviour is queryable, and that's a compliance answer, not just a nice-to-have.
 
 **4. Templates and cloning.** A good agent is a document. Copy it, adjust three fields, and you
 have a new agent. No code duplication, no inheritance hierarchy.
@@ -200,13 +200,13 @@ so delegation can't recurse forever.
 ```
 
 **6. Learning that persists.** This is my favourite. An agent gets a 👎, or notices its own dead
-end — a tool call that failed, a search that returned nothing useful. It reflects and writes a
-**lesson**:
+end, such as a tool call that failed or a search that returned nothing useful. It reflects and
+writes a **lesson**:
 
 ```json
 {
   "agent_id": "agt_docs_qa",
-  "lesson": "When the user asks about leave policy, search 'annual leave' AND 'vacation' — the documents use both terms.",
+  "lesson": "When the user asks about leave policy, search 'annual leave' AND 'vacation'; the documents use both terms.",
   "source": "thumbs_down",
   "created_at": "2026-07-02T11:41:03Z"
 }
@@ -230,16 +230,16 @@ Every architecture trades something. Here's what this one trades, plainly.
 schema from day one and write migrations, or you will be hand-editing JSONB at some point.
 
 **Expressiveness has a ceiling.** Anything the schema can't express, an agent can't do. When a
-user needs genuinely novel behaviour, you extend the schema and the interpreter — a real code
-change with a real deploy. The win is that this becomes *rare* rather than constant.
+user needs genuinely novel behaviour, you extend the schema and the interpreter, which is a real
+code change with a real deploy. The win is that this becomes *rare* rather than constant.
 
 **The interpreter gets complex.** All the branching that used to live in per-agent classes now
 lives in one runtime. It needs to be well-tested, because every agent depends on it. A bug there
 is a bug everywhere.
 
-**Validation must be strict.** A spec that validates but is semantically nonsense — a tool that
-exists but has no credentials, a KB that's empty — produces a confusing runtime failure. Validate
-references, not just shapes.
+**Validation must be strict.** A spec that validates but is semantically nonsense, such as a tool
+that exists with no credentials or a KB that's empty, produces a confusing runtime failure.
+Validate references, not just shapes.
 
 **Debugging shifts.** You're no longer reading code to understand behaviour; you're reading a
 document plus a step trace. Different skill, and you need the trace to be *good* or you're worse
@@ -257,17 +257,17 @@ Four posts, one arc:
 
 | Post | Idea |
 |---|---|
-| [1 — What is an agent harness](/posts/2025/08/what-is-an-agent-harness/) | surface, meaning, policy, approval, audit |
-| [2 — Verbs, not tables](/posts/2025/10/verbs-not-tables/) | expose intent-named operations, not schemas |
-| [3 — Safe by default](/posts/2025/12/safe-by-default-agents/) | enforce in code; never in a prompt |
-| **4 — Agents as data** | make behaviour itself inspectable and reversible |
+| 1. [What is an agent harness](/posts/2025/08/what-is-an-agent-harness/) | surface, meaning, policy, approval, audit |
+| 2. [Verbs, not tables](/posts/2025/10/verbs-not-tables/) | expose intent-named operations, not schemas |
+| 3. [Safe by default](/posts/2025/12/safe-by-default-agents/) | enforce in code; never in a prompt |
+| 4. **Agents as data** | make behaviour itself inspectable and reversible |
 
 The thread through all four: **move the important things out of places you can't inspect.**
 
 Out of the model's reasoning, into a typed capability surface. Out of the system prompt, into code
 that enforces. Out of source files, into versioned rows with diffs and history.
 
-None of that makes the model better. It makes the *system* honest — and an honest system is the
+None of that makes the model better. It makes the *system* honest, and an honest system is the
 only kind you can safely give more power to.
 
 ---
@@ -278,11 +278,12 @@ only kind you can safely give more power to.
   bug.
 - Store an agent as a **versioned, validated spec row**; make the runtime a **pure interpreter**.
 - Three operations: **build** (NL → spec), **run** (interpret), **edit** (NL → approved patch).
-- Validate the orchestrator's output. It's an LLM writing a document — it will invent tool names.
+- Validate the orchestrator's output. It's an LLM writing a document, so it will invent tool
+  names.
 - Free wins: rollback, diffs, audit, templates, teams-as-composition, and **persistent lessons**
   you can actually read and delete.
 - Real costs: schema migrations, an expressiveness ceiling, a complex interpreter, and stricter
   validation.
-- Worth it for a platform. Overkill for one embedded agent — hard-code that one.
+- Worth it for a platform. Overkill for one embedded agent, so hard-code that one.
 
 *The whole series in one line: put the important things where you can see them.*

@@ -12,7 +12,7 @@ math: true
 ---
 
 *Part 2 of the machine-learning-for-biology series. Models eat vectors; biology hands you
-letters. Here's every way I know to bridge that gap — and what each one throws away.*
+letters. Here's every way I know to bridge that gap, and what each one throws away.*
 
 ---
 
@@ -37,14 +37,14 @@ So the game is: *summarise a variable-length string of letters into a constant-l
 while throwing away as little useful information as possible.*
 
 Every descriptor below is one answer to that. None of them is complete. That's why real systems
-concatenate several — our anti-inflammatory peptide work ends up with about **2,282 hand-crafted
+concatenate several. My anti-inflammatory peptide work ends up with about **2,282 hand-crafted
 dimensions** before any deep learning is involved.
 
 Let's build them up, easiest first.
 
 ---
 
-## 2. AAC — just count the letters (20 dims) 🧮
+## 2. AAC: just count the letters (20 dims) 🧮
 
 **Amino Acid Composition.** The bag-of-words of biology.
 
@@ -70,18 +70,18 @@ print([round(x, 3) for x in aac("GLFDIIKKIAESF")])
 ```
 
 **What it catches:** overall character. 23% isoleucine and 15% lysine says "greasy and
-positively charged" — a real, usable signal.
+positively charged", which is a real, usable signal.
 
 **What it destroys:** all order. `GLFDIIKKIAESF` and `FSEAIKKIIDFLG` have *identical* AAC. As we
 saw in [part 1](/posts/2025/09/peptides-101/), those are different molecules with potentially
 different behaviour.
 
-Dividing by $L$ is what makes it length-independent — and also what makes a 6-residue and a
+Dividing by $L$ is what makes it length-independent, and also what makes a 6-residue and a
 40-residue peptide look comparable when they may not be. Every descriptor is a trade like this.
 
 ---
 
-## 3. DPC — count the pairs (400 dims) 👥
+## 3. DPC: count the pairs (400 dims) 👥
 
 **Dipeptide Composition.** If single letters lose order, count *adjacent pairs*.
 
@@ -98,19 +98,19 @@ def dpc(seq):
     return [pairs.count(a + b) / total for a in AA for b in AA]
 ```
 
-**What it catches:** local order. `KK` (two adjacent positives — a charge patch) is now a
-feature in its own right, distinct from having a `K` here and a `K` five residues away.
+**What it catches:** local order. `KK` (two adjacent positives, a charge patch) is now a feature
+in its own right, distinct from having a `K` here and a `K` five residues away.
 
 **The catch:** sparsity. A 13-residue peptide has 12 dipeptides to spread across 400 slots.
 **97% of your vector is zeros.** Tree ensembles cope with that reasonably well; distance-based
 methods really don't.
 
-Yes, you can go further — **TPC** (tripeptide composition) is $20^3 = 8{,}000$ dimensions, and
-on short peptides it is almost pure noise. There's a reason people stop at dipeptides.
+You can go further. **TPC** (tripeptide composition) is $20^3 = 8{,}000$ dimensions, and on
+short peptides it is almost pure noise. There's a reason people stop at dipeptides.
 
 ---
 
-## 4. DDE — pairs, but fairly judged (400 dims) ⚖️
+## 4. DDE: pairs, but fairly judged (400 dims) ⚖️
 
 **Dipeptide Deviation from Expected mean.** The fix for DPC's biggest flaw.
 
@@ -124,9 +124,9 @@ $$
 \text{DDE}_{ab} = \frac{D_{ab} - T_{ab}}{\sqrt{V_{ab}}}
 $$
 
-- $D_{ab}$ — the observed dipeptide frequency (this is just DPC)
-- $T_{ab}$ — the theoretical mean, from how many codons encode each amino acid
-- $V_{ab}$ — the theoretical variance, which scales with $1/(L-1)$
+- $D_{ab}$ is the observed dipeptide frequency (this is just DPC)
+- $T_{ab}$ is the theoretical mean, from how many codons encode each amino acid
+- $V_{ab}$ is the theoretical variance, which scales with $1/(L-1)$
 
 This is TF-IDF's idea wearing a lab coat: **downweight what's common, amplify what's
 surprising.** In our experiments DDE consistently outperformed raw DPC, which is exactly what
@@ -134,7 +134,7 @@ you'd hope.
 
 ---
 
-## 5. CKSAAP — pairs at a distance (1,600 dims) 📏
+## 5. CKSAAP: pairs at a distance (1,600 dims) 📏
 
 **Composition of K-Spaced Amino Acid Pairs.** DPC only sees neighbours. But biology cares about
 pairs that are *near* without touching.
@@ -160,8 +160,8 @@ def cksaap(seq, kmax=3):
 
 **Why the gaps matter so much:** an α-helix turns every **3.6 residues**. So residues at
 positions $i$ and $i+3$ or $i+4$ sit on the *same face* of the helix. A helical peptide with a
-greasy face has hydrophobic residues repeating at that spacing — and CKSAAP with $k=2$ and
-$k=3$ picks up exactly that pattern.
+greasy face has hydrophobic residues repeating at that spacing, and CKSAAP with $k=2$ and $k=3$
+picks up exactly that pattern.
 
 That's the general lesson worth internalising: **good sequence features are secretly structural
 features.** Nobody handed the model a 3-D coordinate. The spacing statistics smuggled the helix
@@ -169,7 +169,7 @@ in through the back door.
 
 ---
 
-## 6. CTD — group, then describe (147 dims) 🎨
+## 6. CTD: group, then describe (147 dims) 🎨
 
 **Composition–Transition–Distribution.** A change of strategy: stop thinking about twenty
 letters and think about *properties*.
@@ -183,34 +183,34 @@ neutral : G A S T P H Y
 hydro.  : C L V I M F W
 ```
 
-Now `GLFDIIKKIAESF` becomes `2 3 3 1 3 3 1 1 3 2 1 2 3` — a 13-letter string over a 3-letter
+Now `GLFDIIKKIAESF` becomes `2 3 3 1 3 3 1 1 3 2 1 2 3`, a 13-letter string over a 3-letter
 alphabet. Then extract three things:
 
-**Composition** — how much of each class? (3 numbers)
+**Composition.** How much of each class? (3 numbers)
 
-**Transition** — how often does the string switch between classes? (3 numbers: 1↔2, 1↔3, 2↔3).
+**Transition.** How often does the string switch between classes? (3 numbers: 1↔2, 1↔3, 2↔3).
 This is an amphipathicity detector. A peptide with a distinct polar half and greasy half has
 *few* transitions; one with alternating charges has many.
 
-**Distribution** — where along the sequence do you reach 0%, 25%, 50%, 75%, 100% of each class?
+**Distribution.** Where along the sequence do you reach 0%, 25%, 50%, 75%, 100% of each class?
 (5 × 3 = 15 numbers). This is what distinguishes "all the greasy residues clustered at the
-N-terminus" from "greasy residues sprinkled evenly" — two peptides that AAC calls identical.
+N-terminus" from "greasy residues sprinkled evenly", two peptides that AAC calls identical.
 
 Repeat across seven properties (hydrophobicity, van der Waals volume, polarity, polarisability,
 charge, secondary-structure propensity, solvent accessibility) and you land at 147 dimensions.
 
 **Why I like CTD:** it's the only cheap descriptor that captures *where* things are, not just
-*how much*. And it's dense — no 97%-zeros problem.
+*how much*. And it's dense, with no 97%-zeros problem.
 
 ---
 
-## 7. PAAC and QSO — order, without the explosion 🌀
+## 7. PAAC and QSO: order, without the explosion 🌀
 
 Two descriptors that solve the same problem with different maths: keep some long-range order
 without blowing up to thousands of dimensions.
 
 **PAAC (Pseudo Amino Acid Composition, ~50 dims).** Take the 20 AAC values, then append
-"correlation factors" — a measure of how similar residues $i$ and $i+\lambda$ are in
+"correlation factors", a measure of how similar residues $i$ and $i+\lambda$ are in
 physicochemical terms, averaged across the sequence, for $\lambda = 1, 2, \ldots$:
 
 $$
@@ -270,7 +270,7 @@ That's a textbook overfitting setup, and you have to design around it rather tha
 
 - **Correlated blocks.** DPC and DDE and CKSAAP($k{=}0$) are near-duplicates of each other. Tree
   ensembles handle this gracefully; linear models get unstable coefficients.
-- **Feature selection helps** — but must be fitted *inside* your cross-validation folds. Select
+- **Feature selection helps**, but must be fitted *inside* your cross-validation folds. Select
   features on the full dataset and your reported score is fiction. This mistake is extremely
   common in published bioinformatics code, and it always inflates results.
 - **Regularise hard,** and prefer ensembles over single deep models at this scale.
@@ -292,7 +292,7 @@ Our own numbers, from 5-fold cross-validation:
 Read that carefully, because it's more interesting than a win.
 
 The 650-million-parameter protein language model **did not beat** twenty lines of letter
-counting. And combining them gained about **0.2 percentage points** — comfortably inside the
+counting. And combining them gained about **0.2 percentage points**, comfortably inside the
 error bars.
 
 Three honest reasons why:
@@ -305,7 +305,7 @@ Three honest reasons why:
    *is* helical periodicity. We told the model where to look; ESM-2 had to infer it.
 
 So: hand-crafted descriptors are not legacy baggage. On short sequences with small datasets they
-remain a strong, cheap, interpretable baseline — and "cheap and interpretable" is worth real
+remain a strong, cheap, interpretable baseline, and "cheap and interpretable" is worth real
 money when you have to defend a result to a reviewer.
 
 That said, ESM-2 brings something the counts genuinely cannot, and it's worth its own post.
@@ -318,7 +318,7 @@ That said, ESM-2 brings something the counts genuinely cannot, and it's worth it
 - **AAC** counts letters and destroys order. **DPC/DDE** recover local order. **CKSAAP** recovers
   order at a distance. **CTD** captures position and property. **PAAC/QSO/autocorrelation**
   capture periodicity cheaply.
-- Good sequence features are **structural features in disguise** — CKSAAP's 3–4 residue gaps are
+- Good sequence features are **structural features in disguise**. CKSAAP's 3–4 residue gaps are
   an α-helix detector.
 - Stacking everything gives ~2,282 dims against a few thousand samples. Regularise, use
   ensembles, and **fit feature selection inside your CV folds** or your numbers are fiction.
@@ -327,5 +327,5 @@ That said, ESM-2 brings something the counts genuinely cannot, and it's worth it
 
 ---
 
-*Series: **Machine Learning for Biology**. Next — [what ESM-2 actually learned](/posts/2026/01/protein-language-models/),
+*Series: **Machine Learning for Biology**. Next up, [what ESM-2 actually learned](/posts/2026/01/protein-language-models/),
 and when a protein language model is worth its weight.*

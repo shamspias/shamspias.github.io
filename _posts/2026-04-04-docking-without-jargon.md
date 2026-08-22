@@ -48,7 +48,7 @@ So the real question is not *"does this key fit"*. It's:
 
 Two pieces: a **search** and a **score**.
 
-**The search.** Generate many candidate placements of the ligand in the pocket — a *pose* being a
+**The search.** Generate many candidate placements of the ligand in the pocket, a *pose* being a
 position, an orientation, and a set of torsion angles. Millions of possibilities, explored by
 genetic algorithms, Monte Carlo, or gradient methods.
 
@@ -69,7 +69,7 @@ Reported in **kcal/mol**, and more negative is better:
 | −4 to −6 | weak; probably nothing |
 | −6 to −8 | plausible, worth a look |
 | **−8 to −10** | **good; typical hit threshold** |
-| below −10 | strong — and be suspicious |
+| below −10 | strong, and be suspicious |
 
 We use **≤ −8.0 kcal/mol** as the hit threshold in the
 [screening pipeline](/posts/2026/03/screening-400k-natural-products/).
@@ -87,7 +87,7 @@ a good day. Useful. Not trustworthy at fine resolution.
 
 The mechanics, so the abstractions have something to sit on.
 
-**Step 1 — Prepare the protein.** Crystal structures are not simulation-ready. Add hydrogens
+**Step 1. Prepare the protein.** Crystal structures are not simulation-ready. Add hydrogens
 (X-ray usually can't see them), assign protonation states at physiological pH, remove
 crystallographic waters and buffer molecules, fix missing side chains, assign charges.
 
@@ -95,7 +95,7 @@ Protonation is not a detail. A histidine that is protonated makes an ionic conta
 histidine neutral makes a hydrogen bond. Get it wrong and you're docking into a different pocket
 than you think.
 
-**Step 2 — Define the box.** Where should the ligand go?
+**Step 2. Define the box.** Where should the ligand go?
 
 ```python
 # Best practice: centre the box on a KNOWN ligand from a co-crystal structure.
@@ -106,9 +106,9 @@ box_size   = (22, 22, 22)                 # Angstroms
 
 Blind docking over a whole protein surface mostly finds shallow decorative grooves with
 flattering scores. Using a co-crystallised ligand to place the box is the single easiest way to
-get sane results — which is why we insist on **ligand-informed structures** for every target.
+get sane results, which is why we insist on **ligand-informed structures** for every target.
 
-**Step 3 — Prepare the ligand.** SMILES is 2-D. You need 3-D coordinates, correct protonation,
+**Step 3. Prepare the ligand.** SMILES is 2-D. You need 3-D coordinates, correct protonation,
 and sensible starting geometry:
 
 ```python
@@ -120,10 +120,10 @@ AllChem.EmbedMultipleConfs(mol, numConfs=10, randomSeed=42)   # several starting
 AllChem.MMFFOptimizeMoleculeConfs(mol)                        # relax each one
 ```
 
-**Step 4 — Dock.** AutoDock Vina, Smina, GNINA, or a commercial engine. Out comes a ranked list
+**Step 4. Dock.** AutoDock Vina, Smina, GNINA, or a commercial engine. Out comes a ranked list
 of poses with scores.
 
-**Step 5 — Look at the pose.** Not just the score. This is the step people skip, and it's the
+**Step 5. Look at the pose.** Not just the score. This is the step people skip, and it's the
 step that matters most.
 
 ---
@@ -156,7 +156,7 @@ So the checks that actually gate a candidate:
 **Catalytic contact.** SARS-CoV-2 Mpro is a cysteine protease with a His41–Cys145 dyad. HIV-1
 protease is an aspartyl protease with two catalytic aspartates. Is the ligand *there*?
 
-**Interaction fingerprints.** Encode the contacts as a bit vector — H-bond to residue X, π-stack
+**Interaction fingerprints.** Encode the contacts as a bit vector: H-bond to residue X, π-stack
 with residue Y, hydrophobic contact with Z. Then compare to the fingerprint of a *known*
 inhibitor. A candidate reproducing the known binding mode is far more believable than one with a
 good score and an unfamiliar contact pattern.
@@ -188,8 +188,8 @@ $$
 which rewards efficient binding rather than sheer bulk.
 
 **3. Entropy is barely modelled.** A rigid ligand and a floppy ligand that make identical
-contacts do *not* bind equally — the floppy one pays an entropic price on binding. Scoring
-functions approximate this with a crude torsion penalty at best.
+contacts do *not* bind equally, because the floppy one pays an entropic price on binding.
+Scoring functions approximate this with a crude torsion penalty at best.
 
 **4. Water is treated as a continuum.** Individual bridging waters, and the entropic bonus from
 evicting ordered water, matter enormously and are mostly invisible to fast scoring.
@@ -217,14 +217,14 @@ Because **docking fails differently from machine learning**, and that's the enti
 | Speed | ~milliseconds | ~seconds to minutes |
 
 An ML model trained on known HIV-protease inhibitors is skilled at recognising things that look
-like known HIV-protease inhibitors — and its confidence is calibrated on that resemblance. It
-has no notion of whether a molecule can physically fit.
+like known HIV-protease inhibitors, and its confidence is calibrated on that resemblance. It has
+no notion of whether a molecule can physically fit.
 
 Docking has no idea what has worked before, and every idea about fit.
 
-When a molecule survives both — a high ML probability *and* a plausible pose at the catalytic
-site — you have two independent lines of evidence. Not proof. But the kind of agreement worth
-spending a wet-lab slot on.
+When a molecule survives both, with a high ML probability *and* a plausible pose at the
+catalytic site, you have two independent lines of evidence. Not proof, but the kind of agreement
+worth spending a wet-lab slot on.
 
 That's why the funnel is a funnel: **cheap and statistical first, expensive and physical
 second.** ML narrows 400,000 to ~1,800; docking narrows ~300 to ~60; interaction analysis gets
@@ -237,8 +237,8 @@ you to twenty.
 Docking is the cheap end of a spectrum. Beyond it:
 
 **MM-GBSA / MM-PBSA rescoring.** Take the docked pose and rescore with a better energy model.
-Minutes per molecule instead of seconds. Modest accuracy gain — worth it for tens of compounds,
-not thousands.
+Minutes per molecule instead of seconds. Modest accuracy gain, worth it for tens of compounds
+but not thousands.
 
 **Molecular dynamics.** Simulate the complex over nanoseconds and watch whether the pose holds.
 Hours to days per molecule. This is the honest way to test pose stability, and a pose that drifts
@@ -264,11 +264,11 @@ everything; spend the expensive methods only on survivors.
 - **Read the pose, not the number.** Does it touch the catalytic residues? Does the interaction
   fingerprint resemble a known inhibitor's?
 - Correct for size with **ligand efficiency**; treat scores as bins.
-- Docking is valuable because it **fails differently from ML** — agreement between the two is
-  the actual signal.
+- Docking is valuable because it **fails differently from ML**. Agreement between the two is the
+  actual signal.
 
 ---
 
-*Series: **Machine Learning for Biology**. Coming next, a change of subject — the same pose
+*Series: **Machine Learning for Biology**. Coming next, a change of subject. The same pose
 estimation idea, applied to a body instead of a molecule:
 [measuring a cricket bowler's action](/posts/2026/05/bowling-biomechanics-pose/).*
