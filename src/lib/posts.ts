@@ -1,5 +1,4 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
-import { SERIES_ORDER } from '../consts';
 import { DEFAULT_LOCALE, formatDateIn, localise, shortDateIn, type Locale } from '../i18n';
 
 export type Post = CollectionEntry<'blog'>;
@@ -82,15 +81,18 @@ export function seriesOf(posts: Post[], name: string): Post[] {
     .sort((a, b) => (a.data.seriesOrder ?? 0) - (b.data.seriesOrder ?? 0));
 }
 
-/** All series, in the curated order, each with its posts in reading order. */
+/** All series, newest first by their most recent post, each in reading order. */
 export function groupBySeries(posts: Post[]): { name: string; posts: Post[] }[] {
   const names = [...new Set(posts.map((p) => p.data.series).filter((s): s is string => !!s))];
-  names.sort((a, b) => {
-    const ia = SERIES_ORDER.indexOf(a as (typeof SERIES_ORDER)[number]);
-    const ib = SERIES_ORDER.indexOf(b as (typeof SERIES_ORDER)[number]);
-    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
-  });
-  return names.map((name) => ({ name, posts: seriesOf(posts, name) }));
+  const groups = names.map((name) => ({ name, posts: seriesOf(posts, name) }));
+  // Newest series first, ranked by the most recent post in each. A series is a
+  // living thing: the one written most recently belongs at the top, the same
+  // way the writing index puts the newest post first. Within a series the posts
+  // stay in reading order; only the series themselves are date-ranked.
+  const newest = (g: { posts: Post[] }) =>
+    Math.max(...g.posts.map((p) => p.data.date.valueOf()));
+  groups.sort((a, b) => newest(b) - newest(a));
+  return groups;
 }
 
 /**

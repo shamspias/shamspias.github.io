@@ -28,18 +28,8 @@ export const SOCIAL = [
   { label: 'Email', href: `mailto:${SITE.email}`, handle: SITE.email },
 ] as const;
 
-/**
- * Fixed display order for series, most recent body of work first. Anything not
- * listed here still renders; it just sorts after the known ones.
+/*
+ * There is no hand-maintained series order any more. The series pages and the
+ * home page rank series by their most recent post (see groupBySeries in
+ * src/lib/posts.ts), so a newly written series rises to the top on its own.
  */
-export const SERIES_ORDER = [
-  'Biomechanics from Video',
-  'Security From the Ground Up',
-  'Problem Solving From Zero',
-  'Agent Harness',
-  'Machine Learning for Biology',
-  'Vision in the Real World',
-  'Mixture of Experts',
-  'Retrieval and RAG',
-  'AI Foundations',
-] as const;
