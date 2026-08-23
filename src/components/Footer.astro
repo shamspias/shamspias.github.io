@@ -1,7 +1,7 @@
 ---
 import { SITE, SOCIAL } from '../consts';
 import { allPosts, groupBySeries } from '../lib/posts';
-import { DEFAULT_LOCALE, localise, num, t, type Locale } from '../i18n';
+import { DEFAULT_LOCALE, localise, t, yearIn, type Locale } from '../i18n';
 
 interface Props {
   locale?: Locale;
@@ -15,9 +15,8 @@ const strings = t(locale);
 const posts = await allPosts(locale);
 const seriesCount = groupBySeries(posts).length;
 
+// The copyright year is dynamic: it is the year the site was last built.
 const year = new Date().getUTCFullYear();
-const span =
-  year > SITE.since ? `${num(locale, SITE.since)}–${num(locale, year)}` : num(locale, year);
 ---
 
 <footer class="site-footer">
@@ -70,7 +69,7 @@ const span =
     <div class="site-footer__block site-footer__colophon">
       <p class="label site-footer__heading">{strings.thisSite}</p>
       <p>{strings.colophon}</p>
-      <p class="site-footer__legal">{strings.legal(span, SITE.name)}</p>
+      <p class="site-footer__legal">{strings.legal(yearIn(year, locale), SITE.name)}</p>
     </div>
   </div>
 </footer>

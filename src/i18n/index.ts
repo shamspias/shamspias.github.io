@@ -87,8 +87,12 @@ export const shortDateIn = (d: Date, locale: Locale): string =>
     numberingSystem: LOCALE_META[locale].numerals,
   }).format(d);
 
-/** A year on its own, in local numerals. */
-export const yearIn = (year: number, locale: Locale): string => num(locale, year);
+/** A year on its own, in local numerals, never grouped (2026, not 2,026). */
+export const yearIn = (year: number, locale: Locale): string =>
+  new Intl.NumberFormat(LOCALE_META[locale].tag, {
+    numberingSystem: LOCALE_META[locale].numerals,
+    useGrouping: false,
+  }).format(year);
 
 /**
  * A two-digit part number, in the language's numerals.

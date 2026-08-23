@@ -52,7 +52,8 @@ type Strings = {
   allWriting: string;
   bySubject: string;
   colophon: string;
-  legal: (span: string, name: string) => string;
+  /** The copyright line: a year and a name, nothing more. */
+  legal: (year: string, name: string) => string;
 
   /* counted phrases */
   nPosts: (n: number) => string;
@@ -134,7 +135,7 @@ const en: Strings = {
   bySubject: 'by subject',
   colophon:
     'Written and built by hand. Static files, no tracking, no cookies, and nothing that needs your consent.',
-  legal: (span, name) => `© ${span} ${name}. Words and code are mine; the code is MIT.`,
+  legal: (year, name) => `© ${year} ${name}`,
 
   nPosts: (n) => `${n} ${n === 1 ? 'post' : 'posts'}`,
   nSeries: (n) => `${n} ${n === 1 ? 'series' : 'series'}`,
@@ -216,8 +217,7 @@ const bn: Strings = {
   bySubject: 'বিষয় অনুযায়ী',
   colophon:
     'নিজের হাতে লেখা এবং তৈরি। স্ট্যাটিক ফাইল, কোনো ট্র্যাকিং নেই, কুকি নেই, আর আপনার সম্মতি লাগে এমন কিছুই নেই।',
-  legal: (span, name) =>
-    `© ${span} ${name}। লেখা ও কোড আমার; কোডের লাইসেন্স MIT।`,
+  legal: (year, name) => `© ${year} ${name}`,
 
   nPosts: (n) => `${num('bn', n)}টি লেখা`,
   nSeries: (n) => `${num('bn', n)}টি সিরিজ`,
@@ -299,7 +299,7 @@ const ar: Strings = {
   bySubject: 'حسب الموضوع',
   colophon:
     'مكتوب ومبني يدويًا. ملفات ثابتة، بلا تتبّع، بلا كوكيز، ولا شيء يحتاج إلى موافقتك.',
-  legal: (span, name) => `© ${span} ${name}. النصوص والكود لي، والكود بترخيص MIT.`,
+  legal: (year, name) => `© ${year} ${name}`,
 
   nPosts: (n) => {
     const d = num('ar', n);
