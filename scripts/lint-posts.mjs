@@ -64,6 +64,16 @@ for (const file of files) {
     const v = fm.match(new RegExp(`^${key}: (.*)$`, 'm'));
     if (v && !/^".*"$/.test(v[1].trim())) report(file, 'frontmatter', `${key} is not double-quoted`);
   }
+
+  // A search result shows about 160 characters, and the content schema refuses
+  // anything longer. Catching it here says which post and by how much, instead
+  // of failing the build with a schema error.
+  const descLen = (fm.match(/^description: "(.*)"$/m)?.[1] ?? '').length;
+  if (descLen > 165) report(file, 'description', `${descLen} characters, ${descLen - 165} over the limit`);
+  if (descLen > 0 && descLen < 70) report(file, 'description', `${descLen} characters, too short for a snippet`);
+
+  const seo = fm.match(/^seoTitle: "(.*)"$/m)?.[1];
+  if (seo && seo.length > 62) report(file, 'seoTitle', `${seo.length} characters, over 62`);
   const series = fm.match(/^series: /m);
   const order = fm.match(/^seriesOrder: /m);
   if (Boolean(series) !== Boolean(order)) report(file, 'frontmatter', 'series and seriesOrder must appear together');

@@ -12,6 +12,23 @@ import { DEFAULT_LOCALE, type Locale } from './config';
 type Blurbs = Partial<Record<Locale, string>>;
 
 const SERIES: Record<string, Blurbs> = {
+  'Problem Solving From Zero': {
+    en:
+      'Twenty parts, written between 2016 and 2021, from counting the steps in a loop to ' +
+      'implementing machine learning by hand. Greedy, graphs, dynamic programming, game theory, ' +
+      'number theory, strings, segment trees, and what the memory hierarchy does to all of them. ' +
+      'Every part assumes only the part before it.',
+    bn:
+      'কুড়িটি পর্ব, ২০১৬ থেকে ২০২১ সালের মধ্যে লেখা: লুপের ধাপ গোনা থেকে শুরু করে নিজের হাতে ' +
+      'মেশিন লার্নিং লেখা পর্যন্ত। গ্রিডি, গ্রাফ, ডায়নামিক প্রোগ্রামিং, গেম থিওরি, সংখ্যাতত্ত্ব, ' +
+      'স্ট্রিং, সেগমেন্ট ট্রি, আর মেমরির স্তরবিন্যাস এই সবের ওপর যা করে। প্রতিটি পর্ব কেবল তার ' +
+      'আগের পর্বটুকু ধরে নেয়।',
+    ar:
+      'عشرون جزءًا، كُتبت بين ٢٠١٦ و٢٠٢١: من عدّ الخطوات في حلقة تكرار إلى كتابة تعلّم الآلة ' +
+      'باليد. الخوارزميات الجَشِعة، والرسوم البيانية، والبرمجة الديناميكية، ونظرية الألعاب، ' +
+      'ونظرية الأعداد، والنصوص، وأشجار المقاطع، وما يفعله تدرّج الذاكرة بكل ذلك. كل جزء لا ' +
+      'يفترض إلا الجزء الذي قبله.',
+  },
   'Biomechanics from Video': {
     en:
       'The measurement programme behind Athlete Intelligence: what "accurate" means for a joint ' +
