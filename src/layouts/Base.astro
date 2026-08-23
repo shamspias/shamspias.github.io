@@ -1,0 +1,33 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  article?: { published: Date; modified?: Date; tags?: string[] };
+  math?: boolean;
+  noindex?: boolean;
+  /** Emitted into <head>, for JSON-LD. */
+  schema?: unknown;
+}
+
+const { title, description, article, math, noindex, schema } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <BaseHead title={title} description={description} article={article} math={math} noindex={noindex} />
+    {schema && <script type="application/ld+json" set:html={JSON.stringify(schema)} />}
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <Header />
+    <main class="shell" id="main">
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

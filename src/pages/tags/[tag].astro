@@ -1,0 +1,86 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Base from '../../layouts/Base.astro';
+import PostEntry from '../../components/PostEntry.astro';
+import { allPosts, slugifyTag, tagCounts } from '../../lib/posts';
+
+export const getStaticPaths = (async () => {
+  const posts = await allPosts();
+  return tagCounts(posts).map((t) => ({
+    params: { tag: t.slug },
+    props: {
+      tag: t.tag,
+      posts: posts.filter((p) => p.data.tags.some((x) => slugifyTag(x) === t.slug)),
+    },
+  }));
+}) satisfies GetStaticPaths;
+
+const { tag, posts } = Astro.props;
+---
+
+<Base
+  title={tag}
+  description={`${posts.length} ${posts.length === 1 ? 'post' : 'posts'} on ${tag}, by Shamsuddin Ahmed.`}
+>
+  <div class="wrap page">
+    <header class="page__head">
+      <p class="label">
+        Subject &nbsp;·&nbsp; {posts.length} {posts.length === 1 ? 'post' : 'posts'}
+      </p>
+      <h1 class="display page__title">{tag}</h1>
+    </header>
+
+    <div class="list">
+      {posts.map((post) => <PostEntry post={post} variant="card" />)}
+    </div>
+
+    <p class="page__back">
+      <a href="/tags/">All subjects</a>
+      <span class="page__sep" aria-hidden="true"></span>
+      <a href="/writing/">All writing</a>
+    </p>
+  </div>
+</Base>
+
+<style>
+  .page {
+    padding-block: var(--s-8) var(--s-6);
+  }
+
+  .page__head {
+    margin-bottom: var(--s-6);
+  }
+
+  .page__title {
+    font-size: var(--t-2xl);
+    margin-top: var(--s-3);
+  }
+
+  .list {
+    border-top: var(--rule-w) solid var(--rule-strong);
+    max-width: 76ch;
+  }
+
+  .page__back {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    margin-top: var(--s-7);
+    font-size: var(--t-sm);
+  }
+
+  .page__back a {
+    color: var(--fg-strong);
+    text-decoration-color: var(--accent);
+  }
+
+  .page__back a:hover {
+    color: var(--accent);
+  }
+
+  .page__sep {
+    width: var(--s-5);
+    border-top: var(--rule-w) solid var(--rule-strong);
+  }
+</style>

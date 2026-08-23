@@ -1,0 +1,448 @@
+---
+import Base from '../layouts/Base.astro';
+
+type Project = {
+  name: string;
+  href?: string;
+  stack: string;
+  blurb: string;
+  points?: string[];
+};
+
+const GROUPS: { title: string; intro?: string; projects: Project[] }[] = [
+  {
+    title: 'Agent harnesses',
+    intro:
+      'The layer between a language model and software that already exists. My view: most teams give the model the wrong surface, raw tables and generated specs, and then blame the model when it guesses.',
+    projects: [
+      {
+        name: 'Reins',
+        href: 'https://github.com/shamspias/reins',
+        stack: 'Python',
+        blurb:
+          'A lightweight harness you bolt onto an existing app so an LLM can operate it. Point it at functions you already have, or at your SQLAlchemy or Django models, and hand it a goal in plain language. It works out which operations to call and in what order, runs them through your own code rather than raw SQL, and returns the result.',
+        points: [
+          '<code>ask()</code> is read-only and cannot write; writes are opt-in and gated by policy, approval and audit. That boundary is enforced in code, not in a prompt the model can talk its way around.',
+          '<code>Agent.from_orm(...)</code> introspects models into intent-named verbs such as <code>find_orders</code> and <code>get_user_by_email</code>, preferring unique natural keys over internal identifiers.',
+          'Anthropic, OpenAI, Gemini, Groq, Z.ai, Ollama and vLLM in the box; <code>agent.explain()</code> shows every call it made and why.',
+        ],
+      },
+      {
+        name: 'Veldra',
+        href: 'https://github.com/shamspias/customizable-gpt-chatbot',
+        stack: 'Python · Vue 3',
+        blurb:
+          'A self-hostable, local-first agent-harness platform. The load-bearing idea: an agent is data, not code, a versioned AgentSpec row in Postgres. "Build me an agent" compiles natural language into a validated spec; "change it" is a JSON-Patch you approve; the runtime is a pure interpreter of the current version.',
+        points: [
+          'Natural-language agent and team construction, with a coordinator plus specialists and depth-capped delegation.',
+          'MCP connectors alongside built-in tools; side-effecting connector tools require explicit approval.',
+          'Editable knowledge bases with per-KB retrieval mode, embedding model, reranker and vector store; citations carry page, section and character span.',
+          'A visual workflow builder, and agents that accumulate lessons from feedback and from their own failed tool calls.',
+        ],
+      },
+      {
+        name: 'Clawkido',
+        href: 'https://github.com/shamspias/clawkido',
+        stack: 'Go',
+        blurb:
+          'Actor-model multi-agent swarm engine: goroutine-per-agent routing, swarm handoff with depth-limited chains, an extensible skill system, provider fallback, and Telegram and Discord integration. Single binary, roughly 50 MB of RAM.',
+      },
+      {
+        name: 'LangGraph Agent System',
+        href: 'https://github.com/shamspias/langgraph-agent-system',
+        stack: 'Python',
+        blurb:
+          'Production-shaped multi-agent system on LangGraph Platform: specialised agents, multi-provider LLM support, LangGraph Studio compatibility.',
+      },
+    ],
+  },
+  {
+    title: 'Machine learning for biology',
+    projects: [
+      {
+        name: 'Anti-inflammatory peptide prediction',
+        stack: 'Python · ongoing',
+        blurb:
+          'A two-stage stacking ensemble combining roughly 2,282 hand-crafted sequence descriptors with 1,280-dimensional ESM-2 protein language model embeddings. The real contribution is not the architecture. It is the dataset: earlier methods drew negatives from random UniProt proteins, which quietly reduces the task to "short peptide versus long protein" and inflates accuracy. Experimentally validated negatives from the same IEDB T-cell assays as the positives give the harder numbers that follow.',
+      },
+      {
+        name: 'DeepNatProtease',
+        href: 'https://github.com/shamspias/DeepNatProtease',
+        stack: 'Python',
+        blurb:
+          'An end-to-end virtual-screening pipeline: integrate per-virus bioactivity data with full provenance, standardise and harmonise units to nM, split by Bemis–Murcko scaffold clusters with zero overlap, train virus-specific ChemProp ensembles and classical models, screen the COCONUT library of 400k+ natural products, filter PAINS and toxicophores, enforce scaffold diversity, dock survivors against ligand-informed structures, and prioritise by consensus. Strict per-virus isolation throughout: HIV-1 protease, HCV NS3/4A, SARS-CoV-2 Mpro, Dengue and Zika NS2B-NS3.',
+      },
+    ],
+  },
+  {
+    title: 'Sports science and biomechanics',
+    projects: [
+      {
+        name: 'Athlete Intelligence',
+        stack: 'Go · Next.js 16 · Python · AlgolyzerLab',
+        blurb:
+          'Multi-tenant athlete performance management for elite sport, built on an IOC-aligned clinical domain: athlete registry, injury and illness register, screening, fitness testing, workload, return-to-play and dashboard analytics, with strict tenant isolation and a soft-delete-first data model so medical history is never destroyed. A separate GPU service runs RTMPose (Halpe-26) over ordinary video and turns it into clinical movement metrics using 2-D geometry and multi-view triangulation.',
+      },
+      {
+        name: 'Cricket Bowling Analyzer',
+        stack: 'Python · Go · AlgolyzerLab',
+        blurb:
+          'Biomechanical analysis of a bowling action from a webcam, a video, or a single image. MediaPipe gives 33 landmarks; twelve of them and some plain trigonometry give front-knee angle, elbow extension, trunk side-bend and shoulder rotation, all checked against injury-risk ranges and the ICC 15° elbow-extension rule. The Go version tracks 18 parameters at 30+ FPS, holds player profiles by bowler type, and generates PDF reports.',
+      },
+    ],
+  },
+  {
+    title: 'Agriculture AI',
+    projects: [
+      {
+        name: 'Agri Remedy',
+        stack: 'FastAPI · React 19 · TypeScript',
+        blurb:
+          'Farmers upload a drone flyover; the app finds diseased patches and explains, in plain English or বাংলা, what the problem is and what to buy for it.',
+        points: [
+          '<strong>DINOv2-Small</strong> as a frozen feature extractor with staff-trained linear-probe heads. The backbone supplies general visual understanding for any crop, and the crop-specific knowledge comes from labelled photos.',
+          'Three-tier fallback so every crop works on day one: trained linear probe, then a k-NN centroid gallery, then a zero-shot colour and texture heuristic with confidence capped well below a trained model.',
+          'Canopy and lesion segmentation drives severity as affected canopy area, the snapshot crop, and the anomaly mask; ISO-6709 GPS tags read from video metadata via <code>ffprobe</code> pin findings on a representative aerial frame.',
+          'A staff console for the disease library, the product catalogue and the per-crop models: label boxes on real photos, train, and read a genuine cross-validated accuracy.',
+        ],
+      },
+    ],
+  },
+  {
+    title: 'Healthcare software',
+    projects: [
+      {
+        name: 'ChemberIQ',
+        stack: 'Go · Vue 3 · Flutter · AlgolyzerLab',
+        blurb:
+          'A medical case-management platform for doctors and clinics: public doctor portfolio, secure clinical CRM, AI chatbot, real-time doctor-to-patient WebSocket chat, and an offline-first Flutter app. The doctor types their clinic website, the app discovers the backend, downloads the dataset, and works fully offline, behind a big-text, big-button UI designed for older doctors. Search is a purpose-built in-memory engine that replaced a Meilisearch dependency entirely.',
+      },
+    ],
+  },
+  {
+    title: 'Systems and developer tools',
+    projects: [
+      {
+        name: 'Fennec',
+        href: 'https://github.com/shamspias/fennec',
+        stack: 'Go',
+        blurb:
+          'Zero-dependency library for SSIM and MS-SSIM guided perceptual image compression: quality targeting, batch worker pools, auto format selection, Lanczos-3 resize, EXIF auto-orientation, a target-file-size engine, and context-aware cancellation. 60 to 90% size reduction at SSIM ≥ 0.94.',
+      },
+      {
+        name: 'VoidMon',
+        href: 'https://github.com/shamspias/voidmon',
+        stack: 'Go',
+        blurb:
+          'Terminal system monitor with per-core CPU, cross-platform GPU support (NVIDIA via nvidia-smi, AMD via ROCm, Intel via sysfs, Apple Silicon via powermetrics), disk I/O, network throughput, battery, and top-process tracking.',
+      },
+      {
+        name: 'RAG-Scout',
+        href: 'https://github.com/shamspias/RAG-Scout',
+        stack: 'Python',
+        blurb:
+          'Benchmarks sparse, dense, hybrid, late-interaction and reranked retrieval stacks on any question-and-answer dataset, then tells you which one to actually build on.',
+      },
+      {
+        name: 'LexSubLM-Lite',
+        href: 'https://github.com/shamspias/lexsublm-lite',
+        stack: 'Python',
+        blurb:
+          'Laptop-friendly lexical substitution: prompted generation via 4-bit causal LLMs, POS and morphological filtering (spaCy and pymorphy3), log-prob and cosine ranking, research-grade metrics (P@1, Recall@k, GAP, ProF1), and a YAML registry for swapping models without code.',
+      },
+      {
+        name: 'VibeVoice Studio',
+        href: 'https://github.com/shamspias/vibevoice-studio',
+        stack: 'Python',
+        blurb:
+          'Web app over Microsoft VibeVoice text-to-speech: train a voice from uploaded or recorded audio, multi-speaker synthesis up to four speakers, cloning, real-time audio visualisation, and a voice library.',
+      },
+      {
+        name: 'PlugBot',
+        href: 'https://github.com/shamspias/PlugBot',
+        stack: 'Next.js · FastAPI',
+        blurb:
+          'Dashboard for running many Dify apps and Telegram bots at once: streaming replies, health checks, encrypted secrets, one-command Docker deploy.',
+      },
+    ],
+  },
+];
+
+const PLUGINS = [
+  { name: 'GigaChat model provider', href: 'https://github.com/shamspias/dify-gigachat-plugin', what: 'Sber GigaChat chat, vision, function calling and embeddings with configurable scopes and SSL handling.' },
+  { name: 'PDF to image converter', href: 'https://github.com/shamspias/dify-pdf-image-converter', what: 'Page rasterisation with DPI and quality options, file URLs, batch processing.' },
+  { name: 'Nmap network scanner', href: 'https://github.com/shamspias/dify-nmap', what: 'Port, OS, service and vulnerability scans with safe-mode defaults and JSON or XML output.' },
+  { name: 'Together AI image', href: 'https://github.com/shamspias/togetherai-dify-image', what: 'Text-to-image generation with the FLUX.1 family.' },
+  { name: 'FLUX Fill Pro', href: 'https://github.com/shamspias/flux-fill-pro-plugin-replicate', what: 'Professional inpainting and outpainting.' },
+  { name: 'Telegram', href: 'https://github.com/shamspias/dify-telegram', what: 'Full Telegram Bot API integration.' },
+  { name: 'Slack', href: 'https://github.com/shamspias/dify-slack-bot', what: 'A class-based Slack bot for any Dify-compatible application.' },
+];
+---
+
+<Base
+  title="Projects"
+  description="Agent harnesses, machine learning for biology, sports biomechanics, agriculture AI, healthcare software, and small readable Go tools. Open source where it can be."
+>
+  <div class="wrap page">
+    <header class="page__head">
+      <p class="label">{GROUPS.reduce((n, g) => n + g.projects.length, 0)} projects &nbsp;·&nbsp; {PLUGINS.length} plugins</p>
+      <h1 class="display page__title">Projects</h1>
+      <p class="lede page__lede">
+        A working list of things I have built. Some are open source, some are client work, some are
+        research code. They are grouped by what they are <em>for</em> rather than by what they are
+        written in.
+      </p>
+    </header>
+
+    {
+      GROUPS.map((g, gi) => (
+        <section class="group">
+          <h2 class="eyebrow group__head" id={g.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}>
+            <span class="group__n tnum">{String(gi + 1).padStart(2, '0')}</span>
+            {g.title}
+          </h2>
+          {g.intro && <p class="group__intro">{g.intro}</p>}
+          <ol class="projects">
+            {g.projects.map((p) => (
+              <li class="project">
+                <div class="project__head">
+                  <h3 class="project__name">
+                    {p.href ? (
+                      <a href={p.href} rel="noopener">
+                        {p.name}
+                      </a>
+                    ) : (
+                      p.name
+                    )}
+                  </h3>
+                  <p class="project__stack label">{p.stack}</p>
+                </div>
+                <p class="project__blurb">{p.blurb}</p>
+                {p.points && (
+                  <ul class="points">
+                    {p.points.map((pt) => (
+                      <li set:html={pt} />
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ol>
+        </section>
+      ))
+    }
+
+    <section class="group">
+      <h2 class="eyebrow group__head" id="dify-plugins">
+        <span class="group__n tnum">{String(GROUPS.length + 1).padStart(2, '0')}</span>
+        Dify plugins
+      </h2>
+      <p class="group__intro">Published for the open-source Dify community.</p>
+      <ul class="plugins">
+        {
+          PLUGINS.map((p) => (
+            <li class="plugin">
+              <a class="plugin__name" href={p.href} rel="noopener">
+                {p.name}
+              </a>
+              <p class="plugin__what">{p.what}</p>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <p class="page__back">
+      The full list, including the experiments that did not work out, lives on{' '}
+      <a href="https://github.com/shamspias?tab=repositories" rel="noopener">GitHub</a>.
+    </p>
+  </div>
+</Base>
+
+<style>
+  .page {
+    padding-block: var(--s-8) var(--s-6);
+  }
+
+  .page__head {
+    max-width: 60ch;
+    margin-bottom: var(--s-8);
+  }
+
+  .page__title {
+    font-size: var(--t-2xl);
+    margin-block: var(--s-3) var(--s-4);
+  }
+
+  .page__lede {
+    max-width: 54ch;
+  }
+
+  .group {
+    padding-top: var(--s-6);
+    margin-top: var(--s-7);
+    border-top: var(--rule-w) solid var(--rule);
+  }
+
+  /* The section number is set in the accent, the only ornament on the page. */
+  .group__head {
+    margin-bottom: var(--s-5);
+    gap: var(--s-3);
+  }
+
+  .group__n {
+    color: var(--accent);
+  }
+
+  .group__intro {
+    max-width: 66ch;
+    color: var(--fg-muted);
+    margin-bottom: var(--s-6);
+    text-wrap: pretty;
+  }
+
+  .projects {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--s-7);
+  }
+
+  .project {
+    max-width: 74ch;
+  }
+
+  .project__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-4);
+    padding-bottom: var(--s-2);
+    border-bottom: var(--rule-w) solid var(--rule);
+  }
+
+  .project__name {
+    font-family: var(--face-display);
+    font-size: var(--t-lg);
+    font-weight: 500;
+    letter-spacing: var(--tr-snug);
+    color: var(--fg-strong);
+    line-height: var(--lh-snug);
+  }
+
+  .project__name a {
+    text-decoration-color: var(--accent);
+  }
+
+  .project__name a:hover {
+    color: var(--accent);
+  }
+
+  .project__stack {
+    color: var(--fg-faint);
+    text-align: right;
+    flex: none;
+    max-width: 18ch;
+  }
+
+  .project__blurb {
+    margin-top: var(--s-4);
+    color: var(--fg-muted);
+    text-wrap: pretty;
+  }
+
+  .points {
+    list-style: none;
+    margin: var(--s-4) 0 0;
+    padding: 0;
+    display: grid;
+    gap: var(--s-3);
+  }
+
+  .points > li {
+    position: relative;
+    padding-left: 1.1em;
+    font-size: var(--t-sm);
+    line-height: 1.62;
+    color: var(--fg-muted);
+    text-wrap: pretty;
+  }
+
+  .points > li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.78em;
+    width: 0.42em;
+    height: var(--rule-w);
+    background: var(--rule-strong);
+  }
+
+  .points :global(strong) {
+    color: var(--fg);
+    font-weight: 600;
+  }
+
+  .points :global(code) {
+    font-family: var(--face-mono);
+    font-size: 0.9em;
+    color: var(--fg);
+  }
+
+  /* --- plugins -------------------------------------------------------- */
+
+  .plugins {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-width: 74ch;
+    border-top: var(--rule-w) solid var(--rule);
+  }
+
+  .plugin {
+    display: grid;
+    gap: var(--s-1);
+    padding-block: var(--s-3);
+    border-bottom: var(--rule-w) solid var(--rule);
+  }
+
+  .plugin__name {
+    font-size: var(--t-sm);
+    color: var(--fg-strong);
+    text-decoration-color: var(--accent);
+    width: fit-content;
+  }
+
+  .plugin__name:hover {
+    color: var(--accent);
+  }
+
+  .plugin__what {
+    font-size: var(--t-sm);
+    color: var(--fg-muted);
+    margin: 0;
+  }
+
+  .page__back {
+    margin-top: var(--s-8);
+    padding-top: var(--s-5);
+    border-top: var(--rule-w) solid var(--rule);
+    font-size: var(--t-sm);
+    color: var(--fg-muted);
+    max-width: 62ch;
+  }
+
+  .page__back a {
+    color: var(--fg-strong);
+    text-decoration-color: var(--accent);
+  }
+
+  @media (min-width: 46rem) {
+    .plugin {
+      grid-template-columns: 16rem minmax(0, 1fr);
+      column-gap: var(--s-5);
+      align-items: baseline;
+    }
+  }
+</style>

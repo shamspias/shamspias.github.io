@@ -1,0 +1,497 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE, SOCIAL } from '../consts';
+
+const ROLES = [
+  {
+    title: 'Senior Software Engineer',
+    org: 'Mevrik',
+    href: 'https://mevrik.com',
+    place: 'Dhaka',
+    when: 'Aug 2026 — Present',
+    note: 'An AI customer-experience platform serving telecom operators and 700+ SMB customers.',
+    points: [
+      'Work across the AI surface of the product: conversational agents, retrieval, and the model serving infrastructure beneath them.',
+      'Design and document feature specifications for engineering teams and leadership.',
+    ],
+  },
+  {
+    title: 'Founder',
+    org: 'AlgolyzerLab',
+    href: null,
+    place: null,
+    when: '2024 — Present',
+    note: 'An applied-AI studio for work that does not fit a standard product roadmap.',
+    points: [
+      '<strong>Athlete Intelligence</strong>: multi-tenant athlete performance management for elite sport (Go, <code>chi</code>, GORM, PostgreSQL, Next.js 16 / React 19) on an IOC-aligned clinical domain, with strict tenant isolation, injury and illness registers, screening, workload and return-to-play tracking, plus a CUDA <strong>RTMPose (Halpe-26)</strong> pipeline that turns ordinary video into clinical movement metrics via 2-D geometry and multi-view triangulation.',
+      '<strong>ChemberIQ</strong>: full-stack medical case-management for doctors and clinics. Go/Gin REST API, Vue 3 SPA, WebSocket doctor-to-patient chat, an offline-first <strong>Flutter</strong> app that auto-discovers its backend and delta-syncs the dataset, and a purpose-built in-memory search engine that replaced a Meilisearch dependency.',
+      '<strong>Agri Remedy</strong>: drone-based crop-disease monitoring. FastAPI backend with a <strong>DINOv2</strong> linear-probe classifier, canopy and lesion localisation, ISO-6709 GPS extraction from video metadata, bilingual (English / বাংলা) treatment guidance, React 19 + TypeScript SPA.',
+      '<strong>Cricket Bowling Analyzer</strong>: biomechanical analysis of a bowling action from video. 18 parameters at 30+ FPS via MediaPipe, automatic ICC 15° elbow-extension compliance checks, PDF clinical reports.',
+      '<strong>Eventaic</strong>: an event-responsive advertising platform (FastAPI, Vue, PostgreSQL) that turns a live event plus a product into a complete, evaluated campaign.',
+    ],
+  },
+  {
+    title: 'Senior Software Engineer',
+    org: 'Evoclick',
+    href: null,
+    place: 'Moscow, remote',
+    when: 'Jun 2024 — Jul 2026',
+    note: null,
+    points: [
+      'Deployed <strong>Qwen 3.5 27B</strong> (INT4 and FP8 quantised) on <strong>vLLM</strong> for production workloads serving 1,000+ concurrent users; tuned throughput through continuous batching, KV-cache sizing, and quantisation strategy selection.',
+      'Built an OpenAI-compatible <strong>LLM Gateway</strong> (FastAPI, httpx) as a routing proxy with rerank support, error enrichment, and benchmark endpoints across multi-tenant workloads.',
+      'Deployed and operated embedding models, vision-embedding models and document regioning models on production GPU infrastructure.',
+      'Implemented <strong>page-index RAG</strong>, combining layout-aware region extraction with vector retrieval for document understanding.',
+      'Built an edge-vision pipeline with <strong>YOLO on NPU hardware</strong> for real-time anomaly detection, with offline-safe buffering for intermittently connected sites.',
+      'Developed multi-agent services with <strong>LangGraph</strong> and <strong>Dify</strong> including human-in-the-loop review, retries and provider fallback; shipped tool integrations over the <strong>Model Context Protocol</strong>.',
+      'Added observability hooks (structured logs, trace IDs, evaluation harnesses) to track accuracy, drift and SLA breaches across deployed devices.',
+    ],
+  },
+  {
+    title: 'Software Engineer',
+    org: 'Evoclick',
+    href: null,
+    place: 'Moscow, remote',
+    when: 'May 2023 — Jun 2024',
+    note: null,
+    points: [
+      'Designed legal-tech RAG systems, from document intake through retrieval to answer drafting; improved retrieval quality over keyword baselines through better chunking, embedding selection, citation prompting and reranking.',
+      'Fine-tuned LLMs with <strong>LoRA/QLoRA</strong> (Unsloth) for domain-specific tasks; led the internal R&amp;D track on agents and retrieval.',
+      'Architected a multi-tenant AI orchestration platform (FastAPI, Vue 3, PostgreSQL/pgvector, Docker) with a DAG-based workflow engine and SSE streaming, comparable in scope to n8n or Dify.',
+      'Built and maintained Dify plugins and workflow integrations for client deployments: GigaChat provider, FLUX Fill Pro, Together AI Image, Telegram Bot.',
+    ],
+  },
+  {
+    title: 'Software Engineer',
+    org: 'OMNAIBLE',
+    href: null,
+    place: 'Amsterdam, remote',
+    when: 'Oct 2022 — Apr 2023',
+    note: null,
+    points: [
+      'Added ML-powered recommendations to an e-commerce analytics platform, exposed as FastAPI microservices with caching and background jobs.',
+      'Improved API responsiveness through query refactoring and pagination; wrote the integration tests that stabilised releases.',
+    ],
+  },
+  {
+    title: 'Software / DevOps Engineer',
+    org: 'CodeSmith Tech Ltd.',
+    href: null,
+    place: 'Dhaka',
+    when: 'Mar 2021 — Aug 2022',
+    note: null,
+    points: [
+      'Automated CI/CD pipelines with Docker; hardened REST and GraphQL APIs with monitoring and structured logging for faster incident resolution.',
+      'Maintained deployments and unit tests (PyTest), increasing release confidence.',
+      'Worked on IoT-integrated backend systems for sensor data ingestion and device communication.',
+    ],
+  },
+];
+
+const SKILLS = [
+  { area: 'Languages', items: 'Go (Gin, chi, concurrency, actor model) · Python (FastAPI, Django) · TypeScript · C/C++' },
+  { area: 'Agents & RAG', items: 'LangGraph · LangChain · LlamaIndex · Dify · MCP · function calling · DAG workflow engines · evaluation harnesses' },
+  { area: 'LLM ops', items: 'vLLM (INT4/FP8) · continuous batching · KV-cache tuning · embedding and vision-embedding models · reranking · benchmarking' },
+  { area: 'ML & DL', items: 'PyTorch · TensorFlow · LoRA/QLoRA · distillation · GGUF quantisation · linear probing · stacking ensembles' },
+  { area: 'Computer vision', items: 'YOLO · SAM · DINOv2 · MediaPipe · RTMPose · OpenCV · NPU and embedded edge inference' },
+  { area: 'Computational biology', items: 'RDKit · ChemProp · ESM-2 embeddings · molecular docking · scaffold-aware splits · ChEMBL / BindingDB / PubChem / COCONUT pipelines' },
+  { area: 'Data', items: 'PostgreSQL (pgvector) · MySQL · MongoDB · Qdrant · Pinecone · FAISS · Redis · ETL' },
+  { area: 'Infrastructure', items: 'Docker · Nginx · Coolify · CI/CD · GPU deployment · Linux administration · S3 / R2 / MinIO' },
+  { area: 'Frontend', items: 'Vue 3 · Next.js · React · Flutter (working proficiency for full-stack delivery)' },
+  { area: 'Practices', items: 'PyTest · observability and tracing · latency and cost budgets · Celery / async jobs · specification writing' },
+];
+
+const RESEARCH = [
+  {
+    title: 'Anti-inflammatory peptide prediction',
+    when: 'Ongoing',
+    points: [
+      'Two-stage stacking ensemble combining roughly 2,282 hand-crafted sequence descriptors (AAC, DPC, DDE, CKSAAP, CTD, PAAC, QSO, autocorrelation, physicochemical) with 1,280-dimensional <strong>ESM-2</strong> protein language model embeddings.',
+      'The core contribution is a dataset correction. Prior work draws negatives from random UniProt proteins, which quietly turns the task into "short peptide versus long protein". Drawing experimentally validated negatives from the same <strong>IEDB</strong> T-cell assays as the positives produces a harder benchmark, and more honest numbers.',
+    ],
+  },
+  {
+    title: 'AI-driven discovery of natural-product inhibitors of viral proteases',
+    when: 'DeepNatProtease, ongoing',
+    points: [
+      'Integrates per-virus bioactivity data from ChEMBL, BindingDB, PubChem BioAssay, ZINC and COVID Moonshot with full provenance; standardises molecules and harmonises units to nM.',
+      'Enforces <strong>scaffold-aware (Bemis–Murcko) splits</strong> with zero scaffold overlap, then trains virus-specific model families (ChemProp GNN ensembles, RF/XGBoost/LightGBM/DNN) selected on pre-registered metrics.',
+      'Screens the <strong>COCONUT</strong> natural-products library (400k+ compounds), filters for PAINS and toxicophores, enforces scaffold diversity, docks survivors against ligand-informed protease structures, then prioritises by consensus of ML probability, docking score and drug-likeness.',
+      'Targets: HIV-1 protease, HCV NS3/4A, SARS-CoV-2 Mpro, Dengue and Zika NS2B-NS3.',
+    ],
+  },
+];
+---
+
+<Base
+  title="Curriculum Vitae"
+  description="Shamsuddin Ahmed: senior software engineer. Five-plus years on backend systems, production ML infrastructure and agent harnesses in Go and Python, plus research in computational biology."
+>
+  <div class="wrap cv">
+    <header class="cv__head">
+      <p class="label">{SITE.role} &nbsp;·&nbsp; {SITE.location}</p>
+      <h1 class="display cv__title">Curriculum Vitae</h1>
+      <ul class="cv__contact">
+        {
+          SOCIAL.map((s) => (
+            <li>
+              <a href={s.href} rel={s.href.startsWith('http') ? 'me noopener' : undefined}>
+                {s.handle}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="lede cv__lede">
+        Software engineer with over five years designing scalable backend systems, production
+        machine-learning infrastructure and developer tooling. Core expertise in <strong>Go</strong> and{' '}
+        <strong>Python</strong>, with hands-on experience deploying large language models at scale,
+        building multi-tenant platforms and shipping real-time computer-vision pipelines. Active
+        research interests in computational biology, covering anti-inflammatory peptide prediction and
+        structure-aware virtual screening for drug discovery.
+      </p>
+    </header>
+
+    {/* --- experience --------------------------------------------------- */}
+    <section class="cv__section">
+      <h2 class="eyebrow cv__section-head" id="experience">Experience</h2>
+      <ol class="roles">
+        {
+          ROLES.map((r) => (
+            <li class="role">
+              <p class="role__when label tnum">{r.when}</p>
+              <div class="role__body">
+                <h3 class="role__title">
+                  {r.title},{' '}
+                  {r.href ? (
+                    <a href={r.href} rel="noopener">
+                      {r.org}
+                    </a>
+                  ) : (
+                    r.org
+                  )}
+                  {r.place && <span class="role__place">{r.place}</span>}
+                </h3>
+                {r.note && <p class="role__note">{r.note}</p>}
+                <ul class="points">
+                  {r.points.map((p) => (
+                    <li set:html={p} />
+                  ))}
+                </ul>
+              </div>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    {/* --- research ----------------------------------------------------- */}
+    <section class="cv__section">
+      <h2 class="eyebrow cv__section-head" id="research">Research</h2>
+      <ol class="roles">
+        {
+          RESEARCH.map((r) => (
+            <li class="role">
+              <p class="role__when label">{r.when}</p>
+              <div class="role__body">
+                <h3 class="role__title">{r.title}</h3>
+                <ul class="points">
+                  {r.points.map((p) => (
+                    <li set:html={p} />
+                  ))}
+                </ul>
+              </div>
+            </li>
+          ))
+        }
+      </ol>
+      <p class="cv__aside">
+        Other interests: context-aware lexical substitution with lightweight models and the evaluation
+        methodology around it (LexSubLM-Lite, benchmarked on SWORDS, ProLex and TSAR-2022);
+        multi-agent orchestration architectures; efficient LLM inference at scale; and layout-aware
+        retrieval for document understanding.
+      </p>
+    </section>
+
+    {/* --- skills ------------------------------------------------------- */}
+    <section class="cv__section">
+      <h2 class="eyebrow cv__section-head" id="skills">Technical skills</h2>
+      <dl class="skills">
+        {
+          SKILLS.map((s) => (
+            <div class="skill">
+              <dt class="skill__area label">{s.area}</dt>
+              <dd class="skill__items">{s.items}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    {/* --- education --------------------------------------------------- */}
+    <section class="cv__section">
+      <h2 class="eyebrow cv__section-head" id="education">Education</h2>
+      <ol class="roles">
+        <li class="role">
+          <p class="role__when label tnum">Jan 2016 — Nov 2020</p>
+          <div class="role__body">
+            <h3 class="role__title">
+              B.Sc. in Computer Science &amp; Engineering{' '}
+              <span class="role__place">Daffodil International University, Dhaka</span>
+            </h3>
+            <ul class="points">
+              <li>
+                Coursework in data structures, algorithms, machine learning, data mining, computer
+                networks, database systems, software engineering, embedded systems and robotics.
+              </li>
+              <li>Final-year research on machine-learning applications in computational biology.</li>
+            </ul>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    {/* --- closing ----------------------------------------------------- */}
+    <section class="cv__section">
+      <h2 class="eyebrow cv__section-head" id="also">Also</h2>
+      <dl class="skills">
+        <div class="skill">
+          <dt class="skill__area label">Certifications</dt>
+          <dd class="skill__items">
+            HackerRank: Problem Solving (basic, intermediate), Python · Google: data analytics,
+            machine learning and AI fundamentals
+          </dd>
+        </div>
+        <div class="skill">
+          <dt class="skill__area label">Languages</dt>
+          <dd class="skill__items">Bangla (native) · English (fluent, professional working proficiency)</dd>
+        </div>
+        <div class="skill">
+          <dt class="skill__area label">Open source</dt>
+          <dd class="skill__items">
+            <a href="/projects/">Selected projects</a> · <a href="https://github.com/shamspias" rel="noopener">github.com/shamspias</a>
+          </dd>
+        </div>
+      </dl>
+    </section>
+  </div>
+</Base>
+
+<style>
+  .cv {
+    padding-block: var(--s-8) var(--s-6);
+  }
+
+  .cv__head {
+    max-width: 62ch;
+    margin-bottom: var(--s-8);
+  }
+
+  .cv__title {
+    font-size: var(--t-2xl);
+    margin-block: var(--s-3) var(--s-4);
+  }
+
+  .cv__contact {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-5);
+    margin: 0 0 var(--s-5);
+    padding: 0;
+    font-family: var(--face-mono);
+    font-size: var(--t-xs);
+  }
+
+  .cv__contact a {
+    color: var(--fg-muted);
+    text-decoration-color: var(--rule-strong);
+  }
+
+  .cv__contact a:hover {
+    color: var(--accent);
+  }
+
+  .cv__lede {
+    max-width: 58ch;
+  }
+
+  .cv__lede strong {
+    color: var(--fg);
+    font-weight: 600;
+    font-style: normal;
+  }
+
+  .cv__section {
+    padding-top: var(--s-7);
+    margin-top: var(--s-7);
+    border-top: var(--rule-w) solid var(--rule);
+  }
+
+  .cv__section-head {
+    margin-bottom: var(--s-6);
+  }
+
+  .cv__aside {
+    margin-top: var(--s-6);
+    font-size: var(--t-sm);
+    color: var(--fg-muted);
+    max-width: 68ch;
+    text-wrap: pretty;
+  }
+
+  /* --- roles ---------------------------------------------------------- */
+
+  .roles {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--s-7);
+    counter-reset: none;
+  }
+
+  .role {
+    display: grid;
+    gap: var(--s-2);
+  }
+
+  .role__when {
+    color: var(--fg-faint);
+    padding-top: 0.4em;
+    white-space: nowrap;
+  }
+
+  .role__title {
+    font-family: var(--face-display);
+    font-size: var(--t-lg);
+    font-weight: 500;
+    letter-spacing: var(--tr-snug);
+    line-height: var(--lh-snug);
+    color: var(--fg-strong);
+  }
+
+  .role__title a {
+    text-decoration-color: var(--accent);
+  }
+
+  .role__title a:hover {
+    color: var(--accent);
+  }
+
+  /* The place sits on its own line in the display italic, which keeps the role
+     line short enough to read as a title rather than a sentence. */
+  .role__place {
+    display: block;
+    font-size: var(--t-sm);
+    font-style: italic;
+    font-weight: 400;
+    color: var(--fg-faint);
+    letter-spacing: 0;
+    margin-top: 0.15em;
+  }
+
+  .role__note {
+    margin-top: var(--s-3);
+    font-size: var(--t-sm);
+    color: var(--fg-muted);
+    max-width: 66ch;
+  }
+
+  .points {
+    list-style: none;
+    margin: var(--s-4) 0 0;
+    padding: 0;
+    display: grid;
+    gap: var(--s-3);
+    max-width: 72ch;
+  }
+
+  .points > li {
+    position: relative;
+    padding-left: 1.1em;
+    font-size: var(--t-sm);
+    line-height: 1.62;
+    color: var(--fg-muted);
+    text-wrap: pretty;
+  }
+
+  .points > li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.78em;
+    width: 0.42em;
+    height: var(--rule-w);
+    background: var(--rule-strong);
+  }
+
+  .points :global(strong) {
+    color: var(--fg);
+    font-weight: 600;
+  }
+
+  .points :global(code) {
+    font-family: var(--face-mono);
+    font-size: 0.9em;
+    color: var(--fg);
+  }
+
+  /* --- skills --------------------------------------------------------- */
+
+  .skills {
+    display: grid;
+    gap: 0;
+    margin: 0;
+    max-width: 82ch;
+    border-top: var(--rule-w) solid var(--rule);
+  }
+
+  .skill {
+    display: grid;
+    gap: var(--s-1);
+    padding-block: var(--s-3);
+    border-bottom: var(--rule-w) solid var(--rule);
+  }
+
+  .skill__area {
+    color: var(--fg-faint);
+    padding-top: 0.3em;
+  }
+
+  .skill__items {
+    margin: 0;
+    font-size: var(--t-sm);
+    color: var(--fg-muted);
+    text-wrap: pretty;
+  }
+
+  .skill__items a {
+    color: var(--fg);
+    text-decoration-color: var(--accent);
+  }
+
+  .skill__items a:hover {
+    color: var(--accent);
+  }
+
+  @media (min-width: 46rem) {
+    .role,
+    .skill {
+      grid-template-columns: 11rem minmax(0, 1fr);
+      column-gap: var(--s-5);
+      align-items: baseline;
+    }
+
+    .roles {
+      gap: var(--s-8);
+    }
+  }
+
+  @media (min-width: 112.5rem) {
+    .role,
+    .skill {
+      grid-template-columns: 14rem minmax(0, 1fr);
+    }
+  }
+</style>

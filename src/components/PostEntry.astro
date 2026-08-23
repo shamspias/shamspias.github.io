@@ -1,0 +1,117 @@
+---
+import type { Post } from '../lib/posts';
+import { isoDate, shortDate, urlOf, wrapEmoji } from '../lib/posts';
+
+interface Props {
+  post: Post;
+  /** `index` is the archive's tabular form; `card` carries the description. */
+  variant?: 'index' | 'card';
+}
+
+const { post, variant = 'index' } = Astro.props;
+const { title, description, date, series, seriesOrder } = post.data;
+---
+
+<article class:list={['entry', `entry--${variant}`]}>
+  <a class="entry-link" href={urlOf(post)}>
+    <time class="entry__date label tnum" datetime={isoDate(date)}>{shortDate(date)}</time>
+    <h3 class="entry-title entry__title" set:html={wrapEmoji(title)} />
+    {variant === 'card' && <p class="entry__desc">{description}</p>}
+    {
+      series && (
+        <p class="entry__series label">
+          {series}
+          <span class="entry__series-n">
+            {String(seriesOrder ?? 0).padStart(2, '0')}
+          </span>
+        </p>
+      )
+    }
+  </a>
+</article>
+
+<style>
+  .entry {
+    border-bottom: var(--rule-w) solid var(--rule);
+  }
+
+  .entry-link {
+    display: grid;
+    gap: var(--s-1);
+    padding-block: var(--s-4);
+  }
+
+  .entry__title {
+    font-family: var(--face-display);
+    font-size: var(--t-md);
+    font-weight: 500;
+    line-height: var(--lh-snug);
+    letter-spacing: var(--tr-snug);
+    color: var(--fg-strong);
+    text-wrap: balance;
+  }
+
+  .entry__desc {
+    font-size: var(--t-sm);
+    color: var(--fg-muted);
+    max-width: 62ch;
+    text-wrap: pretty;
+  }
+
+  .entry__date {
+    color: var(--fg-faint);
+  }
+
+  .entry__series {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    color: var(--fg-faint);
+  }
+
+  .entry__series-n {
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+  }
+
+  /* Above 46rem the archive becomes a real index: the date sits in its own
+     fixed column, so 31 entries scan as a table of contents rather than a
+     feed. Everything stays flush left; nothing is centred. */
+  @media (min-width: 46rem) {
+    .entry--index .entry-link {
+      grid-template-columns: 7.5rem minmax(0, 1fr);
+      align-items: baseline;
+      column-gap: var(--s-5);
+      padding-block: var(--s-4);
+    }
+
+    .entry--index .entry__date {
+      grid-column: 1;
+      grid-row: 1;
+      padding-top: 0.42em;
+    }
+
+    .entry--index .entry__title,
+    .entry--index .entry__desc,
+    .entry--index .entry__series {
+      grid-column: 2;
+    }
+
+    .entry--card .entry-link {
+      grid-template-columns: 7.5rem minmax(0, 1fr);
+      column-gap: var(--s-5);
+    }
+
+    .entry--card .entry__date {
+      grid-column: 1;
+      grid-row: 1 / span 3;
+      padding-top: 0.42em;
+    }
+
+    .entry--card .entry__title,
+    .entry--card .entry__desc,
+    .entry--card .entry__series {
+      grid-column: 2;
+    }
+  }
+</style>

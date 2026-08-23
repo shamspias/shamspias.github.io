@@ -1,0 +1,95 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Base from '../../layouts/Base.astro';
+import PostEntry from '../../components/PostEntry.astro';
+import { allPosts, groupBySeries, slugifyTag } from '../../lib/posts';
+
+export const getStaticPaths = (async () => {
+  const posts = await allPosts();
+  return groupBySeries(posts).map((s) => ({
+    params: { series: slugifyTag(s.name) },
+    props: { name: s.name, posts: s.posts },
+  }));
+}) satisfies GetStaticPaths;
+
+const { name, posts } = Astro.props;
+const first = posts[0];
+const last = posts[posts.length - 1];
+const span =
+  first && last && first !== last
+    ? `${first.data.date.getUTCFullYear()}–${last.data.date.getUTCFullYear()}`
+    : `${first?.data.date.getUTCFullYear() ?? ''}`;
+---
+
+<Base
+  title={name}
+  description={`The ${name} series: ${posts.length} posts, in reading order. ${posts[0]?.data.description ?? ''}`}
+>
+  <div class="wrap page">
+    <header class="page__head">
+      <p class="label">
+        Series &nbsp;·&nbsp; {posts.length} parts &nbsp;·&nbsp; <span class="tnum">{span}</span>
+      </p>
+      <h1 class="display page__title">{name}</h1>
+      <p class="lede page__lede">Written to be read in order, and to stand up out of it.</p>
+    </header>
+
+    <div class="list">
+      {posts.map((post) => <PostEntry post={post} variant="card" />)}
+    </div>
+
+    <p class="page__back">
+      <a href="/series/">All series</a>
+      <span class="page__sep" aria-hidden="true"></span>
+      <a href="/writing/">All writing</a>
+    </p>
+  </div>
+</Base>
+
+<style>
+  .page {
+    padding-block: var(--s-8) var(--s-6);
+  }
+
+  .page__head {
+    max-width: 56ch;
+    margin-bottom: var(--s-7);
+  }
+
+  .page__title {
+    font-size: var(--t-2xl);
+    margin-block: var(--s-3) var(--s-4);
+  }
+
+  .page__lede {
+    max-width: 52ch;
+  }
+
+  .list {
+    border-top: var(--rule-w) solid var(--rule-strong);
+    max-width: 76ch;
+  }
+
+  .page__back {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    margin-top: var(--s-7);
+    font-size: var(--t-sm);
+  }
+
+  .page__back a {
+    color: var(--fg-strong);
+    text-decoration-color: var(--accent);
+  }
+
+  .page__back a:hover {
+    color: var(--accent);
+  }
+
+  .page__sep {
+    width: var(--s-5);
+    border-top: var(--rule-w) solid var(--rule-strong);
+  }
+</style>

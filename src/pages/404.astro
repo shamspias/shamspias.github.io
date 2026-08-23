@@ -1,0 +1,107 @@
+---
+import Base from '../layouts/Base.astro';
+import { allPosts } from '../lib/posts';
+import { urlOf, wrapEmoji } from '../lib/posts';
+
+const recent = (await allPosts()).slice(0, 4);
+---
+
+<Base title="Not found" description="That page does not exist." noindex>
+  <div class="wrap page">
+    <p class="label tnum">Error 404</p>
+    <h1 class="display page__title">This page does not exist.</h1>
+    <p class="lede page__lede">
+      A URL may have changed, or it may never have been. Every post ever published here still lives at
+      its original address, so if you followed a link from somewhere old, it should have worked. If it
+      did not, I would genuinely like to know.
+    </p>
+
+    <nav class="page__routes" aria-label="Where to go instead">
+      <a href="/">Home</a>
+      <span class="page__sep" aria-hidden="true"></span>
+      <a href="/writing/">All writing</a>
+      <span class="page__sep" aria-hidden="true"></span>
+      <a href="/projects/">Projects</a>
+      <span class="page__sep" aria-hidden="true"></span>
+      <a href="mailto:info@shamspias.com">Tell me</a>
+    </nav>
+
+    <section class="page__recent">
+      <h2 class="eyebrow">Recent writing</h2>
+      <ul class="recent">
+        {
+          recent.map((p) => (
+            <li>
+              <a href={urlOf(p)} set:html={wrapEmoji(p.data.title)} />
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+  </div>
+</Base>
+
+<style>
+  .page {
+    padding-block: var(--s-9) var(--s-8);
+    max-width: 62ch;
+  }
+
+  .page__title {
+    font-size: var(--t-2xl);
+    margin-block: var(--s-3) var(--s-4);
+  }
+
+  .page__lede {
+    max-width: 52ch;
+  }
+
+  .page__routes {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    margin-top: var(--s-6);
+    font-size: var(--t-sm);
+  }
+
+  .page__routes a {
+    color: var(--fg-strong);
+    text-decoration-color: var(--accent);
+  }
+
+  .page__routes a:hover {
+    color: var(--accent);
+  }
+
+  .page__sep {
+    width: var(--s-5);
+    border-top: var(--rule-w) solid var(--rule-strong);
+  }
+
+  .page__recent {
+    margin-top: var(--s-8);
+    padding-top: var(--s-5);
+    border-top: var(--rule-w) solid var(--rule);
+  }
+
+  .recent {
+    list-style: none;
+    margin: var(--s-4) 0 0;
+    padding: 0;
+    display: grid;
+    gap: var(--s-3);
+  }
+
+  .recent a {
+    font-family: var(--face-display);
+    font-size: var(--t-base);
+    color: var(--fg-strong);
+    text-decoration-color: var(--rule-strong);
+    text-wrap: pretty;
+  }
+
+  .recent a:hover {
+    color: var(--accent);
+  }
+</style>

@@ -1,0 +1,542 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { SITE } from '../../consts';
+import {
+  allPosts,
+  formatDate,
+  isoDate,
+  plainTitle,
+  readingTime,
+  routeParam,
+  seriesOf,
+  slugifyTag,
+  urlOf,
+  wrapEmoji,
+  type Post,
+} from '../../lib/posts';
+
+export const getStaticPaths = (async () => {
+  const posts = await allPosts();
+  return posts.map((post, i) => ({
+    params: { path: routeParam(post) },
+    props: {
+      post,
+      newer: posts[i - 1] ?? null,
+      older: posts[i + 1] ?? null,
+      siblings: post.data.series ? seriesOf(posts, post.data.series) : [],
+    },
+  }));
+}) satisfies GetStaticPaths;
+
+interface Props {
+  post: Post;
+  newer: Post | null;
+  older: Post | null;
+  siblings: Post[];
+}
+
+const { post, newer, older, siblings } = Astro.props;
+const { title, description, date, tags, series, seriesOrder, math } = post.data;
+
+const { Content, headings } = await render(post);
+const minutes = readingTime(post.body);
+
+// Only h2s, and only when there are enough of them to be worth a contents list.
+const toc = headings.filter((h: { depth: number }) => h.depth === 2);
+const showToc = toc.length >= 4;
+
+const canonical = new URL(urlOf(post), SITE.url).href;
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: plainTitle(title),
+  description,
+  datePublished: date.toISOString(),
+  dateModified: date.toISOString(),
+  url: canonical,
+  mainEntityOfPage: { '@type': 'WebPage', '@id': canonical },
+  author: { '@type': 'Person', name: SITE.name, url: SITE.url },
+  publisher: { '@type': 'Person', name: SITE.name, url: SITE.url },
+  keywords: tags.join(', '),
+  wordCount: (post.body?.match(/\S+/g) ?? []).length,
+  inLanguage: 'en',
+  isPartOf: series ? { '@type': 'CreativeWorkSeries', name: series } : undefined,
+};
+---
+
+<Base
+  title={plainTitle(title)}
+  description={description}
+  math={math}
+  article={{ published: date, tags: [...tags] }}
+  schema={schema}
+>
+  <article class="wrap article">
+    <header class="article__head">
+      {
+        series && (
+          <p class="article__series label">
+            <a href={`/series/${slugifyTag(series)}/`}>{series}</a>
+            <span class="article__series-n tnum">
+              {String(seriesOrder ?? 0).padStart(2, '0')} / {String(siblings.length).padStart(2, '0')}
+            </span>
+          </p>
+        )
+      }
+      <h1 class="display article__title" set:html={wrapEmoji(title)} />
+    </header>
+
+    <div class="article__grid">
+      {/* The margin column. At and above 78rem it is stationary alongside the
+          text; below that it collapses into a single metadata line above it. */}
+      <aside class="margin" aria-label="About this post">
+        <dl class="meta">
+          <div class="meta__row">
+            <dt class="label">Published</dt>
+            <dd><time datetime={isoDate(date)} class="tnum">{formatDate(date)}</time></dd>
+          </div>
+          <div class="meta__row">
+            <dt class="label">Length</dt>
+            <dd class="tnum">{minutes} min read</dd>
+          </div>
+          {
+            tags.length > 0 && (
+              <div class="meta__row meta__row--tags">
+                <dt class="label">Filed under</dt>
+                <dd>
+                  <ul class="tag-list">
+                    {tags.map((t) => (
+                      <li>
+                        <a href={`/tags/${slugifyTag(t)}/`}>{t}</a>
+                      </li>
+                    ))}
+                  </ul>
+                </dd>
+              </div>
+            )
+          }
+        </dl>
+
+        {
+          showToc && (
+            <nav class="toc" aria-labelledby="toc-head">
+              <h2 class="label toc__head" id="toc-head">
+                Contents
+              </h2>
+              <ol class="toc__list">
+                {toc.map((h: { slug: string; text: string }) => (
+                  <li>
+                    <a href={`#${h.slug}`} set:html={wrapEmoji(h.text)} />
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          )
+        }
+      </aside>
+
+      <div class="article__body prose">
+        <Content />
+      </div>
+    </div>
+
+    {/* --- the series strip ------------------------------------------- */}
+    {
+      series && siblings.length > 1 && (
+        <nav class="series-strip" aria-label={`The ${series} series`}>
+          <h2 class="eyebrow series-strip__head">
+            The {series} series
+          </h2>
+          <ol class="series-strip__list">
+            {siblings.map((s) => {
+              const current = s.id === post.id;
+              return (
+                <li class:list={['series-strip__item', current && 'is-current']}>
+                  <span class="series-strip__n label tnum">
+                    {String(s.data.seriesOrder ?? 0).padStart(2, '0')}
+                  </span>
+                  {current ? (
+                    <span class="series-strip__title" aria-current="page" set:html={wrapEmoji(s.data.title)} />
+                  ) : (
+                    <a class="series-strip__title" href={urlOf(s)} set:html={wrapEmoji(s.data.title)} />
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
+      )
+    }
+
+    {/* --- next and previous ------------------------------------------ */}
+    {
+      (newer || older) && (
+        <nav class="adjacent" aria-label="Other posts">
+          <div class="adjacent__side">
+            {older && (
+              <a class="adjacent__link" href={urlOf(older)} rel="prev">
+                <span class="label">Previous</span>
+                <span class="adjacent__title" set:html={wrapEmoji(older.data.title)} />
+              </a>
+            )}
+          </div>
+          <div class="adjacent__side adjacent__side--next">
+            {newer && (
+              <a class="adjacent__link" href={urlOf(newer)} rel="next">
+                <span class="label">Next</span>
+                <span class="adjacent__title" set:html={wrapEmoji(newer.data.title)} />
+              </a>
+            )}
+          </div>
+        </nav>
+      )
+    }
+  </article>
+</Base>
+
+<style>
+  .article {
+    padding-block: var(--s-8) var(--s-6);
+  }
+
+  /* --- head ----------------------------------------------------------- */
+
+  .article__head {
+    max-inline-size: min(100%, 34ch);
+    margin-bottom: var(--s-7);
+  }
+
+  .article__title {
+    font-size: var(--t-2xl);
+  }
+
+  .article__series {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    margin-bottom: var(--s-4);
+  }
+
+  .article__series a {
+    color: var(--fg-muted);
+    text-decoration-color: var(--rule-strong);
+  }
+
+  .article__series a:hover {
+    color: var(--accent);
+  }
+
+  .article__series-n {
+    color: var(--accent);
+  }
+
+  /* --- grid ----------------------------------------------------------- */
+
+  .article__grid {
+    display: grid;
+    gap: var(--s-6);
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .article__body {
+    max-width: var(--measure);
+    min-width: 0;
+  }
+
+  /* --- margin column -------------------------------------------------- */
+
+  .margin {
+    display: grid;
+    gap: var(--s-5);
+    align-content: start;
+    padding-bottom: var(--s-4);
+    border-bottom: var(--rule-w) solid var(--rule);
+  }
+
+  .meta {
+    display: grid;
+    gap: var(--s-3);
+    margin: 0;
+  }
+
+  .meta__row {
+    display: grid;
+    gap: var(--s-1);
+  }
+
+  .meta dd {
+    margin: 0;
+    font-size: var(--t-sm);
+    color: var(--fg-muted);
+  }
+
+  .tag-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-1) var(--s-3);
+  }
+
+  .tag-list a {
+    font-size: var(--t-sm);
+    color: var(--fg-muted);
+    text-decoration-color: var(--rule-strong);
+  }
+
+  .tag-list a:hover {
+    color: var(--accent);
+  }
+
+  .toc__head {
+    padding-bottom: var(--s-2);
+    border-bottom: var(--rule-w) solid var(--rule);
+    margin-bottom: var(--s-3);
+  }
+
+  .toc__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--s-2);
+    counter-reset: toc;
+  }
+
+  .toc__list a {
+    display: block;
+    font-size: var(--t-sm);
+    line-height: 1.4;
+    color: var(--fg-muted);
+    text-decoration: none;
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .toc__list a:hover {
+    color: var(--accent);
+  }
+
+  /* Below the three-column breakpoint the metadata reads as one quiet line
+     rather than a stack, and the contents list is dropped: on a phone the
+     scrollbar is the table of contents. */
+  @media (max-width: 48.99rem) {
+    .meta {
+      grid-template-columns: repeat(auto-fit, minmax(8rem, auto));
+      gap: var(--s-4);
+    }
+
+    .meta__row--tags {
+      grid-column: 1 / -1;
+    }
+
+    .toc {
+      display: none;
+    }
+  }
+
+  @media (min-width: 49rem) and (max-width: 77.99rem) {
+    .margin {
+      max-width: var(--measure);
+    }
+  }
+
+  @media (min-width: 78rem) {
+    .article {
+      padding-block: var(--s-9) var(--s-7);
+    }
+
+    .article__grid {
+      grid-template-columns: minmax(11rem, 15rem) minmax(0, calc(var(--measure) + clamp(var(--s-5), 3vw, var(--s-7))));
+      column-gap: clamp(var(--s-5), 2.5vw, var(--s-7));
+      align-items: start;
+    }
+
+    .margin {
+      position: sticky;
+      top: var(--s-6);
+      max-height: calc(100svh - var(--s-9));
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      border-bottom: 0;
+      padding-bottom: 0;
+      padding-block: var(--s-1);
+    }
+
+    /* One continuous hairline down the whole text block, the way a journal
+       page separates its margin notes from its column. Drawn on the text so it
+       runs the article's full height rather than stopping where the contents
+       list happens to end. */
+    .article__body {
+      border-left: var(--rule-w) solid var(--rule);
+      padding-left: clamp(var(--s-5), 3vw, var(--s-7));
+    }
+
+    /* Everything on the page hangs off one left axis: the masthead wordmark,
+       the margin column, the series strip and the footer all begin at the page
+       gutter. The open space at wide viewports collects on the right, which is
+       a margin rather than a void, and it is why 2560px reads as composed. */
+    .article__grid,
+    .article__head,
+    .series-strip,
+    .adjacent {
+      max-width: calc(
+        15rem + var(--measure) + clamp(var(--s-5), 2.5vw, var(--s-7)) + clamp(var(--s-5), 3vw, var(--s-7))
+      );
+      margin-inline: 0;
+    }
+
+    /* The title spans the whole composition rather than sitting above only the
+       text column, so it reads as a headline over the page. */
+    .article__head {
+      max-inline-size: min(100%, 46ch);
+    }
+  }
+
+  /* --- series strip ---------------------------------------------------- */
+
+  .series-strip {
+    margin-top: var(--s-9);
+    padding-top: var(--s-5);
+    border-top: var(--rule-w) solid var(--rule-strong);
+  }
+
+  .series-strip__head {
+    margin-bottom: var(--s-4);
+  }
+
+  .series-strip__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--s-1);
+  }
+
+  .series-strip__item {
+    display: grid;
+    grid-template-columns: 2.5rem minmax(0, 1fr);
+    gap: var(--s-3);
+    align-items: baseline;
+    padding-block: var(--s-2);
+    border-bottom: var(--rule-w) solid var(--rule);
+  }
+
+  .series-strip__item:last-child {
+    border-bottom: 0;
+  }
+
+  .series-strip__n {
+    color: var(--fg-faint);
+  }
+
+  .series-strip__title {
+    font-family: var(--face-display);
+    font-size: var(--t-base);
+    color: var(--fg-muted);
+    text-decoration-color: var(--rule-strong);
+    text-wrap: pretty;
+  }
+
+  a.series-strip__title:hover {
+    color: var(--accent);
+  }
+
+  /* The post you are reading is marked in the strip, so the run has a "you are
+     here". This is the detail that makes a six-part series feel like a book. */
+  .series-strip__item.is-current .series-strip__n {
+    color: var(--accent);
+  }
+
+  .series-strip__item.is-current .series-strip__title {
+    color: var(--fg-strong);
+    font-weight: 500;
+  }
+
+  /* --- adjacent -------------------------------------------------------- */
+
+  .adjacent {
+    display: grid;
+    gap: var(--s-5);
+    margin-top: var(--s-8);
+    padding-top: var(--s-5);
+    border-top: var(--rule-w) solid var(--rule);
+  }
+
+  .adjacent__link {
+    display: grid;
+    gap: var(--s-2);
+    text-decoration: none;
+    max-width: 34ch;
+  }
+
+  .adjacent__title {
+    font-family: var(--face-display);
+    font-size: var(--t-base);
+    color: var(--fg-strong);
+    line-height: var(--lh-snug);
+    text-wrap: pretty;
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .adjacent__link:hover .adjacent__title {
+    color: var(--accent);
+  }
+
+  @media (min-width: 46rem) {
+    .adjacent {
+      grid-template-columns: 1fr 1fr;
+      gap: var(--s-6);
+    }
+
+    .adjacent__side--next {
+      text-align: right;
+      justify-items: end;
+    }
+
+    .adjacent__side--next .adjacent__link {
+      justify-items: end;
+    }
+  }
+</style>
+
+<script>
+  /**
+   * A box that scrolls has to be reachable by keyboard, but which boxes scroll
+   * depends on the viewport, so it cannot be decided at build time. Marking only
+   * the ones that actually overflow keeps a code-heavy post from collecting
+   * eighty pointless tab stops.
+   */
+  const CANDIDATES = 'pre, .table-scroll, .katex-display';
+
+  const sync = () => {
+    for (const el of document.querySelectorAll<HTMLElement>(CANDIDATES)) {
+      const scrolls = el.scrollWidth > el.clientWidth + 1;
+      if (scrolls) {
+        el.setAttribute('tabindex', '0');
+        if (!el.hasAttribute('role')) el.setAttribute('role', 'region');
+        if (!el.hasAttribute('aria-label')) el.setAttribute('aria-label', 'Scrollable content');
+      } else if (el.getAttribute('tabindex') === '0' && el.dataset.keepFocusable !== 'true') {
+        el.removeAttribute('tabindex');
+      }
+    }
+  };
+
+  sync();
+
+  // A ResizeObserver catches every cause of reflow, not just window resizes:
+  // webfonts landing after first paint, a theme change altering metrics, or the
+  // reader zooming. Polling on 'resize' alone misses the font case entirely.
+  if ('ResizeObserver' in window) {
+    let queued = 0;
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(queued);
+      queued = requestAnimationFrame(sync);
+    });
+    for (const el of document.querySelectorAll(CANDIDATES)) ro.observe(el);
+    ro.observe(document.documentElement);
+  }
+</script>

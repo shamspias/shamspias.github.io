@@ -1,0 +1,208 @@
+---
+import Base from '../../layouts/Base.astro';
+import PostEntry from '../../components/PostEntry.astro';
+import { allPosts, byYear, groupBySeries, slugifyTag, tagCounts } from '../../lib/posts';
+
+const posts = await allPosts();
+const years = byYear(posts);
+const series = groupBySeries(posts);
+const tags = tagCounts(posts).slice(0, 14);
+---
+
+<Base
+  title="Writing"
+  description="Long-form notes on agent harnesses, LLM infrastructure, machine learning for biology, computer vision, and the AI foundations that sit underneath all of it."
+>
+  <div class="wrap page">
+    <header class="page__head">
+      <p class="label">{posts.length} posts &nbsp;·&nbsp; {years.length} years</p>
+      <h1 class="display page__title">Writing</h1>
+      <p class="lede page__lede">
+        I write to understand things, not to look clever. Everything here explains a hard idea the way
+        I wish someone had explained it to me, with analogies, runnable code, and honest numbers.
+      </p>
+    </header>
+
+    {/* At wide viewports the index gets a stationary margin column carrying the
+        series and tag indexes. Below that they sit above the list, collapsed. */}
+    <div class="page__grid">
+      <aside class="rail" aria-label="Browse by series and subject">
+        <nav class="rail__block">
+          <h2 class="label rail__head">Series</h2>
+          <ul class="rail__list">
+            {
+              series.map((s) => (
+                <li>
+                  <a href={`/series/${slugifyTag(s.name)}/`}>
+                    {s.name}
+                    <span class="rail__n tnum">{s.posts.length}</span>
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+
+        <nav class="rail__block">
+          <h2 class="label rail__head">Subjects</h2>
+          <ul class="rail__list rail__list--inline">
+            {
+              tags.map((t) => (
+                <li>
+                  <a href={`/tags/${t.slug}/`}>
+                    {t.tag}
+                    <span class="rail__n tnum">{t.count}</span>
+                  </a>
+                </li>
+              ))
+            }
+            <li><a href="/tags/">All subjects &rarr;</a></li>
+          </ul>
+        </nav>
+      </aside>
+
+      <div class="index">
+        {
+          years.map(({ year, posts: inYear }) => (
+            <section class="index__year">
+              <h2 class="index__year-label label tnum" id={`y${year}`}>
+                {year}
+              </h2>
+              <div class="index__list">
+                {inYear.map((post) => (
+                  <PostEntry post={post} variant="index" />
+                ))}
+              </div>
+            </section>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</Base>
+
+<style>
+  .page {
+    padding-block: var(--s-8) var(--s-6);
+  }
+
+  .page__head {
+    max-width: 56ch;
+    margin-bottom: var(--s-8);
+  }
+
+  .page__title {
+    font-size: var(--t-2xl);
+    margin-block: var(--s-3) var(--s-4);
+  }
+
+  .page__lede {
+    max-width: 52ch;
+  }
+
+  .page__grid {
+    display: grid;
+    gap: var(--s-7);
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* --- the rail ------------------------------------------------------- */
+
+  .rail {
+    display: grid;
+    gap: var(--s-6);
+    align-content: start;
+  }
+
+  .rail__head {
+    padding-bottom: var(--s-2);
+    border-bottom: var(--rule-w) solid var(--rule);
+    margin-bottom: var(--s-3);
+  }
+
+  .rail__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--s-2);
+  }
+
+  .rail__list--inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-4);
+  }
+
+  .rail__list a {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--s-2);
+    font-size: var(--t-sm);
+    text-decoration: none;
+    color: var(--fg-muted);
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .rail__list a:hover {
+    color: var(--accent);
+  }
+
+  .rail__n {
+    font-family: var(--face-mono);
+    font-size: var(--t-2xs);
+    color: var(--fg-faint);
+  }
+
+  /* --- the year index ------------------------------------------------- */
+
+  .index__year + .index__year {
+    margin-top: var(--s-7);
+  }
+
+  .index__year-label {
+    font-size: var(--t-sm);
+    letter-spacing: var(--tr-wide);
+    color: var(--fg-faint);
+    padding-bottom: var(--s-2);
+    border-bottom: var(--rule-w) solid var(--rule-strong);
+    scroll-margin-top: var(--s-6);
+  }
+
+  /* Above 60rem the rail moves to the right, so the index keeps the reader's
+     natural left edge and the page reads as content-first. At 4K the rail
+     widens rather than the list, keeping the measure honest. */
+  @media (min-width: 60rem) {
+    .page__grid {
+      grid-template-columns: minmax(0, 1fr) minmax(13rem, 17rem);
+      column-gap: clamp(var(--s-6), 5vw, var(--s-9));
+      align-items: start;
+    }
+
+    .rail {
+      order: 2;
+      position: sticky;
+      top: var(--s-6);
+    }
+
+    .index {
+      order: 1;
+      max-width: 62ch;
+    }
+
+    .index__year {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (min-width: 112.5rem) {
+    .page__grid {
+      grid-template-columns: minmax(0, 1fr) minmax(17rem, 22rem);
+    }
+
+    .index {
+      max-width: 68ch;
+    }
+  }
+</style>

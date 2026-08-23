@@ -1,0 +1,119 @@
+---
+/**
+ * Three-state, because two is a lie: a visitor who has expressed no preference
+ * should follow their system, and there must be a way back to that.
+ * system -> light -> dark -> system
+ */
+---
+
+<button
+  class="theme-toggle"
+  type="button"
+  aria-label="Change colour theme"
+  title="Change colour theme"
+  data-theme-toggle
+>
+  <svg class="theme-toggle__icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+    <g class="i-system" fill="none" stroke="currentColor" stroke-width="1.25">
+      <rect x="1.6" y="2.6" width="12.8" height="9" rx="1" />
+      <path d="M5.5 13.6h5" stroke-linecap="round" />
+    </g>
+    <g class="i-light" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round">
+      <circle cx="8" cy="8" r="3.1" />
+      <path d="M8 1.2v1.6M8 13.2v1.6M1.2 8h1.6M13.2 8h1.6M3.4 3.4l1.1 1.1M11.5 11.5l1.1 1.1M12.6 3.4l-1.1 1.1M4.5 11.5l-1.1 1.1" />
+    </g>
+    <g class="i-dark" fill="currentColor">
+      <path d="M9.6 1.7A6.3 6.3 0 1 0 14.3 9 5 5 0 0 1 9.6 1.7Z" />
+    </g>
+  </svg>
+  <span class="visually-hidden" data-theme-label>System theme</span>
+</button>
+
+<style>
+  .theme-toggle {
+    display: inline-grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    background: none;
+    border: var(--rule-w) solid var(--rule);
+    border-radius: var(--radius);
+    color: var(--fg-muted);
+    cursor: pointer;
+    flex: none;
+    transition:
+      color var(--dur-fast) var(--ease),
+      border-color var(--dur-fast) var(--ease);
+  }
+
+  .theme-toggle:hover {
+    color: var(--fg-strong);
+    border-color: var(--rule-strong);
+  }
+
+  .theme-toggle__icon g {
+    display: none;
+  }
+
+  .theme-toggle[data-state='system'] .i-system,
+  .theme-toggle[data-state='light'] .i-light,
+  .theme-toggle[data-state='dark'] .i-dark {
+    display: block;
+  }
+
+  /* Before the script runs, show the system glyph rather than nothing. */
+  .theme-toggle:not([data-state]) .i-system {
+    display: block;
+  }
+</style>
+
+<script>
+  const CYCLE = ['system', 'light', 'dark'] as const;
+  type State = (typeof CYCLE)[number];
+
+  const read = (): State => {
+    try {
+      const v = localStorage.getItem('theme');
+      return v === 'light' || v === 'dark' ? v : 'system';
+    } catch {
+      return 'system';
+    }
+  };
+
+  const apply = (state: State) => {
+    const root = document.documentElement;
+    if (state === 'system') delete root.dataset.theme;
+    else root.dataset.theme = state;
+
+    for (const button of document.querySelectorAll<HTMLElement>('[data-theme-toggle]')) {
+      button.dataset.state = state;
+      const label = button.querySelector('[data-theme-label]');
+      if (label) label.textContent = `${state === 'system' ? 'System' : state === 'light' ? 'Light' : 'Dark'} theme`;
+    }
+  };
+
+  const store = (state: State) => {
+    try {
+      if (state === 'system') localStorage.removeItem('theme');
+      else localStorage.setItem('theme', state);
+    } catch {
+      /* private mode: the choice simply does not persist */
+    }
+  };
+
+  apply(read());
+
+  for (const button of document.querySelectorAll<HTMLElement>('[data-theme-toggle]')) {
+    button.addEventListener('click', () => {
+      const next = CYCLE[(CYCLE.indexOf(read()) + 1) % CYCLE.length]!;
+      store(next);
+      apply(next);
+    });
+  }
+
+  // Follow the OS while in system mode, without a reload.
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (read() === 'system') apply('system');
+  });
+</script>

@@ -1,0 +1,109 @@
+---
+import Base from '../../layouts/Base.astro';
+import { allPosts, tagCounts } from '../../lib/posts';
+
+const posts = await allPosts();
+const tags = tagCounts(posts);
+const max = tags[0]?.count ?? 1;
+---
+
+<Base
+  title="Subjects"
+  description="Every subject written about here, from agent harnesses and LLM serving to peptides, docking, pose estimation and the classical AI foundations."
+>
+  <div class="wrap page">
+    <header class="page__head">
+      <p class="label">{tags.length} subjects &nbsp;·&nbsp; {posts.length} posts</p>
+      <h1 class="display page__title">Subjects</h1>
+      <p class="lede page__lede">
+        The whole index, heaviest first. The rule beside each one is its share of the archive.
+      </p>
+    </header>
+
+    <ul class="tags">
+      {
+        tags.map((t) => (
+          <li class="tag">
+            <a class="tag__link" href={`/tags/${t.slug}/`}>
+              <span class="tag__name">{t.tag}</span>
+              <span class="tag__bar" aria-hidden="true" style={`--w:${Math.max(6, (t.count / max) * 100)}%`} />
+              <span class="tag__n label tnum">{String(t.count).padStart(2, '0')}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</Base>
+
+<style>
+  .page {
+    padding-block: var(--s-8) var(--s-6);
+  }
+
+  .page__head {
+    max-width: 56ch;
+    margin-bottom: var(--s-7);
+  }
+
+  .page__title {
+    font-size: var(--t-2xl);
+    margin-block: var(--s-3) var(--s-4);
+  }
+
+  .page__lede {
+    max-width: 52ch;
+  }
+
+  .tags {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-width: 52ch;
+    border-top: var(--rule-w) solid var(--rule-strong);
+  }
+
+  .tag {
+    border-bottom: var(--rule-w) solid var(--rule);
+  }
+
+  .tag__link {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--s-2) var(--s-4);
+    padding-block: var(--s-3);
+    text-decoration: none;
+  }
+
+  .tag__name {
+    font-size: var(--t-sm);
+    color: var(--fg);
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  .tag__link:hover .tag__name {
+    color: var(--accent);
+  }
+
+  /* The share bar is a rule, not a chart. It is the same hairline as every
+     other divider on the site, just cut to length. */
+  .tag__bar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    height: 0;
+    border-top: 2px solid var(--rule-strong);
+    width: var(--w);
+    transition: border-color var(--dur-fast) var(--ease);
+  }
+
+  .tag__link:hover .tag__bar {
+    border-color: var(--accent);
+  }
+
+  .tag__n {
+    grid-column: 2;
+    grid-row: 1;
+    color: var(--fg-faint);
+  }
+</style>

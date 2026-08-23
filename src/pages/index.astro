@@ -1,0 +1,407 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import PostEntry from '../components/PostEntry.astro';
+import portrait from '../assets/shamsuddin-ahmed.jpg';
+import { SITE, SOCIAL } from '../consts';
+import { allPosts, groupBySeries } from '../lib/posts';
+
+const posts = await allPosts();
+const recent = posts.slice(0, 6);
+const series = groupBySeries(posts);
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: SITE.name,
+  jobTitle: 'Senior Software Engineer',
+  url: SITE.url,
+  email: `mailto:${SITE.email}`,
+  image: new URL(portrait.src, SITE.url).href,
+  address: { '@type': 'PostalAddress', addressLocality: 'Dhaka', addressCountry: 'BD' },
+  worksFor: { '@type': 'Organization', name: 'Mevrik', url: 'https://mevrik.com' },
+  founder: { '@type': 'Organization', name: 'AlgolyzerLab' },
+  sameAs: SOCIAL.filter((s) => s.href.startsWith('http')).map((s) => s.href),
+  knowsAbout: [
+    'Agent harnesses',
+    'Large language model serving',
+    'Retrieval-augmented generation',
+    'Computational biology',
+    'Computer vision',
+    'Go',
+    'Python',
+  ],
+};
+
+const NOW = [
+  {
+    role: 'Senior Software Engineer',
+    org: 'Mevrik',
+    href: 'https://mevrik.com',
+    when: 'Since Aug 2026',
+    what:
+      'An AI customer-experience platform used by telecom operators and several hundred smaller ' +
+      'businesses. I work on the AI side: agents, retrieval, and the serving infrastructure underneath.',
+  },
+  {
+    role: 'Founder',
+    org: 'AlgolyzerLab',
+    href: null,
+    when: 'Since 2024',
+    what:
+      'A small studio for applied AI that does not fit a product roadmap: sports science for elite ' +
+      'cricket, clinical software for doctors, agriculture AI, and research engineering.',
+  },
+];
+
+const THREADS = [
+  {
+    n: '01',
+    title: 'Agent harnesses',
+    body:
+      'A model is only as useful as the surface you hand it. Most teams give an LLM raw tables and ' +
+      'generated specs instead of the intent-named operations their own code already has.',
+    links: [
+      { label: 'Reins', href: 'https://github.com/shamspias/reins' },
+      { label: 'Veldra', href: 'https://github.com/shamspias/customizable-gpt-chatbot' },
+      { label: 'The series', href: '/series/agent-harness/' },
+    ],
+  },
+  {
+    n: '02',
+    title: 'Machine learning for biology',
+    body:
+      'Anti-inflammatory peptide prediction, and structure-aware virtual screening of natural ' +
+      'products against understudied viral proteases. Both taught the same lesson: the dataset you ' +
+      'choose decides the result long before the model does.',
+    links: [
+      { label: 'DeepNatProtease', href: 'https://github.com/shamspias/DeepNatProtease' },
+      { label: 'The series', href: '/series/machine-learning-for-biology/' },
+    ],
+  },
+  {
+    n: '03',
+    title: 'Systems that stay explainable',
+    body:
+      'Small, readable, zero-magic tools I actually use: perceptual image compression, a terminal ' +
+      'system monitor, actor-model agent swarms. Single binaries, no framework underneath.',
+    links: [
+      { label: 'Fennec', href: 'https://github.com/shamspias/fennec' },
+      { label: 'VoidMon', href: 'https://github.com/shamspias/voidmon' },
+      { label: 'Clawkido', href: 'https://github.com/shamspias/clawkido' },
+    ],
+  },
+];
+---
+
+<Base title={SITE.name} description={SITE.description} schema={schema}>
+  {/* --- masthead ------------------------------------------------------- */}
+  <section class="wrap hero">
+    <div class="hero__body">
+      <p class="label hero__meta">{SITE.role} &nbsp;·&nbsp; {SITE.location}</p>
+      <h1 class="display hero__title">
+        I build the layer between a language model and software that already exists.
+      </h1>
+      <div class="hero__prose stack">
+        <p>
+          Five-plus years on the same stubborn question: how do you take something that works in a
+          notebook and make it survive real users? Mostly that has meant backend systems, production
+          machine learning, and the harness layer in between. Lately a fourth thread has crept in,
+          machine learning for biology, where the datasets are small, the labels are noisy, and being
+          honest about your numbers matters more than beating a leaderboard.
+        </p>
+        <p class="hero__cta">
+          <a href="/writing/">Read the writing</a>
+          <span class="hero__sep" aria-hidden="true"></span>
+          <a href="/cv/">See the CV</a>
+          <span class="hero__sep" aria-hidden="true"></span>
+          <a href="https://github.com/shamspias" rel="me noopener">GitHub</a>
+        </p>
+      </div>
+    </div>
+
+    <figure class="hero__portrait">
+      <Image
+        src={portrait}
+        alt={`${SITE.name}, photographed in Dhaka`}
+        widths={[220, 340, 468]}
+        sizes="(min-width: 64rem) 17rem, (min-width: 46rem) 13rem, 8.5rem"
+        loading="eager"
+        fetchpriority="high"
+      />
+    </figure>
+  </section>
+
+  {/* --- what I'm working on ------------------------------------------- */}
+  <section class="bleed"><div class="wrap section">
+    <h2 class="eyebrow section__head" id="now">Now</h2>
+    <ul class="roles">
+      {
+        NOW.map((r) => (
+          <li class="role">
+            <p class="role__when label tnum">{r.when}</p>
+            <div class="role__body">
+              <h3 class="role__title">
+                {r.role},{' '}
+                {r.href ? (
+                  <a href={r.href} rel="noopener">
+                    {r.org}
+                  </a>
+                ) : (
+                  r.org
+                )}
+              </h3>
+              <p class="role__what">{r.what}</p>
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+  </div></section>
+
+  {/* --- the three threads --------------------------------------------- */}
+  <section class="bleed"><div class="wrap section">
+    <h2 class="eyebrow section__head" id="threads">What I think about</h2>
+    <ol class="threads">
+      {
+        THREADS.map((t) => (
+          <li class="thread">
+            <p class="thread__n label tnum">{t.n}</p>
+            <div class="thread__body">
+              <h3 class="thread__title">{t.title}</h3>
+              <p class="thread__what">{t.body}</p>
+              <p class="thread__links">
+                {t.links.map((l) => (
+                  <a href={l.href} rel={l.href.startsWith('http') ? 'noopener' : undefined}>
+                    {l.label}
+                  </a>
+                ))}
+              </p>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </div></section>
+
+  {/* --- recent writing ------------------------------------------------- */}
+  <section class="bleed"><div class="wrap section">
+    <h2 class="eyebrow section__head" id="recent">Recent writing</h2>
+    <div class="recent">
+      {recent.map((post) => <PostEntry post={post} variant="card" />)}
+    </div>
+    <p class="section__more">
+      <a href="/writing/">All {posts.length} posts</a>
+      <span class="hero__sep" aria-hidden="true"></span>
+      <a href="/series/">{series.length} series</a>
+    </p>
+  </div></section>
+</Base>
+
+<style>
+  /* --- masthead ------------------------------------------------------- */
+
+  .hero {
+    display: grid;
+    gap: var(--s-6);
+    padding-block: var(--s-8) var(--s-9);
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hero__meta {
+    color: var(--fg-faint);
+    margin-bottom: var(--s-4);
+  }
+
+  .hero__title {
+    font-size: var(--t-2xl);
+    max-width: 30ch;
+    margin-bottom: var(--s-5);
+  }
+
+  .hero__prose {
+    --flow: var(--s-4);
+    max-width: 58ch;
+    color: var(--fg-muted);
+  }
+
+  .hero__cta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    font-size: var(--t-sm);
+  }
+
+  .hero__cta a {
+    color: var(--fg-strong);
+    text-decoration-color: var(--accent);
+    text-decoration-thickness: 1px;
+  }
+
+  .hero__cta a:hover {
+    color: var(--accent);
+  }
+
+  /* A hairline rather than a bullet or a slash. Quieter, and it belongs to the
+     same family as every other separator on the site. */
+  .hero__sep {
+    width: var(--s-5);
+    border-top: var(--rule-w) solid var(--rule-strong);
+  }
+
+  .hero__portrait {
+    margin: 0;
+    width: 8.5rem;
+    order: -1;
+  }
+
+  /* The portrait sits inside a frame drawn with two rules, echoing the mark.
+     No shadow, no rounded corner: the photo is an object on paper. */
+  .hero__portrait :global(img) {
+    width: 100%;
+    filter: saturate(0.92) contrast(1.02);
+    border: var(--rule-w) solid var(--rule-strong);
+    border-radius: 2px;
+  }
+
+  @media (min-width: 46rem) {
+    .hero {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: clamp(var(--s-6), 5vw, var(--s-9));
+      align-items: start;
+      padding-block: var(--s-9);
+    }
+
+    .hero__portrait {
+      order: 0;
+      width: 13rem;
+      position: sticky;
+      top: var(--s-6);
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .hero__portrait {
+      width: 17rem;
+    }
+  }
+
+  /* --- sections ------------------------------------------------------- */
+
+  .section {
+    padding-block: var(--s-8);
+  }
+
+  .section__head {
+    margin-bottom: var(--s-6);
+  }
+
+  .section__more {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    margin-top: var(--s-6);
+    font-size: var(--t-sm);
+  }
+
+  .section__more a {
+    color: var(--fg-strong);
+    text-decoration-color: var(--accent);
+  }
+
+  .section__more a:hover {
+    color: var(--accent);
+  }
+
+  /* --- roles and threads share one two-column rhythm ------------------ */
+
+  .roles,
+  .threads {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--s-6);
+  }
+
+  .role,
+  .thread {
+    display: grid;
+    gap: var(--s-2);
+  }
+
+  .role__when,
+  .thread__n {
+    color: var(--fg-faint);
+    padding-top: 0.4em;
+  }
+
+  .thread__n {
+    color: var(--accent);
+  }
+
+  .role__title,
+  .thread__title {
+    font-family: var(--face-display);
+    font-size: var(--t-lg);
+    font-weight: 500;
+    letter-spacing: var(--tr-snug);
+    color: var(--fg-strong);
+    line-height: var(--lh-snug);
+  }
+
+  .role__title a {
+    text-decoration-color: var(--accent);
+  }
+
+  .role__title a:hover {
+    color: var(--accent);
+  }
+
+  .role__what,
+  .thread__what {
+    color: var(--fg-muted);
+    max-width: 62ch;
+    margin-top: var(--s-2);
+    text-wrap: pretty;
+  }
+
+  .thread__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-4);
+    margin-top: var(--s-3);
+    font-size: var(--t-sm);
+  }
+
+  .thread__links a {
+    color: var(--fg-muted);
+    text-decoration-color: var(--rule-strong);
+  }
+
+  .thread__links a:hover {
+    color: var(--accent);
+  }
+
+  @media (min-width: 46rem) {
+    .role,
+    .thread {
+      grid-template-columns: 7.5rem minmax(0, 1fr);
+      column-gap: var(--s-5);
+      align-items: baseline;
+    }
+
+    .roles,
+    .threads {
+      gap: var(--s-7);
+    }
+  }
+
+  /* --- recent --------------------------------------------------------- */
+
+  .recent {
+    border-top: var(--rule-w) solid var(--rule-strong);
+  }
+</style>
