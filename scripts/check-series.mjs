@@ -18,6 +18,10 @@ const files = globSync('src/content/blog/**/*.md').sort();
 const byPermalink = new Map();
 // series -> lang -> [order...]
 const orders = new Map();
+// slug -> Set of the distinct tag strings that produce it
+const tagSlugs = new Map();
+
+const slugify = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
 for (const file of files) {
   const raw = readFileSync(file, 'utf8');
@@ -27,6 +31,18 @@ for (const file of files) {
   const order = Number(fm.match(/^seriesOrder: (\d+)$/m)?.[1] ?? 0);
   const lang = fm.match(/^lang: (\w+)$/m)?.[1] ?? 'en';
   if (permalink) byPermalink.set(`${lang}:${permalink}`, { order, series, lang, file });
+
+  // Tags are keys shared across languages; two spellings that slugify to the
+  // same segment (c and c++, "api design" and "API design") silently collide on
+  // one /tags/<slug>/ page and break the thin-tag/sitemap bookkeeping.
+  const tagBlock = fm.match(/^tags:\n((?: {2}- .*\n?)+)/m)?.[1] ?? '';
+  for (const line of tagBlock.trim().split('\n').filter(Boolean)) {
+    const tag = line.replace(/^\s*-\s*/, '').replace(/^"|"$/g, '');
+    const slug = slugify(tag);
+    if (!tagSlugs.has(slug)) tagSlugs.set(slug, new Set());
+    tagSlugs.get(slug).add(tag);
+  }
+
   if (series) {
     if (!orders.has(series)) orders.set(series, new Map());
     const perLang = orders.get(series);
@@ -79,5 +95,21 @@ for (const file of files) {
   }
 }
 
-console.log(problems === 0 ? `\n${files.length} posts, series numbering consistent.` : `\n${problems} numbering problem(s).`);
+// 3. No two distinct tag spellings may slugify to the same segment.
+for (const [slug, spellings] of tagSlugs) {
+  if (spellings.size > 1) {
+    problems++;
+    console.log(
+      `  tag slug collision: /tags/${slug}/ is produced by ${[...spellings]
+        .map((s) => `"${s}"`)
+        .join(' and ')} — pick one spelling`,
+    );
+  }
+}
+
+console.log(
+  problems === 0
+    ? `\n${files.length} posts, series numbering and tag slugs consistent.`
+    : `\n${problems} problem(s).`,
+);
 process.exit(problems > 0 ? 1 : 0);

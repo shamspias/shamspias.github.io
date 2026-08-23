@@ -8,7 +8,7 @@ tags:
   - "LLM"
   - "tool use"
   - "text-to-SQL"
-  - "API design"
+  - "api design"
   - "AI engineering"
 series: "Agent Harness"
 seriesOrder: 2

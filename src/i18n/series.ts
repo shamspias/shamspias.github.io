@@ -12,6 +12,15 @@ import { DEFAULT_LOCALE, type Locale } from './config';
 type Blurbs = Partial<Record<Locale, string>>;
 
 const SERIES: Record<string, Blurbs> = {
+  'Building Backends': {
+    en:
+      'The plumbing that turns a prototype into a service, written between 2019 and 2023: the ' +
+      'handful of design patterns you actually use, choosing between Django and FastAPI, what a ' +
+      'database transaction really guarantees, when to reach past SQL and when not to, REST APIs ' +
+      'that age well, the real-time spectrum from polling to WebSocket to WebRTC, gRPC between ' +
+      'services, and the small tricks that keep a backend boring. Problems, solutions, and the ' +
+      'reason behind each.',
+  },
   'LLM and Agent Security': {
     en:
       'Security for systems built on language models, where the oldest bug wears a new face: ' +
