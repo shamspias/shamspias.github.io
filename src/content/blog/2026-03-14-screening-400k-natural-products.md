@@ -330,30 +330,7 @@ your model is wrong. The funnel exists because no single stage can carry this lo
 
 ## 7. The funnel
 
-```
-COCONUT, raw download                     ~400,000  ██████████████████████
-  │  parse, standardise, drop invalid and duplicate
-  ▼
-valid, standardised                       ~390,000  █████████████████████
-  │  permissive physicochemistry filter
-  ▼
-plausible physicochemistry                ~180,000  ██████████
-  │  per-virus ML model, keep the top 1 per cent
-  ▼
-ML-prioritised                              ~1,800  ▏
-  │  PAINS and toxicophore filters
-  ▼
-clean chemistry                             ~1,200  ▏
-  │  cap molecules per Murcko scaffold
-  ▼
-diverse shortlist                             ~300  ▏
-  │  docking, keep scores at or below -8.0 kcal/mol
-  ▼
-structurally plausible                         ~60  ▏
-  │  does the pose touch the catalytic residues?
-  ▼
-candidates for the wet lab                     ~20  ▏
-```
+![A funnel from 400,000 catalogued natural products down to 20 candidates, each stage labelled with the filter that produced it, drawn on logarithmic widths](/figures/screening-funnel.svg "Bar widths are logarithmic. On a linear scale every stage after the second one would be invisible. Each filter has to fail differently from the one above it, or the funnel removes nothing it has not already removed.")
 
 Every stage needs a reason to exist, because a funnel whose filters all correlate with each
 other filters nothing.

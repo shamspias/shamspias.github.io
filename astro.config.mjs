@@ -5,13 +5,27 @@ import sitemap from '@astrojs/sitemap';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+
 import {
   rehypeDemoteHeadings,
   rehypeFigures,
   rehypeFocusableScrollers,
   rehypeHeadingAnchors,
+  rehypeInlineFigures,
   rehypeScrollableTables,
 } from './src/plugins/rehype-prose.mjs';
+
+/** Reads a generated figure off disk so it can be inlined into the page. */
+const readFigure = (src) => {
+  try {
+    return readFileSync(path.join(process.cwd(), 'public', src.replace(/^\//, '')), 'utf8');
+  } catch {
+    // A missing figure must fail the build loudly rather than ship a blank plate.
+    throw new Error(`figure not found: ${src} (run \`npm run assets\`)`);
+  }
+};
 
 export default defineConfig({
   site: 'https://shamspias.com',
@@ -105,6 +119,7 @@ export default defineConfig({
         rehypeHeadingAnchors,
         rehypeScrollableTables,
         rehypeFigures,
+        [rehypeInlineFigures, { read: readFigure }],
         rehypeFocusableScrollers,
       ],
     }),

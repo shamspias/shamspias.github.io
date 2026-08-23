@@ -44,6 +44,11 @@ const PAGES = [
   '/posts/2022/06/transformers-attention-made-simple/',
   '/posts/2026/03/screening-400k-natural-products/',
   '/posts/2025/05/dify-ssl-zero-to-green/',
+  // The figure-heavy posts: a chart that shrinks past its floor scrolls inside
+  // its own box, and that box has to stay reachable and stay off the page axis.
+  '/posts/2026/01/joint-angle-accuracy/',
+  '/posts/2026/06/triangulation-and-cameras/',
+  '/posts/2026/08/kinetix-clinical-agent/',
 ];
 
 /** Runs in the page. Reports overflow and the elements responsible. */

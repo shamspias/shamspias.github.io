@@ -237,6 +237,8 @@ point.
 | Length-only stump | random UniProt | ~90% | ~0.80 | length, entirely |
 | **This work** | **IEDB-validated** | **76%** | **0.50** | **activity** |
 
+![Four bars of reported accuracy, two published predictors at 92 and 88 per cent, a length-only decision stump at 90 per cent, and this work at 76 per cent, each labelled with what it actually measures](/figures/honest-negatives.svg "What each number is measuring, printed beside the number. A stump on sequence length reproduces most of the published headline, which is why the 76 per cent is the only bar here that is about anti-inflammatory activity.")
+
 My independent test set, in full:
 
 | Metric | Value |

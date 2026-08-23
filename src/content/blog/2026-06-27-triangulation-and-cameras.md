@@ -264,6 +264,8 @@ rather than the one that produced the pixels, which is precisely the production 
 | 20 cm and 10 deg | 5.37 deg | 6% | 1.05 deg | 100% |
 | 40 cm and 15 deg | 6.46 deg | 3% | 0.05 deg | 100% |
 
+![Two lines against the same set of calibration errors: joint-angle error rising from 0 to 6.46 degrees while the share of frames surviving the quality gate falls from 100 per cent to 3 per cent](/figures/calibration-sensitivity.svg "The two lines have to be read together. At 40 cm of placement error the mean error looks survivable at 6.46 degrees only because the gate has already thrown away 97 per cent of the frames.")
+
 The refined column is not monotonic, 0.85 then 1.05 then 0.05 at the largest displacement, and
 on three repeats of a random draw at each magnitude I would not read an ordering into it. What
 it says is that after refinement every row lands inside about a degree.
@@ -400,6 +402,8 @@ variants solved it (`validation/README.md`, section 4b):
 | Confidence only | 8.72 deg | 49.8 mm | 2.97 px |
 | Depth reweighting only | 8.70 deg | 40.8 mm | 3.18 px |
 | Confidence and depth | 9.63 deg | 60.3 mm | 2.97 px |
+
+![Two lines moving in opposite directions across four triangulation variants: reprojection error falling from 3.21 to 2.97 pixels while reconstruction error rises from 40.5 to 60.3 millimetres](/figures/dlt-weighting-ablation.svg "Confidence weighting improves the residual the solver can see and moves the reconstruction further from the truth. The pixels are what the optimiser is scoring. The millimetres are where the athlete is.")
 
 Confidence weighting made the reconstruction 23% worse in millimetres while making its own
 reprojection error look better. The reason is a property of the confidence number rather than of

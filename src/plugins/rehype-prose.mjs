@@ -154,11 +154,73 @@ export function rehypeFocusableScrollers() {
       const isPre = node.tagName === 'pre';
       const isMath =
         node.tagName === 'span' && node.properties?.className?.includes?.('katex-display');
-      if (!isPre && !isMath) return;
+      const isFigure =
+        node.tagName === 'div' && node.properties?.className?.includes?.('figure-svg');
+      if (!isPre && !isMath && !isFigure) return;
       node.properties = node.properties ?? {};
       node.properties.tabindex = '0';
-      node.properties.role = 'region';
-      node.properties['aria-label'] = isMath ? 'Equation' : 'Code block';
+      // An inlined figure already carries role="img" and its alt text as the
+      // accessible name; overwriting either would lose the description.
+      if (!isFigure) {
+        node.properties.role = 'region';
+        node.properties['aria-label'] = isMath ? 'Equation' : 'Code block';
+      }
+    });
+  };
+}
+
+/**
+ * Inlines a local SVG figure into the document instead of leaving it in an
+ * <img src>.
+ *
+ * This is what makes the charts theme-aware. An <img> is an opaque document: it
+ * cannot see `currentColor`, cannot read `--accent`, and cannot respond to the
+ * site's own light/dark toggle, only to the OS preference. The alternative was
+ * an invert() filter over the whole plate, which flipped the one red to cyan.
+ * Inlining the markup at build time means every stroke and label resolves
+ * against the page's own tokens, in both themes and through the toggle, at no
+ * runtime cost.
+ *
+ * Takes a resolver so the plugin stays free of filesystem concerns.
+ */
+export function rehypeInlineFigures({ read } = {}) {
+  if (typeof read !== 'function') throw new Error('rehypeInlineFigures needs a read(src) function');
+
+  return (tree) => {
+    walk(tree, null, (node, parent) => {
+      if (node.type !== 'element' || node.tagName !== 'img' || !parent) return;
+      const src = node.properties?.src;
+      if (typeof src !== 'string' || !src.startsWith('/figures/') || !src.endsWith('.svg')) return;
+
+      const markup = read(src);
+      if (!markup) return;
+
+      const idx = parent.children.indexOf(node);
+      if (idx === -1) return;
+
+      // The alt text becomes the accessible name of the inlined graphic, so it
+      // is not lost when the <img> goes away.
+      const alt = typeof node.properties.alt === 'string' ? node.properties.alt : '';
+
+      // A chart that shrinks to the width of a phone stops being readable: its
+      // labels are set in absolute units inside the viewBox, so scaling the
+      // figure scales the type with it. Below a floor the figure scrolls
+      // instead of shrinking. The floor is the figure's own width, capped, so a
+      // narrow diagram is never blown up to meet it.
+      const natural = Number(markup.match(/\swidth="(\d+(?:\.\d+)?)"/)?.[1] ?? 0);
+      const floor = natural ? Math.min(Math.round(natural), 620) : 0;
+
+      parent.children[idx] = {
+        type: 'element',
+        tagName: 'div',
+        properties: {
+          className: ['figure-svg'],
+          role: 'img',
+          'aria-label': alt,
+          style: floor ? `--fig-floor:${floor}px` : undefined,
+        },
+        children: [{ type: 'raw', value: markup }],
+      };
     });
   };
 }

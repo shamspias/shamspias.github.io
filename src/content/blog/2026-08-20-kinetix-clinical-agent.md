@@ -172,6 +172,8 @@ same checks the REST route would have hit.
 Three scoping rules ride along for free, and they are worth spelling out because they are the
 ones a coach would actually worry about.
 
+![Five stacked layers from the HTTP request down to the audit log: CurrentUser, the permission gate over 60 tools, the confirm gate over 29 mutating tools, the real service, and an append-only audit trail](/figures/kinetix-authority.svg "The same chain with the counts on it. Nothing in the picture grants the agent anything. It carries the caller's own authority into the run, and every one of the 29 mutating tools stops for a human before it writes.")
+
 **Tenant scoping.** Every repository call takes `cu.OrganizationID`. One club cannot read
 another's athletes through the assistant for the same reason it cannot through the API: the
 organisation id is not a parameter the model can supply.

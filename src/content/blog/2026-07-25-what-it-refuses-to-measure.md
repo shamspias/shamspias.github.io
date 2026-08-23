@@ -150,6 +150,8 @@ only error source in the table (validation README, section 4b):
 | 0.15 to 0.30 | 0.6% | 28.18° |
 | below 0.15 | 0.4% | 122.38° |
 
+![Horizontal bars of shoulder-flexion error by sagittal-projection ratio, from 4.69 degrees when the limb is fully visible to 122.38 degrees when it is almost edge on, with the ten-degree clinical threshold marked](/figures/flexion-observability.svg "How much of the limb the camera can see, against the error that follows. The ratio is computed before any angle is reported, so the refusal sits in front of the measurement rather than in a footnote after it.")
+
 Two things in that table are worth staring at. The error at the bottom is not degraded, it is
 meaningless: 122 degrees of mean absolute error on a joint whose full clinical range is about
 180 degrees is a random number generator with a units label. And the ladder is not monotonic,

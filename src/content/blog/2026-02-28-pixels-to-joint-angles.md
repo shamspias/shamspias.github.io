@@ -404,6 +404,8 @@ minimum 10 labelled keypoints.
 | Hip flexion | 6.60° | −0.25° | 83 / 100 |
 | Knee flexion | 7.31° | −0.78° | 83 / 100 |
 | Elbow flexion | 10.49° | −0.28° | 77 / 100 |
+
+![A lollipop chart of mean absolute error for four joint angles, shoulder at 5.11 degrees rising to elbow at 10.49 degrees, with a bias column showing every value within a degree of zero](/figures/detector-cost-in-degrees.svg "Pixel error converted into the unit a clinician actually reads. Angles from human annotations against angles from the detector, same image and same box, COCO val2017. Bias stays under a degree in every joint, so the detector is noisy rather than skewed.")
 | Mean | 7.38° | | 83 / 100 |
 
 Overall, 58.3% of readings within 5 degrees, 82.7% within 10, 91.1% within 15.

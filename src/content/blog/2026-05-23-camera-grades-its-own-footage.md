@@ -235,29 +235,7 @@ table: the same shape, flattened by the estimator's own 14.47° error.
 
 It came out sharper.
 
-```
-  Monocular joint-angle MAE, the same readings banded two ways.
-  T = banded by TRUE obliquity   E = banded by the ESTIMATE
-  one block = 1°
-
-  0-15  T █████████████ 12.79°
-        E ████████ 7.69°
-
-  15-30 T ████████████ 11.99°
-        E ███████████ 11.13°
-
-  30-45 T ████████████████ 16.32°
-        E ██████████████ 14.18°
-
-  45-60 T █████████████████████ 20.70°
-        E █████████████████████ 20.72°
-
-  60-75 T ██████████████████████████ 26.33°
-        E ██████████████████████████ 26.11°
-
-  75-90 T ███████████████████████████████████ 34.63°
-        E ███████████████████████████ 26.70°
-```
+![Paired horizontal bars for six obliquity bands, each band showing the error when banded by true obliquity and by the system's own estimate; the estimate separates the best band at 7.69 degrees against 12.79 for the truth](/figures/obliquity-banding.svg "The same monocular readings, banded by true obliquity and by the system's own estimate of it. The estimate separates good frames from bad ones more sharply than the truth does, which is the result I went looking for a bug over.")
 
 With the within-tolerance scores and the frame counts, from `validation/README.md` §3b:
 

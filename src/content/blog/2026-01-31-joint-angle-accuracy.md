@@ -175,6 +175,8 @@ system's own validation summary reports them:
 | Monocular, single camera | 31 / 100 | 52 / 100 | 64 / 100 |
 | Monocular, frames read as within 30 degrees of side-on | 52 / 100 | 74 / 100 | 83 / 100 |
 
+![Grouped horizontal bars comparing six capture configurations by the share of joint-angle readings within 5, 10 and 15 degrees of the ground truth, from multi-view calibrated with athlete markers at the top to a single camera at the bottom](/figures/scorecard-configurations.svg "The same table as a picture. Every row is the same code on the same clips; what changes is how much the camera and the calibration are told. The last row is the fifth one again, scored only on the frames the system itself flags as well captured.")
+
 Three of those rows deserve a sentence each.
 
 **"Athlete marked"** means the operator tapped the athlete once, on one frame, to say which

@@ -54,6 +54,8 @@ questions that a model, on its own, cannot:
 | Should a human see this first? | **The approval gate** | A refund runs at 3 a.m., unwatched |
 | What just happened? | **The audit trail** | "The AI did something" is your incident report |
 
+![Five stacked layers a tool call passes through: capability surface, meaning, policy, approval and audit, with the approval layer marked default-deny](/figures/harness-layers.svg "The same five questions in the order a call meets them. The first two describe what the agent can do. The last three decide whether it may, and those are the three nobody hands you.")
+
 Only the first two are about *capability*. The other three are about *restraint*. A harness is
 mostly restraint, and restraint is the part people leave for later, which is to say, never.
 

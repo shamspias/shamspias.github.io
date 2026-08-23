@@ -363,6 +363,8 @@ And the same thing as a table you can reason about when choosing:
 | Autocorrelation | 96 | property periodicity | identity | dense |
 | Physicochemical | 20 | charge, hydropathy, isoelectric point | everything local | dense |
 
+![Horizontal bars of the dimension count for each descriptor block, CKSAAP at 1,600 dominating a total of about 2,282 columns](/figures/descriptor-dimensions.svg "Where the width comes from. CKSAAP alone is more than half the hand-crafted vector, and the whole thing is fitted on a few thousand labelled peptides, which is why regularisation ends up doing most of the generalising.")
+
 Do not hand-roll all nine of these for production. I wrote the code above so the mechanism is
 legible, not because you should retype it. `iFeatureOmega`, `propy3`, `protlearn` and `peptides`
 all cover most of this zoo and have been tested against the original papers, which your Sunday
