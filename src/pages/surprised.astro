@@ -3,242 +3,112 @@ import Base from '../layouts/Base.astro';
 import { ID, abs, breadcrumb, graph, itemList, person, website } from '../lib/seo';
 
 /**
- * A hidden little arcade. Two dozen self-contained games, each one an idea from
- * logic, physics, or maths made pokeable. Every game lives in src/scripts and
- * mounts into its card on demand; this file is the shell and the copy.
+ * The Surprised arcade: a searchable, paginated gallery of self-contained games
+ * that each teach one idea, from primary-school logic to how a neural network
+ * actually learns. Every game lives in src/scripts/surprised.js and mounts into
+ * its card on demand; this file is the shell, the copy, and the gallery UI.
  *
- * It is the one page on the site that ships client JavaScript, because a game
- * you cannot play is not a game. It is published in English only: the games are
- * interactive, not prose, so there is nothing to translate but the labels.
+ * It is the one page that ships client JavaScript, because a game you cannot
+ * play is not a game. Published in English only: the games are interactive, not
+ * prose, so there is nothing to translate but the chrome.
  */
 
-type Game = {
-  id: string;
-  title: string;
-  tag: string;
-  learn: string;
-  how: string;
-};
+type Cat = 'ml' | 'arch' | 'logic' | 'maths' | 'physics' | 'mind';
+type Game = { id: string; title: string; cat: Cat; tag: string; learn: string; how: string };
 
-type Group = { key: string; title: string; blurb: string; games: Game[] };
-
-const GROUPS: Group[] = [
-  {
-    key: 'logic',
-    title: 'Logic and strategy',
-    blurb: 'Puzzles with a right answer hiding in plain sight, and one game a computer has solved completely.',
-    games: [
-      {
-        id: 'lights-out',
-        title: 'Lights Out',
-        tag: 'Parity',
-        learn: 'Every light is wired to its neighbours, so turning them all off is really a puzzle about even and odd.',
-        how: 'Tap a light to flip it and its four neighbours. Get the whole board dark.',
-      },
-      {
-        id: 'hanoi',
-        title: 'Tower of Hanoi',
-        tag: 'Recursion',
-        learn: 'Moving a tall stack is the same problem one disc smaller, done twice. That is recursion you can watch.',
-        how: 'Tap a peg to lift its top disc, tap another to set it down. Never rest a big disc on a smaller one.',
-      },
-      {
-        id: 'fifteen',
-        title: 'Fifteen Puzzle',
-        tag: 'Planning',
-        learn: 'Fifteen tiles and one gap. Order has to be built move by move, each of which looks like a step backward.',
-        how: 'Click a tile next to the gap to slide it in. Arrange the numbers 1 to 15.',
-      },
-      {
-        id: 'nim',
-        title: 'Nim',
-        tag: 'Game theory',
-        learn: 'A fully solved game. The winner is fixed in advance by the exclusive-or of the piles, not by luck.',
-        how: 'Take any number of stones from one pile. Take the very last stone to win. The computer plays perfectly.',
-      },
-      {
-        id: 'mastermind',
-        title: 'Mastermind',
-        tag: 'Deduction',
-        learn: 'Each guess is an experiment, and the feedback shrinks a space of over a thousand codes toward one.',
-        how: 'Guess the four hidden colours. A dark key means right colour and place; a pale key means right colour, wrong place.',
-      },
-      {
-        id: 'logic-gates',
-        title: 'Logic Gates',
-        tag: 'Boolean logic',
-        learn: 'AND, OR, XOR. The whole of digital logic is a handful of these little truth machines wired together.',
-        how: 'Flip the input switches or swap the gate until the bulb matches the goal.',
-      },
-    ],
-  },
-  {
-    key: 'physics',
-    title: 'Physics you can poke',
-    blurb: 'Little sandboxes running the real equations: gravity, torque, oscillation, and elastic collisions.',
-    games: [
-      {
-        id: 'projectile',
-        title: 'The Cannon',
-        tag: 'Projectiles',
-        learn: 'Gravity pulls down at the same rate whatever the sideways speed, and that is exactly what bends the path into a parabola.',
-        how: 'Set the angle and the power, then fire to land on the target.',
-      },
-      {
-        id: 'orbit',
-        title: 'Orbits',
-        tag: 'Gravity',
-        learn: 'An orbit is just falling forever and always missing. Too slow and you crash in; too fast and you escape.',
-        how: 'Drag anywhere and release to fling a planet past the star. Find the speed that makes it loop.',
-      },
-      {
-        id: 'pendulum',
-        title: 'Pendulums',
-        tag: 'Oscillation',
-        learn: 'A pendulum keeps time by its length alone. The weight of the bob never enters the period; longer just means slower.',
-        how: 'Set two different lengths, pull them back, and watch one beat slower than the other.',
-      },
-      {
-        id: 'incline',
-        title: 'The Ramp',
-        tag: 'Acceleration',
-        learn: 'On a slope the useful part of gravity is g times the sine of the angle. Steeper means a bigger push down the ramp.',
-        how: 'Change the ramp angle and drop the ball. The acceleration reads out as you go.',
-      },
-      {
-        id: 'bounce',
-        title: 'Bounce Box',
-        tag: 'Collisions',
-        learn: 'When two equal balls hit, they swap the speed along the line between them. Energy sloshes around and barely leaks away.',
-        how: 'Drag to fling a ball. Add a few more and watch them knock each other about.',
-      },
-      {
-        id: 'balance',
-        title: 'Balance Beam',
-        tag: 'Torque',
-        learn: 'What tips a lever is not weight but weight times distance from the pivot. That product is torque.',
-        how: 'Click to the left or right of the pivot to drop a weight. Make the two sides balance.',
-      },
-    ],
-  },
-  {
-    key: 'maths',
-    title: 'Numbers and shapes',
-    blurb: 'Arithmetic, primes, fractions, lines, and angles, each turned into something with a score.',
-    games: [
-      {
-        id: 'primes',
-        title: 'Prime Sieve',
-        tag: 'Number theory',
-        learn: 'Cross out every multiple and the primes are simply whatever is left standing. The trick is 2000 years old.',
-        how: 'Click a number to strike out its multiples. Keep going until only the primes survive.',
-      },
-      {
-        id: 'times-table',
-        title: 'Times Lightning',
-        tag: 'Mental maths',
-        learn: 'Instant recall of the multiplication table is a muscle. Here are thirty seconds of reps for it.',
-        how: 'Pick the right product before the clock runs down. A wrong tap costs you two seconds.',
-      },
-      {
-        id: 'fractions',
-        title: 'Fraction Match',
-        tag: 'Fractions',
-        learn: 'A fraction is a slice of a whole, and many different fractions name the very same slice.',
-        how: 'Read the shaded pie and pick the fraction that matches, reduced to lowest terms.',
-      },
-      {
-        id: 'guess-line',
-        title: 'Line of Best Fit',
-        tag: 'Algebra',
-        learn: 'A straight line is a slope and a height. Threading one through a cloud of points is what regression does.',
-        how: 'Tune the slope and the intercept to fit the dots, chasing the lowest error you can.',
-      },
-      {
-        id: 'estimate',
-        title: 'Dot Estimator',
-        tag: 'Number sense',
-        learn: 'You can feel roughly how many things are there without counting them. That sense sharpens with practice.',
-        how: 'The dots flash for a moment. Guess how many there were, then check.',
-      },
-      {
-        id: 'pattern',
-        title: 'Next in Line',
-        tag: 'Sequences',
-        learn: 'Add, multiply, square, or Fibonacci. Spotting the rule behind a run of numbers is the heart of the thing.',
-        how: 'Work out the rule and choose the number that comes next.',
-      },
-      {
-        id: 'angle',
-        title: 'Angle Aim',
-        tag: 'Geometry',
-        learn: 'Degrees measure turning. Ninety is a right angle, and every target sits at one exact angle from the corner.',
-        how: 'Point the arrow at the dot and read the angle off the protractor.',
-      },
-    ],
-  },
-  {
-    key: 'mind',
-    title: 'Mind and senses',
-    blurb: 'Memory, reflex, and attention, measured on you.',
-    games: [
-      {
-        id: 'simon',
-        title: 'Simon',
-        tag: 'Working memory',
-        learn: 'Holding a growing sequence in your head is working memory, stretched one extra step every round.',
-        how: 'Watch the pads light up in order, then repeat the pattern back. It grows by one each time.',
-      },
-      {
-        id: 'memory-match',
-        title: 'Memory Match',
-        tag: 'Recall',
-        learn: 'Where was that pair? Memory for places improves surprisingly fast with a little play.',
-        how: 'Flip two cards. If they match they stay face up. Clear the board in as few moves as you can.',
-      },
-      {
-        id: 'reaction',
-        title: 'Reaction Time',
-        tag: 'Reflex',
-        learn: 'From a flash of light to your click is about a fifth of a second. Here you can measure your own.',
-        how: 'Wait for green, then click as fast as you can. Clicking too early sends you back.',
-      },
-      {
-        id: 'stroop',
-        title: 'Stroop Test',
-        tag: 'Attention',
-        learn: 'Reading is so automatic that naming the ink of a colour word fights the word itself. That clash is the Stroop effect.',
-        how: 'Click the colour of the ink, not the word it spells. Thirty seconds on the clock.',
-      },
-      {
-        id: 'binary',
-        title: 'Binary Blocks',
-        tag: 'Number systems',
-        learn: 'Every whole number is a sum of powers of two, which is all a computer ever counts in. Eight switches reach 255.',
-        how: 'Flip the switches so their place values add up to the target number.',
-      },
-    ],
-  },
+const CATEGORIES: { key: Cat; label: string; blurb: string }[] = [
+  { key: 'ml', label: 'Machine Learning', blurb: 'The ideas behind how machines learn, made small enough to play with: a line that fits itself, a neuron, a network that solves what one line cannot.' },
+  { key: 'arch', label: 'AI Architectures', blurb: 'What is really inside a modern AI model: softmax, attention, a tiny language model, state-space memory, embeddings, and a builder to feel how parameters explode.' },
+  { key: 'logic', label: 'Logic & Puzzles', blurb: 'Puzzles with a right answer hiding in plain sight, from river crossings to Sudoku, and one game a computer has solved completely.' },
+  { key: 'maths', label: 'Maths', blurb: 'Numbers, primes, fractions, slopes, areas, vectors, and matrices, each turned into something with a score, including the calculus that training runs on.' },
+  { key: 'physics', label: 'Physics', blurb: 'Little sandboxes running the real equations: gravity, torque, oscillation, springs, and elastic collisions.' },
+  { key: 'mind', label: 'Mind & Senses', blurb: 'Memory, reflex, and attention, measured on you.' },
 ];
 
-const ALL = GROUPS.flatMap((g) => g.games);
-const COUNT = ALL.length;
+const GAMES: Game[] = [
+  // --- Machine Learning ---
+  { id: 'gradient-descent', cat: 'ml', title: 'Rolling Downhill', tag: 'Gradient descent', learn: 'Training a model is just rolling a ball downhill on its error. The slope says which way to go; the learning rate says how big a step to take. Too big and it flies out of the valley.', how: 'Drop the ball and press Auto-roll. If it diverges, lower the learning rate.' },
+  { id: 'classify', cat: 'ml', title: 'Draw the Boundary', tag: 'Classification', learn: 'A classifier draws a line between two kinds of thing. Everything on one side is an apple, the other an orange. That line is the whole model.', how: 'Move the line with the sliders, or press Let it learn to watch it place itself.' },
+  { id: 'perceptron', cat: 'ml', title: 'One Neuron', tag: 'The neuron', learn: 'A neuron adds its inputs times their weights and fires if the total clears zero. That is the atom of every neural network, and it can learn simple gates on its own.', how: 'Tune the weights so the neuron matches the target gate, or press Train.' },
+  { id: 'neural-net', cat: 'ml', title: 'Learn XOR', tag: 'Backpropagation', learn: 'One neuron can only draw a straight line, so it cannot solve XOR. Add a hidden layer and it can bend space until a boundary fits. Backpropagation is how it finds the bends.', how: 'Press Train and watch the colours carve the board until each corner is right.' },
+  { id: 'activation', cat: 'ml', title: 'Activation Curves', tag: 'Activations', learn: 'Between layers each neuron passes its total through a curve that decides how much to fire. Without that bend, stacking layers just gives you one big straight line.', how: 'Pick a function and slide the input to see its shape.' },
+  { id: 'kmeans', cat: 'ml', title: 'Find the Groups', tag: 'Clustering', learn: 'With no labels at all a machine can still find groups: guess some centres, colour each point by its nearest, slide the centres to the middle, and repeat until nothing moves.', how: 'Choose how many groups, then press Step until it settles.' },
+  { id: 'knn', cat: 'ml', title: 'Ask the Neighbours', tag: 'Nearest neighbours', learn: 'The simplest classifier there is: to label a new point, just ask its closest neighbours to vote. More neighbours means a smoother, calmer boundary.', how: 'Drag the grey point around and change how many neighbours vote.' },
+  { id: 'overfit', cat: 'ml', title: 'Too Clever', tag: 'Overfitting', learn: 'A model too simple misses the pattern; one too complex memorises the noise and fails on anything new. Good learning is the honest middle, and you can watch it happen.', how: 'Slide the complexity and compare the fit on the dots against unseen points.' },
+
+  // --- AI Architectures ---
+  { id: 'softmax', cat: 'arch', title: 'Scores to Choices', tag: 'Softmax', learn: 'Softmax turns a row of raw scores into probabilities that add to one. Temperature decides whether the top choice dominates or the whole field stays in play. Every model ends this way.', how: 'Move the scores and the temperature and watch the bars respond.' },
+  { id: 'attention', cat: 'arch', title: 'Who Looks at Whom', tag: 'Attention', learn: 'Attention lets each word look at all the others and pull in the ones that matter. It is how a model works out that "it" means the tiger, not the deer.', how: 'Click any word to make it the question and see what it attends to.' },
+  { id: 'next-token', cat: 'arch', title: 'Guess the Next Word', tag: 'Language models', learn: 'A language model does exactly one thing: guess the next word from the words so far. String those guesses together and it writes. This one learned from a few nursery rhymes.', how: "Pick from the model's suggestions to build a sentence one word at a time." },
+  { id: 'state-space', cat: 'arch', title: 'The Running Memory', tag: 'State space / Mamba', learn: 'Rather than re-read every word like attention, a state-space model like Mamba keeps one running summary and updates it as each word arrives. Memory decides how far back it remembers.', how: 'Press Play and change the memory to see how long an early signal survives.' },
+  { id: 'model-builder', cat: 'arch', title: 'Build a Model', tag: 'Scaling laws', learn: 'Stack layers and widen them and the parameter count explodes. More parameters can do more, but cost far more to train and run. This is why big models are big deals.', how: 'Add and widen layers, watch the counter, and see what the model might manage.' },
+  { id: 'embeddings', cat: 'arch', title: 'A Map of Meaning', tag: 'Embeddings', learn: 'Words become points in space, arranged so similar meanings sit close. You can even do arithmetic with them: king minus man plus woman lands right on queen.', how: 'Tap a word to see its neighbours, then try the famous analogy.' },
+
+  // --- Logic & Puzzles ---
+  { id: 'lights-out', cat: 'logic', title: 'Lights Out', tag: 'Parity', learn: 'Every light is wired to its neighbours, so turning them all off is really a puzzle about even and odd.', how: 'Tap a light to flip it and its four neighbours. Get the whole board dark.' },
+  { id: 'hanoi', cat: 'logic', title: 'Tower of Hanoi', tag: 'Recursion', learn: 'Moving a tall stack is the same problem one disc smaller, done twice. That is recursion you can watch.', how: 'Tap a peg to lift its top disc, tap another to set it down. Never rest a big disc on a smaller one.' },
+  { id: 'fifteen', cat: 'logic', title: 'Fifteen Puzzle', tag: 'Planning', learn: 'Fifteen tiles and one gap. Order has to be built move by move, each of which looks like a step backward.', how: 'Click a tile next to the gap to slide it in. Arrange the numbers 1 to 15.' },
+  { id: 'nim', cat: 'logic', title: 'Nim', tag: 'Game theory', learn: 'A fully solved game. The winner is fixed in advance by the exclusive-or of the piles, not by luck.', how: 'Take any number of stones from one pile. Take the very last stone to win. The computer plays perfectly.' },
+  { id: 'mastermind', cat: 'logic', title: 'Mastermind', tag: 'Deduction', learn: 'Each guess is an experiment, and the feedback shrinks a space of over a thousand codes toward one.', how: 'Guess the four hidden colours. A dark key means right colour and place; a pale key means right colour, wrong place.' },
+  { id: 'logic-gates', cat: 'logic', title: 'Logic Gates', tag: 'Boolean logic', learn: 'AND, OR, XOR. The whole of digital logic is a handful of these little truth machines wired together.', how: 'Flip the input switches or swap the gate until the bulb matches the goal.' },
+  { id: 'river-crossing', cat: 'logic', title: 'Wolf, Goat, Cabbage', tag: 'Search', learn: 'A classic planning puzzle. Some states are traps, and the only way through is to sometimes carry things backward.', how: 'Row items across, but never leave wolf with goat, or goat with cabbage, unwatched.' },
+  { id: 'missionaries', cat: 'logic', title: 'Missionaries & Cannibals', tag: 'Constraints', learn: 'Every move must keep a rule true on both banks at once. That is constraint satisfaction, the idea behind scheduling and Sudoku.', how: 'Load one or two into the boat and cross, never letting cannibals outnumber missionaries.' },
+  { id: 'water-jugs', cat: 'logic', title: 'Water Jugs', tag: 'State search', learn: 'With a 5 and a 3 litre jug you can measure a 4. The reachable amounts are exactly the multiples of the two sizes’ greatest common divisor.', how: 'Fill, empty, and pour between the jugs until one holds four litres.' },
+  { id: 'sokoban', cat: 'logic', title: 'Sokoban', tag: 'Planning', learn: 'You can push a box but never pull it, so one careless shove into a corner can doom the level. Real planning means thinking before you move.', how: 'Push every box onto a dot, using the arrows.' },
+  { id: 'sudoku4', cat: 'logic', title: 'Mini Sudoku', tag: 'Constraints', learn: 'A tiny Sudoku. Each row, column, and box must hold every digit once, and each filled cell rules out choices for the rest.', how: 'Click a cell to cycle its number until the whole grid obeys the rules.' },
+
+  // --- Maths ---
+  { id: 'primes', cat: 'maths', title: 'Prime Sieve', tag: 'Number theory', learn: 'Cross out every multiple and the primes are simply whatever is left standing. The trick is 2000 years old.', how: 'Click a number to strike out its multiples. Keep going until only the primes survive.' },
+  { id: 'times-table', cat: 'maths', title: 'Times Lightning', tag: 'Mental maths', learn: 'Instant recall of the multiplication table is a muscle. Here are thirty seconds of reps for it.', how: 'Pick the right product before the clock runs down. A wrong tap costs you two seconds.' },
+  { id: 'fractions', cat: 'maths', title: 'Fraction Match', tag: 'Fractions', learn: 'A fraction is a slice of a whole, and many different fractions name the very same slice.', how: 'Read the shaded pie and pick the fraction that matches, reduced to lowest terms.' },
+  { id: 'guess-line', cat: 'maths', title: 'Line of Best Fit', tag: 'Algebra', learn: 'A straight line is a slope and a height. Threading one through a cloud of points is what regression does.', how: 'Tune the slope and the intercept to fit the dots, chasing the lowest error.' },
+  { id: 'estimate', cat: 'maths', title: 'Dot Estimator', tag: 'Number sense', learn: 'You can feel roughly how many things are there without counting them. That sense sharpens with practice.', how: 'The dots flash for a moment. Guess how many there were, then check.' },
+  { id: 'pattern', cat: 'maths', title: 'Next in Line', tag: 'Sequences', learn: 'Add, multiply, square, or Fibonacci. Spotting the rule behind a run of numbers is the heart of the thing.', how: 'Work out the rule and choose the number that comes next.' },
+  { id: 'angle', cat: 'maths', title: 'Angle Aim', tag: 'Geometry', learn: 'Degrees measure turning. Ninety is a right angle, and every target sits at one exact angle from the corner.', how: 'Point the arrow at the dot and read the angle off the protractor.' },
+  { id: 'derivative', cat: 'maths', title: 'The Slope', tag: 'Calculus', learn: 'The derivative is the slope of a curve at a single point. Where the slope is zero you are at a peak or a valley, which is exactly where training stops.', how: 'Slide the point along the curve and read the slope of the pink tangent.' },
+  { id: 'integral', cat: 'maths', title: 'Area Under the Curve', tag: 'Calculus', learn: 'The area under a curve is a sum of many thin rectangles. Add more and the estimate homes in on the true value. That is integration.', how: 'Add rectangles and watch the estimate approach the real area.' },
+  { id: 'vectors', cat: 'maths', title: 'Dot Product', tag: 'Linear algebra', learn: 'A dot product measures how much two arrows point the same way: positive when aligned, zero at a right angle. It is the core of attention and of embeddings.', how: 'Drag the two arrows and watch the dot product and the angle.' },
+  { id: 'matrix', cat: 'maths', title: 'Bend the Grid', tag: 'Linear algebra', learn: 'A 2 by 2 matrix bends the whole plane: rotate, stretch, shear, flip. Its determinant is how much area grows. Every neural layer is a matrix like this.', how: 'Change the four numbers, or try a preset, and watch the square transform.' },
+
+  // --- Physics ---
+  { id: 'projectile', cat: 'physics', title: 'The Cannon', tag: 'Projectiles', learn: 'Gravity pulls down at the same rate whatever the sideways speed, and that is exactly what bends the path into a parabola.', how: 'Set the angle and the power, then fire to land on the target.' },
+  { id: 'orbit', cat: 'physics', title: 'Orbits', tag: 'Gravity', learn: 'An orbit is just falling forever and always missing. Too slow and you crash in; too fast and you escape.', how: 'Drag anywhere and release to fling a planet past the star. Find the speed that loops.' },
+  { id: 'pendulum', cat: 'physics', title: 'Pendulums', tag: 'Oscillation', learn: 'A pendulum keeps time by its length alone. The weight of the bob never enters the period; longer just means slower.', how: 'Set two lengths, pull them back, and watch one beat slower than the other.' },
+  { id: 'incline', cat: 'physics', title: 'The Ramp', tag: 'Acceleration', learn: 'On a slope the useful part of gravity is g times the sine of the angle. Steeper means a bigger push down the ramp.', how: 'Change the ramp angle and drop the ball. The acceleration reads out as you go.' },
+  { id: 'bounce', cat: 'physics', title: 'Bounce Box', tag: 'Collisions', learn: 'When two equal balls hit, they swap the speed along the line between them. Energy sloshes around and barely leaks away.', how: 'Drag to fling a ball. Add a few more and watch them knock each other about.' },
+  { id: 'balance', cat: 'physics', title: 'Balance Beam', tag: 'Torque', learn: 'What tips a lever is not weight but weight times distance from the pivot. That product is torque.', how: 'Click to the left or right of the pivot to drop a weight. Make the two sides balance.' },
+  { id: 'spring', cat: 'physics', title: 'The Spring', tag: 'Oscillation', learn: 'A spring pulls back in proportion to how far you stretch it. Let go and it swings at a rhythm set by its stiffness and the mass, never by how far you pulled.', how: 'Drag the block aside and release. Change the stiffness.' },
+  { id: 'collide', cat: 'physics', title: 'Cart Collisions', tag: 'Momentum', learn: 'In an elastic collision total momentum is exactly preserved. A heavy cart barely flinches when a light one hits it; two equal carts swap speeds.', how: 'Set the masses and launch. Watch the momentum readout stay fixed.' },
+
+  // --- Mind & Senses ---
+  { id: 'simon', cat: 'mind', title: 'Simon', tag: 'Working memory', learn: 'Holding a growing sequence in your head is working memory, stretched one extra step every round.', how: 'Watch the pads light up in order, then repeat the pattern back. It grows by one each time.' },
+  { id: 'memory-match', cat: 'mind', title: 'Memory Match', tag: 'Recall', learn: 'Where was that pair? Memory for places improves surprisingly fast with a little play.', how: 'Flip two cards. If they match they stay. Clear the board in as few moves as you can.' },
+  { id: 'reaction', cat: 'mind', title: 'Reaction Time', tag: 'Reflex', learn: 'From a flash of light to your click is about a fifth of a second. Here you can measure your own.', how: 'Wait for green, then click as fast as you can. Clicking too early sends you back.' },
+  { id: 'stroop', cat: 'mind', title: 'Stroop Test', tag: 'Attention', learn: 'Reading is so automatic that naming the ink of a colour word fights the word itself. That clash is the Stroop effect.', how: 'Click the colour of the ink, not the word it spells. Thirty seconds on the clock.' },
+  { id: 'binary', cat: 'mind', title: 'Binary Blocks', tag: 'Number systems', learn: 'Every whole number is a sum of powers of two, which is all a computer ever counts in. Eight switches reach 255.', how: 'Flip the switches so their place values add up to the target number.' },
+];
+
+const COUNT = GAMES.length;
+const catLabel = (k: Cat) => CATEGORIES.find((c) => c.key === k)!.label;
+const searchStr = (g: Game) => `${g.title} ${g.tag} ${catLabel(g.cat)} ${g.learn} ${g.how}`.toLowerCase();
 
 const DESCRIPTION =
-  'Two dozen tiny browser games that each teach one idea, from logic and gravity to primes, ' +
-  'fractions, and reaction time. Free, no install, played right on the page.';
+  'Dozens of tiny browser games that each teach one idea, from logic and physics to how a neural ' +
+  'network learns and attention works. Free, no install.';
 
 const KEYWORDS = [
+  'machine learning games',
+  'learn machine learning',
+  'neural network game',
+  'gradient descent',
+  'attention mechanism',
+  'transformer explained',
   'educational games',
-  'learning games',
   'physics games',
   'math games',
   'logic puzzles',
-  'brain games',
-  'browser games',
+  'learn AI for kids',
   'interactive learning',
-  'game theory',
-  'learn by playing',
 ] as const;
 
 const url = abs('/surprised/');
@@ -268,10 +138,10 @@ const surprisedSchema = graph(
   ]),
   itemList(
     url,
-    ALL.map((g) => ({ name: g.title, url: `/surprised/#game-${g.id}` })),
+    GAMES.map((g) => ({ name: g.title, url: `/surprised/#game-${g.id}` })),
     {
       itemListOrder: 'https://schema.org/ItemListOrderAscending',
-      itemListElement: ALL.map((g, i) => ({
+      itemListElement: GAMES.map((g, i) => ({
         '@type': 'ListItem',
         position: i + 1,
         item: {
@@ -281,6 +151,7 @@ const surprisedSchema = graph(
           url: `${url}#game-${g.id}`,
           author: { '@id': ID.person },
           genre: g.tag,
+          about: catLabel(g.cat),
         },
       })),
     },
@@ -300,53 +171,82 @@ const surprisedSchema = graph(
       <p class="label">A surprise arcade &nbsp;·&nbsp; {COUNT} little games</p>
       <h1 class="display page__title">Surprised</h1>
       <p class="lede page__lede">
-        You found the arcade. Two dozen tiny games, each one smuggling in a single idea from
-        <em>logic</em>, <em>physics</em>, or <em>maths</em>. Nothing to install, nothing to sign up
-        for. They run right here, on this page, and most take under a minute to get.
+        You found the arcade. Dozens of tiny games, each one smuggling in a single idea and made simple
+        enough that an eight-year-old can feel it by playing. Start with fractions and pendulums; end up
+        watching a <em>neural network</em> teach itself, or poking at how <em>attention</em> and a
+        <em>language model</em> really work. Search, filter, play.
       </p>
-      <nav class="arcade-jump" aria-label="Jump to a category">
-        {GROUPS.map((g) => <a href={`#${g.key}`} class="arcade-chip">{g.title}</a>)}
-      </nav>
-      <p class="arcade-noscript">These games need JavaScript. If nothing appears in the tiles below, it is switched off.</p>
     </header>
 
-    {
-      GROUPS.map((g, gi) => (
-        <section class="arcade-group" id={g.key} data-group={g.key}>
-          <div class="arcade-group__head">
-            <h2 class="eyebrow arcade-group__title">
-              <span class="arcade-group__n tnum">{String(gi + 1).padStart(2, '0')}</span>
-              {g.title}
-            </h2>
-            <p class="arcade-group__blurb">{g.blurb}</p>
-          </div>
-          <div class="arcade-grid">
-            {g.games.map((game) => (
-              <article class="gamecard game" id={`game-${game.id}`} data-game={game.id}>
-                <div class="gamecard__bar">
-                  <h3 class="gamecard__title">{game.title}</h3>
-                  <span class="gamecard__tag">{game.tag}</span>
-                </div>
-                <div class="gamecard__stage" data-stage>
-                  <p class="gamecard__placeholder">Loading…</p>
-                </div>
-                <p class="gamecard__how">{game.how}</p>
-                <details class="gamecard__learn">
-                  <summary>What it teaches</summary>
-                  <p>{game.learn}</p>
-                </details>
-              </article>
-            ))}
-          </div>
-        </section>
-      ))
-    }
+    <div class="arcade-controls" role="search">
+      <div class="arcade-search-wrap">
+        <svg class="arcade-search-icon" viewBox="0 0 20 20" aria-hidden="true" width="18" height="18">
+          <circle cx="9" cy="9" r="6" fill="none" stroke="currentColor" stroke-width="2"></circle>
+          <line x1="13.5" y1="13.5" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
+        </svg>
+        <input
+          id="arcade-search"
+          class="arcade-search"
+          type="search"
+          placeholder="Search games, ideas, subjects..."
+          aria-label="Search games"
+          autocomplete="off"
+        />
+      </div>
+      <div class="arcade-chips" role="tablist" aria-label="Filter by subject">
+        <button type="button" class="arcade-chip" data-cat="all" data-label="All games" aria-pressed="true">All</button>
+        {CATEGORIES.map((c) => (
+          <button type="button" class="arcade-chip" data-cat={c.key} data-label={c.label} aria-pressed="false">
+            {c.label}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <div class="arcade-bar">
+      <h2 class="eyebrow arcade-section" id="arcade-heading">All games</h2>
+      <span class="arcade-count tnum" id="arcade-count">{COUNT} games</span>
+    </div>
+
+    <div class="arcade-grid" id="arcade-grid">
+      {
+        GAMES.map((game) => (
+          <article
+            class="gamecard game"
+            id={`game-${game.id}`}
+            data-game={game.id}
+            data-cat={game.cat}
+            data-search={searchStr(game)}
+          >
+            <div class="gamecard__bar">
+              <h3 class="gamecard__title">{game.title}</h3>
+              <span class="gamecard__tag">{game.tag}</span>
+            </div>
+            <div class="gamecard__stage" data-stage>
+              <p class="gamecard__placeholder">Loading…</p>
+            </div>
+            <p class="gamecard__how">{game.how}</p>
+            <details class="gamecard__learn">
+              <summary>What it teaches</summary>
+              <p>{game.learn}</p>
+            </details>
+            <span class="gamecard__cat">{catLabel(game.cat)}</span>
+          </article>
+        ))
+      }
+    </div>
+
+    <p class="arcade-empty" id="arcade-empty" hidden>
+      No game matches that. Try another word, or press <strong>All</strong>.
+    </p>
+
+    <nav class="arcade-pager" id="arcade-pager" aria-label="Pages"></nav>
 
     <footer class="arcade-foot">
       <p>
-        Every game here is a few dozen lines of plain JavaScript, no libraries, drawn with the same
-        care as the rest of the site. If one breaks on your browser, that is a bug worth an email.
-        Otherwise, go on, one more round.
+        Every game here is a few dozen lines of plain JavaScript, no libraries, drawn with the same care
+        as the rest of the site. Only twelve show at a time, so it stays light; search or filter to find
+        the rest. If one breaks on your browser, that is a bug worth an email.
       </p>
     </footer>
   </div>
@@ -357,68 +257,90 @@ const surprisedSchema = graph(
 
   <style>
     /* --- page shell -------------------------------------------------------- */
-    .arcade-hero {
-      max-width: var(--measure);
+    .arcade-hero { max-width: var(--measure); }
+
+    .arcade-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s-3) var(--s-4);
+      align-items: center;
+      margin-top: var(--s-7);
+      padding-bottom: var(--s-4);
     }
-    .arcade-jump {
+    .arcade-search-wrap {
+      position: relative;
+      flex: 1 1 16rem;
+      min-width: 12rem;
+      display: flex;
+      align-items: center;
+    }
+    .arcade-search-icon {
+      position: absolute;
+      inset-inline-start: 0.7rem;
+      color: var(--fg-faint);
+      pointer-events: none;
+    }
+    .arcade-search {
+      width: 100%;
+      font: inherit;
+      font-size: var(--t-sm);
+      color: var(--fg);
+      background: var(--bg-sunken);
+      border: var(--rule-w) solid var(--rule);
+      border-radius: 999px;
+      padding: 0.6em 0.9em 0.6em 2.4em;
+      transition: border-color var(--dur-fast) var(--ease);
+    }
+    .arcade-search:focus-visible {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .arcade-chips {
       display: flex;
       flex-wrap: wrap;
       gap: var(--s-2);
-      margin-top: var(--s-5);
     }
     .arcade-chip {
-      display: inline-block;
-      padding: 0.35em 0.8em;
-      border: var(--rule-w) solid var(--rule-strong);
-      border-radius: 999px;
+      font: inherit;
       font-size: var(--t-xs);
       font-family: var(--face-mono);
       letter-spacing: var(--tr-wide);
       text-transform: uppercase;
+      cursor: pointer;
       color: var(--fg-muted);
-      text-decoration: none;
+      background: transparent;
+      border: var(--rule-w) solid var(--rule-strong);
+      border-radius: 999px;
+      padding: 0.4em 0.8em;
       transition:
         color var(--dur-fast) var(--ease),
         border-color var(--dur-fast) var(--ease),
         background var(--dur-fast) var(--ease);
     }
-    .arcade-chip:hover {
-      color: var(--accent);
+    .arcade-chip:hover { color: var(--accent); border-color: var(--accent); }
+    .arcade-chip[aria-pressed='true'] {
+      color: #fff;
+      background: var(--accent);
       border-color: var(--accent);
-      background: var(--accent-wash);
-    }
-    .arcade-noscript {
-      margin-top: var(--s-4);
-      font-size: var(--t-sm);
-      color: var(--fg-faint);
     }
 
-    .arcade-group {
-      margin-top: var(--s-9);
-      scroll-margin-top: var(--s-6);
-    }
-    .arcade-group__head {
-      max-width: var(--measure);
-      margin-bottom: var(--s-5);
-    }
-    .arcade-group__title {
+    .arcade-bar {
       display: flex;
       align-items: baseline;
+      justify-content: space-between;
       gap: var(--s-3);
+      border-top: var(--rule-w) solid var(--rule);
+      padding-top: var(--s-4);
+      margin-bottom: var(--s-5);
     }
-    .arcade-group__n {
-      color: var(--accent);
-    }
-    .arcade-group__blurb {
-      margin-top: var(--s-2);
-      color: var(--fg-muted);
-      font-size: var(--t-sm);
-    }
+    .arcade-section { margin: 0; }
+    .arcade-count { color: var(--fg-faint); font-size: var(--t-xs); font-family: var(--face-mono); }
 
     .arcade-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
       gap: var(--s-5);
+      scroll-margin-top: var(--s-5);
     }
 
     .gamecard {
@@ -439,6 +361,7 @@ const surprisedSchema = graph(
       box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.35);
       transform: translateY(-2px);
     }
+    .gamecard.is-hidden { display: none; }
     .gamecard__bar {
       display: flex;
       align-items: center;
@@ -483,10 +406,7 @@ const surprisedSchema = graph(
       color: var(--fg-muted);
       line-height: var(--lh-snug);
     }
-    .gamecard__learn {
-      margin-top: var(--s-2);
-      font-size: var(--t-sm);
-    }
+    .gamecard__learn { margin-top: var(--s-2); font-size: var(--t-sm); }
     .gamecard__learn summary {
       cursor: pointer;
       color: var(--fg-faint);
@@ -495,14 +415,46 @@ const surprisedSchema = graph(
       text-transform: uppercase;
       letter-spacing: var(--tr-wide);
     }
-    .gamecard__learn summary:hover {
-      color: var(--accent);
+    .gamecard__learn summary:hover { color: var(--accent); }
+    .gamecard__learn p { margin: var(--s-2) 0 0; color: var(--fg-muted); line-height: var(--lh-body); }
+    .gamecard__cat {
+      margin-top: var(--s-3);
+      align-self: flex-start;
+      font-size: var(--t-2xs);
+      color: var(--fg-faint);
+      font-family: var(--face-mono);
+      letter-spacing: var(--tr-wide);
+      text-transform: uppercase;
     }
-    .gamecard__learn p {
-      margin: var(--s-2) 0 0;
+
+    .arcade-empty {
+      margin-top: var(--s-6);
       color: var(--fg-muted);
-      line-height: var(--lh-body);
+      font-size: var(--t-sm);
     }
+    .arcade-pager {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: var(--s-2);
+      margin-top: var(--s-7);
+    }
+    .arcade-page {
+      font: inherit;
+      font-size: var(--t-sm);
+      font-family: var(--face-mono);
+      min-width: 2.4em;
+      cursor: pointer;
+      color: var(--fg-muted);
+      background: var(--bg);
+      border: var(--rule-w) solid var(--rule-strong);
+      border-radius: 8px;
+      padding: 0.4em 0.7em;
+      transition: border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+    }
+    .arcade-page:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    .arcade-page.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .arcade-page:disabled { opacity: 0.4; cursor: default; }
 
     .arcade-foot {
       margin-top: var(--s-9);
@@ -514,529 +466,197 @@ const surprisedSchema = graph(
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .gamecard {
-        transition: none;
-      }
-      .gamecard:hover {
-        transform: none;
-      }
+      .gamecard { transition: none; }
+      .gamecard:hover { transform: none; }
     }
   </style>
 
   <style is:global>
     /* --- game internals (built by src/scripts/surprised.js) ---------------- *
        Every selector is anchored under .surprised so nothing leaks onto the
-       rest of the site. The game code creates these nodes at runtime, so they
-       cannot be reached by Astro's scoped styles above. */
+       rest of the site. */
 
-    .surprised {
-      --g-cell: var(--bg-sunken);
-      --g-win: #15803d;
-    }
+    .surprised { --g-win: #15803d; }
     .surprised .g-btn {
-      font: inherit;
-      font-size: var(--t-sm);
-      cursor: pointer;
-      border: var(--rule-w) solid var(--rule-strong);
-      background: var(--bg);
-      color: var(--fg);
-      border-radius: 999px;
-      padding: 0.4em 0.9em;
-      line-height: 1;
-      transition:
-        background var(--dur-fast) var(--ease),
-        border-color var(--dur-fast) var(--ease),
-        color var(--dur-fast) var(--ease);
+      font: inherit; font-size: var(--t-sm); cursor: pointer;
+      border: var(--rule-w) solid var(--rule-strong); background: var(--bg); color: var(--fg);
+      border-radius: 999px; padding: 0.4em 0.9em; line-height: 1;
+      transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
     }
-    .surprised .g-btn:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-    .surprised .g-btn.on {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
-    }
-    .surprised .g-bar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--s-2);
-      align-items: center;
-    }
-    .surprised .g-note {
-      margin: 0;
-      font-size: var(--t-sm);
-      color: var(--fg-muted);
-      line-height: var(--lh-snug);
-      min-height: 2.4em;
-    }
-    .surprised .g-note.win {
-      color: var(--g-win);
-      font-weight: 600;
-    }
-    .surprised .g-canvas {
-      position: relative;
-      width: 100%;
-      background: var(--bg-sunken);
-      border-radius: 12px;
-      overflow: hidden;
-      touch-action: none;
-    }
-    .surprised .g-canvas canvas {
-      display: block;
-    }
+    .surprised .g-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .surprised .g-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .surprised .g-btn.g-mini { font-size: var(--t-2xs); padding: 0.3em 0.6em; }
+    .surprised .g-bar { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; }
+    .surprised .g-note { margin: 0; font-size: var(--t-sm); color: var(--fg-muted); line-height: var(--lh-snug); min-height: 2.4em; }
+    .surprised .g-note.win { color: var(--g-win); font-weight: 600; }
+    .surprised .g-canvas { position: relative; width: 100%; background: var(--bg-sunken); border-radius: 12px; overflow: hidden; touch-action: none; }
+    .surprised .g-canvas canvas { display: block; }
 
-    /* boards (lights out, fifteen, memory) */
-    .surprised .g-board {
-      display: grid;
-      grid-template-columns: repeat(var(--n), 1fr);
-      gap: 6px;
-    }
-    .surprised .g-lite {
-      aspect-ratio: 1;
-      border: none;
-      border-radius: 10px;
-      background: var(--bg-sunken);
-      box-shadow: inset 0 0 0 1px var(--rule);
-      cursor: pointer;
-      transition:
-        background var(--dur-fast) var(--ease),
-        box-shadow var(--dur-fast) var(--ease);
-    }
-    .surprised .g-lite.on {
-      background: radial-gradient(circle at 50% 35%, #ffe58a, #ffb020);
-      box-shadow:
-        inset 0 0 0 1px #f59e0b,
-        0 0 14px -2px #ffb020;
-    }
-    .surprised .g-tile {
-      aspect-ratio: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: var(--face-mono);
-      font-size: var(--t-lg);
-      font-weight: 600;
-      border: none;
-      border-radius: 10px;
-      background: var(--accent-wash);
-      color: var(--accent);
-      cursor: pointer;
-    }
-    .surprised .g-tile.home {
-      background: #dcfce7;
-      color: #15803d;
-    }
-    .surprised .g-tile.blank {
-      background: transparent;
-    }
-    .surprised .g-card {
-      aspect-ratio: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: var(--t-xl);
-      border: var(--rule-w) solid var(--rule);
-      border-radius: 10px;
-      background: var(--bg-sunken);
-      color: var(--fg-faint);
-      cursor: pointer;
-    }
-    .surprised .g-card.up {
-      background: var(--bg);
-      border-color: var(--accent);
-    }
-    .surprised .g-card.done {
-      background: #dcfce7;
-      border-color: #86efac;
-    }
+    /* boards */
+    .surprised .g-board { display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 6px; }
+    .surprised .g-lite { aspect-ratio: 1; border: none; border-radius: 10px; background: var(--bg-sunken); box-shadow: inset 0 0 0 1px var(--rule); cursor: pointer; transition: background var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease); }
+    .surprised .g-lite.on { background: radial-gradient(circle at 50% 35%, #ffe58a, #ffb020); box-shadow: inset 0 0 0 1px #f59e0b, 0 0 14px -2px #ffb020; }
+    .surprised .g-tile { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-family: var(--face-mono); font-size: var(--t-lg); font-weight: 600; border: none; border-radius: 10px; background: var(--accent-wash); color: var(--accent); cursor: pointer; }
+    .surprised .g-tile.home { background: #dcfce7; color: #15803d; }
+    .surprised .g-tile.blank { background: transparent; }
+    .surprised .g-card { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: var(--t-xl); border: var(--rule-w) solid var(--rule); border-radius: 10px; background: var(--bg-sunken); color: var(--fg-faint); cursor: pointer; }
+    .surprised .g-card.up { background: var(--bg); border-color: var(--accent); }
+    .surprised .g-card.done { background: #dcfce7; border-color: #86efac; }
 
     /* hanoi */
-    .surprised .g-hanoi {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: var(--s-3);
-      align-items: end;
-      min-height: 170px;
-    }
-    .surprised .g-peg {
-      position: relative;
-      display: flex;
-      flex-direction: column-reverse;
-      align-items: center;
-      gap: 4px;
-      min-height: 160px;
-      padding-bottom: 6px;
-      border: none;
-      background: none;
-      border-bottom: 4px solid var(--rule-strong);
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .surprised .g-peg.sel {
-      background: var(--accent-wash);
-      border-radius: 8px 8px 4px 4px;
-    }
-    .surprised .g-rod {
-      position: absolute;
-      bottom: 6px;
-      width: 4px;
-      height: 150px;
-      background: var(--rule-strong);
-      border-radius: 2px;
-      z-index: 0;
-    }
-    .surprised .g-disc {
-      position: relative;
-      z-index: 1;
-      height: 15px;
-      border-radius: 8px;
-      box-shadow: inset 0 -3px 6px -3px rgba(0, 0, 0, 0.4);
-    }
+    .surprised .g-hanoi { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-3); align-items: end; min-height: 170px; }
+    .surprised .g-peg { position: relative; display: flex; flex-direction: column-reverse; align-items: center; gap: 4px; min-height: 160px; padding-bottom: 6px; border: none; background: none; border-bottom: 4px solid var(--rule-strong); border-radius: 4px; cursor: pointer; }
+    .surprised .g-peg.sel { background: var(--accent-wash); border-radius: 8px 8px 4px 4px; }
+    .surprised .g-rod { position: absolute; bottom: 6px; width: 4px; height: 150px; background: var(--rule-strong); border-radius: 2px; z-index: 0; }
+    .surprised .g-disc { position: relative; z-index: 1; height: 15px; border-radius: 8px; box-shadow: inset 0 -3px 6px -3px rgba(0, 0, 0, 0.4); }
 
     /* nim */
-    .surprised .g-nim {
-      display: flex;
-      flex-direction: column;
-      gap: var(--s-3);
-    }
-    .surprised .g-nim-row {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-    .surprised .g-bead {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      border: none;
-      cursor: pointer;
-      box-shadow: inset 0 -4px 6px -3px rgba(0, 0, 0, 0.45);
-      transition: transform var(--dur-fast) var(--ease);
-    }
-    .surprised .g-bead:hover:not(:disabled) {
-      transform: scale(1.12);
-    }
-    .surprised .g-bead:disabled {
-      cursor: default;
-      opacity: 0.9;
-    }
+    .surprised .g-nim { display: flex; flex-direction: column; gap: var(--s-3); }
+    .surprised .g-nim-row { display: flex; gap: 6px; flex-wrap: wrap; }
+    .surprised .g-bead { width: 26px; height: 26px; border-radius: 50%; border: none; cursor: pointer; box-shadow: inset 0 -4px 6px -3px rgba(0, 0, 0, 0.45); transition: transform var(--dur-fast) var(--ease); }
+    .surprised .g-bead:hover:not(:disabled) { transform: scale(1.12); }
+    .surprised .g-bead:disabled { cursor: default; opacity: 0.9; }
 
     /* mastermind */
-    .surprised .g-mm {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .surprised .g-mm-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .surprised .g-mm-row.active {
-      background: var(--accent-wash);
-      border-radius: 999px;
-      padding: 3px 6px;
-      margin: -3px -6px;
-    }
-    .surprised .g-mm-peg {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      border: 2px solid var(--rule-strong);
-      background: var(--bg-sunken);
-      cursor: pointer;
-      padding: 0;
-    }
-    .surprised .g-mm-fb {
-      display: grid;
-      grid-template-columns: repeat(2, 8px);
-      gap: 3px;
-      margin-left: auto;
-    }
-    .surprised .g-key {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-    }
-    .surprised .g-key.black {
-      background: var(--fg);
-    }
-    .surprised .g-key.white {
-      background: none;
-      box-shadow: inset 0 0 0 1.5px var(--fg-faint);
-    }
-    .surprised .g-mm-pal,
-    .surprised .g-mm-secret {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-    .surprised .g-swatch {
-      width: 28px;
-      height: 28px;
-      border-radius: 8px;
-      border: 2px solid rgba(0, 0, 0, 0.12);
-      cursor: pointer;
-      padding: 0;
-    }
+    .surprised .g-mm { display: flex; flex-direction: column; gap: 6px; }
+    .surprised .g-mm-row { display: flex; align-items: center; gap: 6px; }
+    .surprised .g-mm-row.active { background: var(--accent-wash); border-radius: 999px; padding: 3px 6px; margin: -3px -6px; }
+    .surprised .g-mm-peg { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--rule-strong); background: var(--bg-sunken); cursor: pointer; padding: 0; }
+    .surprised .g-mm-fb { display: grid; grid-template-columns: repeat(2, 8px); gap: 3px; margin-left: auto; }
+    .surprised .g-key { width: 8px; height: 8px; border-radius: 50%; }
+    .surprised .g-key.black { background: var(--fg); }
+    .surprised .g-key.white { background: none; box-shadow: inset 0 0 0 1.5px var(--fg-faint); }
+    .surprised .g-mm-pal, .surprised .g-mm-secret { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .surprised .g-swatch { width: 28px; height: 28px; border-radius: 8px; border: 2px solid rgba(0, 0, 0, 0.12); cursor: pointer; padding: 0; }
 
     /* logic gates */
-    .surprised .g-gate {
-      display: flex;
-      align-items: center;
-      justify-content: space-around;
-      gap: var(--s-3);
-      background: var(--bg-sunken);
-      border-radius: 12px;
-      padding: var(--s-4) var(--s-3);
-      min-height: 96px;
-    }
-    .surprised .g-gate-io {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .surprised .g-switch {
-      font-family: var(--face-mono);
-      font-size: var(--t-xs);
-      border: var(--rule-w) solid var(--rule-strong);
-      background: var(--bg);
-      color: var(--fg-muted);
-      border-radius: 8px;
-      padding: 0.3em 0.5em;
-      cursor: pointer;
-    }
-    .surprised .g-switch.on {
-      background: var(--accent);
-      color: #fff;
-      border-color: var(--accent);
-    }
-    .surprised .g-gate-box {
-      font-family: var(--face-mono);
-      font-weight: 700;
-      font-size: var(--t-md);
-      border: 2px solid var(--fg);
-      border-radius: 10px;
-      padding: 0.5em 0.7em;
-      color: var(--fg);
-    }
-    .surprised .g-bulb {
-      width: 46px;
-      height: 46px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: var(--face-mono);
-      font-weight: 700;
-      background: var(--bg-sunken);
-      box-shadow: inset 0 0 0 2px var(--rule-strong);
-      color: var(--fg-faint);
-    }
-    .surprised .g-bulb.lit {
-      background: radial-gradient(circle at 50% 35%, #ffe58a, #ffb020);
-      box-shadow:
-        inset 0 0 0 2px #f59e0b,
-        0 0 18px -2px #ffb020;
-      color: #7a4a00;
-    }
+    .surprised .g-gate { display: flex; align-items: center; justify-content: space-around; gap: var(--s-3); background: var(--bg-sunken); border-radius: 12px; padding: var(--s-4) var(--s-3); min-height: 96px; }
+    .surprised .g-gate-io { display: flex; flex-direction: column; gap: 6px; }
+    .surprised .g-switch { font-family: var(--face-mono); font-size: var(--t-xs); border: var(--rule-w) solid var(--rule-strong); background: var(--bg); color: var(--fg-muted); border-radius: 8px; padding: 0.3em 0.5em; cursor: pointer; }
+    .surprised .g-switch.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .surprised .g-gate-box { font-family: var(--face-mono); font-weight: 700; font-size: var(--t-md); border: 2px solid var(--fg); border-radius: 10px; padding: 0.5em 0.7em; color: var(--fg); }
+    .surprised .g-bulb { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--face-mono); font-weight: 700; background: var(--bg-sunken); box-shadow: inset 0 0 0 2px var(--rule-strong); color: var(--fg-faint); }
+    .surprised .g-bulb.lit { background: radial-gradient(circle at 50% 35%, #ffe58a, #ffb020); box-shadow: inset 0 0 0 2px #f59e0b, 0 0 18px -2px #ffb020; color: #7a4a00; }
 
     /* sliders */
-    .surprised .g-slider {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      align-items: center;
-      gap: var(--s-3);
-      font-size: var(--t-sm);
-    }
-    .surprised .g-slider-label {
-      color: var(--fg-muted);
-    }
-    .surprised .g-slider-val {
-      color: var(--accent);
-      font-family: var(--face-mono);
-      min-width: 3ch;
-      text-align: right;
-    }
-    .surprised .g-range {
-      width: 100%;
-      accent-color: var(--accent);
-    }
+    .surprised .g-slider { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--s-3); font-size: var(--t-sm); }
+    .surprised .g-slider-label { color: var(--fg-muted); }
+    .surprised .g-slider-val { color: var(--accent); font-family: var(--face-mono); min-width: 3ch; text-align: right; }
+    .surprised .g-range { width: 100%; accent-color: var(--accent); }
 
     /* sieve */
-    .surprised .g-sieve {
-      display: grid;
-      grid-template-columns: repeat(10, 1fr);
-      gap: 3px;
-    }
-    .surprised .g-num {
-      aspect-ratio: 1;
-      font-family: var(--face-mono);
-      font-size: var(--t-2xs);
-      border: none;
-      border-radius: 5px;
-      background: var(--accent-wash);
-      color: var(--accent);
-      cursor: pointer;
-      padding: 0;
-    }
-    .surprised .g-num.out {
-      background: var(--bg-sunken);
-      color: var(--fg-faint);
-      text-decoration: line-through;
-    }
+    .surprised .g-sieve { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; }
+    .surprised .g-num { aspect-ratio: 1; font-family: var(--face-mono); font-size: var(--t-2xs); border: none; border-radius: 5px; background: var(--accent-wash); color: var(--accent); cursor: pointer; padding: 0; }
+    .surprised .g-num.out { background: var(--bg-sunken); color: var(--fg-faint); text-decoration: line-through; }
 
-    /* quiz layouts (times table, fractions, pattern, estimate, stroop) */
-    .surprised .g-quiz-q {
-      font-family: var(--face-mono);
-      font-size: var(--t-2xl);
-      font-weight: 700;
-      text-align: center;
-      letter-spacing: 0.04em;
-      color: var(--fg-strong);
-    }
-    .surprised .g-quiz-opts {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: var(--s-2);
-    }
-    .surprised .g-quiz-opt {
-      font-family: var(--face-mono);
-      font-size: var(--t-md);
-      padding: 0.6em;
-      border: var(--rule-w) solid var(--rule-strong);
-      border-radius: 10px;
-      background: var(--bg);
-      color: var(--fg);
-      cursor: pointer;
-      transition:
-        border-color var(--dur-fast) var(--ease),
-        background var(--dur-fast) var(--ease);
-    }
-    .surprised .g-quiz-opt:hover {
-      border-color: var(--accent);
-      background: var(--accent-wash);
-    }
+    /* quiz layouts */
+    .surprised .g-quiz-q { font-family: var(--face-mono); font-size: var(--t-2xl); font-weight: 700; text-align: center; letter-spacing: 0.04em; color: var(--fg-strong); }
+    .surprised .g-quiz-opts { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s-2); }
+    .surprised .g-quiz-opt { font-family: var(--face-mono); font-size: var(--t-md); padding: 0.6em; border: var(--rule-w) solid var(--rule-strong); border-radius: 10px; background: var(--bg); color: var(--fg); cursor: pointer; transition: border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease); }
+    .surprised .g-quiz-opt:hover { border-color: var(--accent); background: var(--accent-wash); }
 
     /* simon */
-    .surprised .g-simon-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-      max-width: 260px;
-      margin: 0 auto;
-    }
-    .surprised .g-simon {
-      aspect-ratio: 1;
-      border: none;
-      border-radius: 14px;
-      cursor: pointer;
-      opacity: 0.55;
-      transition:
-        opacity 90ms var(--ease),
-        transform 90ms var(--ease);
-    }
-    .surprised .g-simon:hover {
-      opacity: 0.8;
-    }
-    .surprised .g-simon.flash {
-      opacity: 1;
-      transform: scale(0.96);
-      box-shadow: 0 0 22px -4px currentColor;
-    }
+    .surprised .g-simon-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; max-width: 260px; margin: 0 auto; }
+    .surprised .g-simon { aspect-ratio: 1; border: none; border-radius: 14px; cursor: pointer; opacity: 0.55; transition: opacity 90ms var(--ease), transform 90ms var(--ease); }
+    .surprised .g-simon:hover { opacity: 0.8; }
+    .surprised .g-simon.flash { opacity: 1; transform: scale(0.96); box-shadow: 0 0 22px -4px currentColor; }
 
     /* reaction */
-    .surprised .g-react {
-      width: 100%;
-      min-height: 150px;
-      border: none;
-      border-radius: 12px;
-      font-family: var(--face-mono);
-      font-size: var(--t-md);
-      font-weight: 600;
-      color: #fff;
-      cursor: pointer;
-    }
-    .surprised .g-react.idle,
-    .surprised .g-react.result {
-      background: #4b5563;
-    }
-    .surprised .g-react.wait {
-      background: #b91c1c;
-    }
-    .surprised .g-react.go {
-      background: #16a34a;
-    }
-    .surprised .g-react.early {
-      background: #b45309;
-    }
+    .surprised .g-react { width: 100%; min-height: 150px; border: none; border-radius: 12px; font-family: var(--face-mono); font-size: var(--t-md); font-weight: 600; color: #fff; cursor: pointer; }
+    .surprised .g-react.idle, .surprised .g-react.result { background: #4b5563; }
+    .surprised .g-react.wait { background: #b91c1c; }
+    .surprised .g-react.go { background: #16a34a; }
+    .surprised .g-react.early { background: #b45309; }
 
     /* stroop */
-    .surprised .g-stroop-word {
-      font-family: var(--face-display);
-      font-weight: 800;
-      font-size: var(--t-3xl);
-      text-align: center;
-      letter-spacing: 0.03em;
-      min-height: 1.4em;
-    }
+    .surprised .g-stroop-word { font-family: var(--face-display); font-weight: 800; font-size: var(--t-3xl); text-align: center; letter-spacing: 0.03em; min-height: 1.4em; }
 
     /* binary */
-    .surprised .g-binary {
-      display: grid;
-      grid-template-columns: repeat(8, 1fr);
-      gap: 4px;
-    }
-    .surprised .g-bit-col {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
-    }
-    .surprised .g-bit {
-      width: 100%;
-      aspect-ratio: 0.8;
-      border: none;
-      border-radius: 8px;
-      font-family: var(--face-mono);
-      font-weight: 700;
-      background: var(--bg-sunken);
-      color: var(--fg-faint);
-      cursor: pointer;
-      box-shadow: inset 0 0 0 1px var(--rule);
-    }
-    .surprised .g-bit.on {
-      background: var(--accent);
-      color: #fff;
-      box-shadow: none;
-    }
-    .surprised .g-bit-place {
-      font-family: var(--face-mono);
-      font-size: 0.6rem;
-      color: var(--fg-faint);
-    }
+    .surprised .g-binary { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+    .surprised .g-bit-col { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .surprised .g-bit { width: 100%; aspect-ratio: 0.8; border: none; border-radius: 8px; font-family: var(--face-mono); font-weight: 700; background: var(--bg-sunken); color: var(--fg-faint); cursor: pointer; box-shadow: inset 0 0 0 1px var(--rule); }
+    .surprised .g-bit.on { background: var(--accent); color: #fff; box-shadow: none; }
+    .surprised .g-bit-place { font-family: var(--face-mono); font-size: 0.6rem; color: var(--fg-faint); }
 
+    /* perceptron truth table */
+    .surprised .g-ptable { display: flex; flex-direction: column; gap: 4px; }
+    .surprised .g-prow { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; padding: 5px 8px; border-radius: 8px; font-family: var(--face-mono); font-size: var(--t-xs); }
+    .surprised .g-prow.ok { background: rgba(34, 197, 94, 0.14); }
+    .surprised .g-prow.bad { background: var(--accent-wash); }
+    .surprised .g-pmono { font-family: var(--face-mono); }
+
+    /* bar charts (softmax, next-token) */
+    .surprised .g-bars { display: flex; flex-direction: column; gap: 6px; }
+    .surprised .g-bar-row { display: grid; grid-template-columns: 4.5em 1fr 3em; align-items: center; gap: 8px; }
+    .surprised .g-bar-btn { font: inherit; text-align: left; cursor: pointer; border: none; background: none; color: var(--fg); padding: 3px; border-radius: 8px; }
+    .surprised .g-bar-btn:hover { background: var(--bg-sunken); }
+    .surprised .g-bar-tag { font-family: var(--face-mono); font-size: var(--t-xs); color: var(--fg-muted); overflow: hidden; text-overflow: ellipsis; }
+    .surprised .g-bar-track { height: 16px; background: var(--bg-sunken); border-radius: 999px; overflow: hidden; }
+    .surprised .g-bar-fill { height: 100%; border-radius: 999px; transition: width var(--dur) var(--ease); min-width: 2px; }
+    .surprised .g-bar-num { font-family: var(--face-mono); font-size: var(--t-xs); color: var(--fg-faint); text-align: right; }
+
+    /* attention tokens */
+    .surprised .g-tokens { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+    .surprised .g-token { font: inherit; font-size: var(--t-md); cursor: pointer; border: var(--rule-w) solid var(--rule); border-radius: 8px; padding: 0.3em 0.6em; background: var(--bg); color: var(--fg); transition: border-color var(--dur-fast) var(--ease); }
+    .surprised .g-token:hover { border-color: var(--accent); }
+    .surprised .g-token.q { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .surprised .g-sentence { font-family: var(--face-display); font-size: var(--t-md); text-align: center; min-height: 1.6em; color: var(--fg-strong); margin: 0; }
+
+    /* model builder */
+    .surprised .g-layers { display: flex; flex-direction: column; gap: 6px; }
+    .surprised .g-layer { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 8px; border: var(--rule-w) solid var(--rule); border-radius: 10px; background: var(--bg-sunken); }
+    .surprised .g-layer-name { font-family: var(--face-display); font-weight: 600; min-width: 6em; }
+    .surprised .g-layer-w { font-family: var(--face-mono); font-size: var(--t-2xs); color: var(--fg-faint); }
+    .surprised .g-layer-p { font-family: var(--face-mono); font-size: var(--t-xs); color: var(--accent); margin-left: auto; }
+    .surprised .g-readout { text-align: center; padding: var(--s-3); background: var(--accent-wash); border-radius: 12px; }
+    .surprised .g-readout-big { font-family: var(--face-mono); font-size: var(--t-xl); font-weight: 700; color: var(--accent); }
+    .surprised .g-readout-cls { font-family: var(--face-mono); font-size: var(--t-xs); text-transform: uppercase; letter-spacing: var(--tr-wide); color: var(--fg-muted); margin-top: 2px; }
+    .surprised .g-readout-can { font-size: var(--t-sm); color: var(--fg); margin-top: 6px; }
+
+    /* river / banks */
+    .surprised .g-banks, .surprised .g-mc { display: grid; grid-template-columns: 1fr auto 1fr; gap: var(--s-2); align-items: stretch; }
+    .surprised .g-bank { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: var(--s-3); border: var(--rule-w) dashed var(--rule-strong); border-radius: 12px; min-height: 130px; }
+    .surprised .g-bank.here { border-style: solid; border-color: var(--accent); background: var(--accent-wash); }
+    .surprised .g-bank-label { font-family: var(--face-mono); font-size: var(--t-2xs); text-transform: uppercase; letter-spacing: var(--tr-wide); color: var(--fg-faint); }
+    .surprised .g-riv { font-size: var(--t-xl); border: none; background: none; cursor: default; padding: 2px; border-radius: 8px; }
+    .surprised .g-riv.can { cursor: pointer; }
+    .surprised .g-riv.can:hover { background: var(--bg-sunken); }
+    .surprised .g-mc-count { font-size: var(--t-md); letter-spacing: 2px; min-height: 1.4em; }
+    .surprised .g-mc-boat { display: flex; align-items: center; justify-content: center; font-size: var(--t-lg); padding: 0 var(--s-2); }
+
+    /* water jugs */
+    .surprised .g-jugs { display: flex; justify-content: center; gap: var(--s-6); align-items: flex-end; min-height: 150px; }
+    .surprised .g-jug-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .surprised .g-jug { width: 60px; height: 130px; border: 3px solid var(--rule-strong); border-top: none; border-radius: 0 0 10px 10px; display: flex; flex-direction: column-reverse; overflow: hidden; background: var(--bg-sunken); }
+    .surprised .g-jug-fill { background: #4da3ff; transition: height var(--dur) var(--ease); }
+    .surprised .g-jug-cap { font-family: var(--face-mono); font-size: var(--t-xs); color: var(--fg-muted); }
+
+    /* sokoban */
+    .surprised .g-sok { display: grid; grid-template-columns: repeat(var(--w), 1fr); gap: 2px; max-width: 320px; margin: 0 auto; }
+    .surprised .g-sok-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: var(--t-md); border-radius: 4px; background: var(--bg-sunken); }
+    .surprised .g-sok-cell.wall { background: var(--rule-strong); }
+    .surprised .g-sok-cell.target { color: var(--accent); font-weight: 700; }
+    .surprised .g-sok-cell.box.on { background: #dcfce7; }
+    .surprised .g-dpad { display: grid; grid-template-columns: repeat(3, 2.6em); gap: 4px; justify-content: center; margin-top: var(--s-2); }
+    .surprised .g-dpad .g-btn { padding: 0.4em 0; text-align: center; }
+
+    /* sudoku */
+    .surprised .g-sudoku { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; max-width: 240px; margin: 0 auto; }
+    .surprised .g-scell { aspect-ratio: 1; font-family: var(--face-mono); font-size: var(--t-lg); font-weight: 600; border: var(--rule-w) solid var(--rule); border-radius: 4px; background: var(--bg); color: var(--accent); cursor: pointer; }
+    .surprised .g-scell.fixed { background: var(--bg-sunken); color: var(--fg); cursor: default; }
+    .surprised .g-scell.bad { color: #dc2626; background: var(--accent-wash); }
+    .surprised .g-scell.vr { margin-right: 3px; }
+    .surprised .g-scell.hr { margin-bottom: 3px; }
+
+    /* dark-theme tweaks */
     @media (prefers-color-scheme: dark) {
-      .surprised {
-        --g-win: #4ade80;
-      }
-      .surprised .g-tile.home,
-      .surprised .g-card.done {
-        background: #14331f;
-        color: #4ade80;
-        border-color: #14331f;
-      }
+      .surprised { --g-win: #4ade80; }
+      .surprised .g-tile.home, .surprised .g-card.done, .surprised .g-sok-cell.box.on { background: #14331f; color: #4ade80; border-color: #14331f; }
+      .surprised .g-prow.ok { background: rgba(34, 197, 94, 0.2); }
     }
-    :root[data-theme='dark'] .surprised {
-      --g-win: #4ade80;
-    }
+    :root[data-theme='dark'] .surprised { --g-win: #4ade80; }
     :root[data-theme='dark'] .surprised .g-tile.home,
-    :root[data-theme='dark'] .surprised .g-card.done {
-      background: #14331f;
-      color: #4ade80;
-      border-color: #14331f;
-    }
+    :root[data-theme='dark'] .surprised .g-card.done,
+    :root[data-theme='dark'] .surprised .g-sok-cell.box.on { background: #14331f; color: #4ade80; border-color: #14331f; }
   </style>
 </Base>

@@ -1735,6 +1735,1601 @@ reg('binary', (stage) => {
   return {};
 });
 
+/* ========================================================================== *
+ *  SHARED HELPERS for the learning games (hoisted function declarations, so
+ *  they can sit anywhere in the file).
+ * ========================================================================== */
+
+const BLUE = '#4da3ff';
+const PINK = '#ff5d8f';
+const MINT = '#3ddc97';
+
+const sigmoid = (z) => 1 / (1 + Math.exp(-z));
+
+/** Linear interpolation between two hex colours. t in [0,1]. */
+function lerpHex(a, b, t) {
+  const pa = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16));
+  const pb = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16));
+  const c = pa.map((v, i) => Math.round(v + (pb[i] - v) * clamp(t, 0, 1)));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+/** A field value in [0,1] to a blue-to-pink colour. */
+const heat = (v) => lerpHex(BLUE, PINK, v);
+
+/** Map the data square [-1,1] x [-1,1] onto the canvas, with inverses. */
+function dataFrame(W, H, pad = 16) {
+  const s = Math.min(W, H) - pad * 2;
+  const ox = (W - s) / 2;
+  const oy = (H - s) / 2;
+  return {
+    s,
+    x: (dx) => ox + ((dx + 1) / 2) * s,
+    y: (dy) => oy + ((1 - dy) / 2) * s,
+    ix: (px) => ((px - ox) / s) * 2 - 1,
+    iy: (py) => 1 - ((py - oy) / s) * 2,
+  };
+}
+
+/** Softmax of an array, with an optional temperature. */
+function softmaxArr(logits, temp = 1) {
+  const m = Math.max(...logits);
+  const ex = logits.map((z) => Math.exp((z - m) / temp));
+  const sum = ex.reduce((a, b) => a + b, 0);
+  return ex.map((e) => e / sum);
+}
+
+/** Solve A x = b in place by Gaussian elimination with partial pivoting. */
+function solveLinear(A, b) {
+  const n = b.length;
+  for (let i = 0; i < n; i++) {
+    let p = i;
+    for (let r = i + 1; r < n; r++) if (Math.abs(A[r][i]) > Math.abs(A[p][i])) p = r;
+    [A[i], A[p]] = [A[p], A[i]];
+    [b[i], b[p]] = [b[p], b[i]];
+    const piv = A[i][i] || 1e-9;
+    for (let r = 0; r < n; r++) {
+      if (r === i) continue;
+      const f = A[r][i] / piv;
+      for (let c = i; c < n; c++) A[r][c] -= f * A[i][c];
+      b[r] -= f * b[i];
+    }
+  }
+  return b.map((v, i) => v / (A[i][i] || 1e-9));
+}
+
+/** Least-squares polynomial coefficients (low to high) with tiny ridge term. */
+function polyfit(xs, ys, deg) {
+  const n = deg + 1;
+  const A = Array.from({ length: n }, () => new Array(n).fill(0));
+  const bb = new Array(n).fill(0);
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) for (let k = 0; k < xs.length; k++) A[i][j] += xs[k] ** (i + j);
+    A[i][i] += 1e-6;
+    for (let k = 0; k < xs.length; k++) bb[i] += ys[k] * xs[k] ** i;
+  }
+  return solveLinear(A, bb);
+}
+const polyval = (c, x) => c.reduce((s, ci, i) => s + ci * x ** i, 0);
+
+/* ========================================================================== *
+ *  MACHINE LEARNING
+ * ========================================================================== */
+
+/* Gradient descent -------------------------------------------------------- */
+reg('gradient-descent', (stage) => {
+  const c = makeCanvas(stage, 1.6);
+  const loop = makeLoop(tick);
+  const L = (x) => (x - 0.25) * (x - 0.25) + 0.15; // a smooth valley
+  const dL = (x) => 2 * (x - 0.25);
+  let x = -1.15;
+  let lr = 0.12;
+  let auto = false;
+  const status = note();
+  const px = (dx) => 24 + ((dx + 1.4) / 2.8) * (c.state.W - 48);
+  const py = (v) => c.state.H - 20 - (v / 1.9) * (c.state.H - 40);
+  const step = () => {
+    const g = dL(x);
+    x = x - lr * g * 2.2;
+    if (!isFinite(x) || Math.abs(x) > 3) {
+      x = clamp(x, -1.4, 1.4);
+      auto = false;
+      status.textContent = 'Diverged! The steps were too big and it flew out of the valley. Lower the learning rate.';
+      status.classList.remove('win');
+    } else if (Math.abs(g) < 0.03) {
+      status.textContent = `Found the bottom at x = ${x.toFixed(2)}. That is what "learning" is: rolling downhill on the error.`;
+      status.classList.add('win');
+      auto = false;
+    } else {
+      status.classList.remove('win');
+      status.textContent = `Rolling downhill. Loss ${L(x).toFixed(3)}, slope ${dL(x).toFixed(2)}.`;
+    }
+    draw();
+  };
+  function tick() {
+    if (auto) step();
+  }
+  function draw() {
+    const { ctx } = c;
+    const { W, H } = c.state;
+    const t = theme();
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = t.faint;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let dx = -1.4; dx <= 1.4; dx += 0.03) {
+      const X = px(dx),
+        Y = py(L(dx));
+      dx === -1.4 ? ctx.moveTo(X, Y) : ctx.lineTo(X, Y);
+    }
+    ctx.stroke();
+    // ball
+    const bx = px(x),
+      by = py(L(x));
+    ctx.fillStyle = PINK;
+    ctx.beginPath();
+    ctx.arc(bx, by, 9, 0, 7);
+    ctx.fill();
+  }
+  const s = slider('Learning rate', 2, 120, lr * 100, (v) => (lr = v / 100), '%');
+  status.textContent = 'This ball is a model learning. Each step rolls it down the error curve. Watch the learning rate.';
+  stage.append(
+    s.node,
+    bar(
+      button('Step', () => { auto = false; step(); }),
+      button('Auto-roll', () => { auto = !auto; status.classList.remove('win'); }),
+      button('Reset', () => { x = -1.15; auto = false; status.classList.remove('win'); draw(); }),
+    ),
+    status,
+  );
+  draw();
+  return { pause: loop.stop, resume: loop.start };
+});
+
+/* Classifier: draw the boundary -------------------------------------------- */
+reg('classify', (stage) => {
+  const c = makeCanvas(stage, 1.3);
+  let angle = 0.6,
+    bias = 0;
+  let pts = [];
+  const status = note();
+  const gen = () => {
+    pts = [];
+    const blob = (mx, my, label) => {
+      for (let i = 0; i < 9; i++) pts.push({ x: mx + rand(-0.3, 0.3), y: my + rand(-0.3, 0.3), label });
+    };
+    blob(-0.5, 0.45, 1);
+    blob(0.5, -0.45, -1);
+    draw();
+  };
+  const wof = () => [Math.cos(angle), Math.sin(angle)];
+  const pred = (p) => {
+    const [w1, w2] = wof();
+    return w1 * p.x + w2 * p.y - bias >= 0 ? 1 : -1;
+  };
+  const acc = () => pts.filter((p) => pred(p) === p.label).length / pts.length;
+  const draw = () => {
+    const { ctx } = c;
+    const { W, H } = c.state;
+    const t = theme();
+    const f = dataFrame(W, H);
+    ctx.clearRect(0, 0, W, H);
+    // shaded half-planes
+    const [w1, w2] = wof();
+    const img = 22;
+    for (let i = 0; i < img; i++)
+      for (let j = 0; j < img; j++) {
+        const dx = (i / (img - 1)) * 2 - 1;
+        const dy = (j / (img - 1)) * 2 - 1;
+        const side = w1 * dx + w2 * dy - bias >= 0;
+        ctx.fillStyle = side ? 'rgba(77,163,255,0.14)' : 'rgba(255,93,143,0.14)';
+        ctx.fillRect(f.x(dx) - f.s / img / 2, f.y(dy) - f.s / img / 2, f.s / img + 1, f.s / img + 1);
+      }
+    // boundary line: w.p = bias
+    ctx.strokeStyle = t.fg;
+    ctx.lineWidth = 2;
+    const dir = [-w2, w1];
+    const c0 = [w1 * bias, w2 * bias];
+    ctx.beginPath();
+    ctx.moveTo(f.x(c0[0] - dir[0] * 2), f.y(c0[1] - dir[1] * 2));
+    ctx.lineTo(f.x(c0[0] + dir[0] * 2), f.y(c0[1] + dir[1] * 2));
+    ctx.stroke();
+    // points
+    for (const p of pts) {
+      ctx.fillStyle = p.label === 1 ? BLUE : PINK;
+      ctx.strokeStyle = pred(p) === p.label ? 'rgba(0,0,0,0)' : t.fg;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(f.x(p.x), f.y(p.y), 6, 0, 7);
+      ctx.fill();
+      if (pred(p) !== p.label) ctx.stroke();
+    }
+    const a = acc();
+    status.classList.toggle('win', a === 1);
+    status.textContent = a === 1 ? 'Perfect split! Every dot is on its own side.' : `${Math.round(a * 100)}% separated. Turn and shift the line, or let it learn.`;
+  };
+  const learn = () => {
+    // a few perceptron passes, then read the weights back into the sliders
+    let w = wof();
+    let b = bias;
+    for (let e = 0; e < 60; e++)
+      for (const p of pts) {
+        const y = w[0] * p.x + w[1] * p.y - b >= 0 ? 1 : -1;
+        if (y !== p.label) {
+          w[0] += 0.1 * p.label * p.x;
+          w[1] += 0.1 * p.label * p.y;
+          b -= 0.1 * p.label;
+        }
+      }
+    angle = Math.atan2(w[1], w[0]);
+    const mag = Math.hypot(w[0], w[1]) || 1;
+    bias = clamp(b / mag, -1, 1);
+    sA.set(((angle + Math.PI) / (2 * Math.PI)) * 100);
+    sB.set(((bias + 1) / 2) * 100);
+    draw();
+  };
+  const sA = slider('Turn', 0, 100, ((angle + Math.PI) / (2 * Math.PI)) * 100, (v) => { angle = (v / 100) * 2 * Math.PI - Math.PI; draw(); });
+  const sB = slider('Shift', 0, 100, ((bias + 1) / 2) * 100, (v) => { bias = (v / 100) * 2 - 1; draw(); });
+  status.textContent = 'Blue apples, pink oranges. Move the line so each kind is on its own side. That line is the model.';
+  stage.append(sA.node, sB.node, bar(button('Let it learn', learn), button('New dots', gen)), status);
+  gen();
+  return {};
+});
+
+/* Perceptron: one neuron --------------------------------------------------- */
+reg('perceptron', (stage) => {
+  const GATES = { AND: (a, b) => a & b, OR: (a, b) => a | b, NAND: (a, b) => (a & b) ? 0 : 1 };
+  let gate = 'AND';
+  let w1 = 0.2,
+    w2 = -0.4,
+    b = 0.1;
+  const status = note();
+  const table = el('div', { class: 'g-ptable' });
+  const out = (x1, x2) => (w1 * x1 + w2 * x2 + b >= 0 ? 1 : 0);
+  const draw = () => {
+    table.replaceChildren();
+    let right = 0;
+    for (const [x1, x2] of [[0, 0], [0, 1], [1, 0], [1, 1]]) {
+      const want = GATES[gate](x1, x2);
+      const got = out(x1, x2);
+      if (got === want) right++;
+      table.append(
+        el('div', { class: 'g-prow' + (got === want ? ' ok' : ' bad') },
+          el('span', { class: 'g-pmono' }, `${x1} , ${x2}`),
+          el('span', { class: 'g-pmono' }, `neuron ${got}`),
+          el('span', { class: 'g-pmono' }, `want ${want}`),
+        ),
+      );
+    }
+    status.classList.toggle('win', right === 4);
+    status.textContent = right === 4 ? `Solved. This one neuron now computes ${gate}.` : `${right} of 4 rows right. Tune the weights, or press Train.`;
+  };
+  const train = () => {
+    for (let e = 0; e < 30; e++)
+      for (const [x1, x2] of [[0, 0], [0, 1], [1, 0], [1, 1]]) {
+        const want = GATES[gate](x1, x2);
+        const got = out(x1, x2);
+        const err = want - got;
+        w1 += 0.1 * err * x1;
+        w2 += 0.1 * err * x2;
+        b += 0.1 * err;
+      }
+    sW1.set(w1 * 25 + 50);
+    sW2.set(w2 * 25 + 50);
+    sB.set(b * 25 + 50);
+    draw();
+  };
+  const sW1 = slider('Weight 1', 0, 100, w1 * 25 + 50, (v) => { w1 = (v - 50) / 25; draw(); });
+  const sW2 = slider('Weight 2', 0, 100, w2 * 25 + 50, (v) => { w2 = (v - 50) / 25; draw(); });
+  const sB = slider('Bias', 0, 100, b * 25 + 50, (v) => { b = (v - 50) / 25; draw(); });
+  const gateBar = bar(el('span', { class: 'g-note' }, 'Target:'), ...Object.keys(GATES).map((g) => button(g, () => { gate = g; draw(); })));
+  status.textContent = 'A neuron adds up its inputs times weights. If the total clears zero, it fires. Make it match the gate.';
+  stage.append(table, sW1.node, sW2.node, sB.node, gateBar, bar(button('Train it', train)), status);
+  draw();
+  return {};
+});
+
+/* Neural net learns XOR ---------------------------------------------------- */
+reg('neural-net', (stage) => {
+  const c = makeCanvas(stage, 1.15);
+  const loop = makeLoop(tick);
+  const data = [
+    [0, 0, 0], [0, 1, 1], [1, 0, 1], [1, 1, 0],
+  ];
+  let W1, b1, W2, b2, epoch, training;
+  const status = note();
+  const init = () => {
+    const r = () => rand(-1, 1);
+    W1 = [[r(), r()], [r(), r()]];
+    b1 = [r(), r()];
+    W2 = [r(), r()];
+    b2 = r();
+    epoch = 0;
+  };
+  const fwd = (x1, x2) => {
+    const h = [sigmoid(W1[0][0] * x1 + W1[0][1] * x2 + b1[0]), sigmoid(W1[1][0] * x1 + W1[1][1] * x2 + b1[1])];
+    const o = sigmoid(W2[0] * h[0] + W2[1] * h[1] + b2);
+    return { h, o };
+  };
+  const trainStep = () => {
+    const lr = 0.5;
+    for (const [x1, x2, y] of data) {
+      const { h, o } = fwd(x1, x2);
+      const dO = (o - y) * o * (1 - o);
+      const dH = [dO * W2[0] * h[0] * (1 - h[0]), dO * W2[1] * h[1] * (1 - h[1])];
+      W2[0] -= lr * dO * h[0];
+      W2[1] -= lr * dO * h[1];
+      b2 -= lr * dO;
+      W1[0][0] -= lr * dH[0] * x1;
+      W1[0][1] -= lr * dH[0] * x2;
+      W1[1][0] -= lr * dH[1] * x1;
+      W1[1][1] -= lr * dH[1] * x2;
+      b1[0] -= lr * dH[0];
+      b1[1] -= lr * dH[1];
+    }
+    epoch++;
+  };
+  const loss = () => data.reduce((s, [x1, x2, y]) => s + (fwd(x1, x2).o - y) ** 2, 0) / 4;
+  function tick() {
+    if (training) {
+      for (let k = 0; k < 60; k++) trainStep();
+      if (epoch > 900 && loss() > 0.2) init(); // shake out of a local minimum
+    }
+    draw();
+  }
+  function draw() {
+    const { ctx } = c;
+    const { W, H } = c.state;
+    const f = dataFrame(W, H);
+    ctx.clearRect(0, 0, W, H);
+    const R = 20;
+    for (let i = 0; i < R; i++)
+      for (let j = 0; j < R; j++) {
+        const dx = i / (R - 1),
+          dy = j / (R - 1);
+        const o = fwd(dx, dy).o;
+        ctx.fillStyle = heat(o);
+        ctx.globalAlpha = 0.5;
+        ctx.fillRect(f.x(dx * 2 - 1) - f.s / R / 2, f.y(dy * 2 - 1) - f.s / R / 2, f.s / R + 1, f.s / R + 1);
+      }
+    ctx.globalAlpha = 1;
+    for (const [x1, x2, y] of data) {
+      ctx.fillStyle = y ? PINK : BLUE;
+      ctx.strokeStyle = theme().fg;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(f.x(x1 * 2 - 1), f.y(x2 * 2 - 1), 11, 0, 7);
+      ctx.fill();
+      ctx.stroke();
+    }
+    const l = loss();
+    status.classList.toggle('win', l < 0.02);
+    status.textContent = l < 0.02 ? `Solved XOR after ${epoch} rounds. The hidden layer bent the space until a line could split it.` : `Training. Round ${epoch}, error ${l.toFixed(3)}. Watch the colours carve out the corners.`;
+  }
+  status.textContent = 'One straight line cannot solve this. A hidden layer can. Press Train and watch it learn XOR.';
+  stage.append(
+    bar(
+      button('Train', () => { training = !training; }),
+      button('Reset weights', () => { init(); training = false; draw(); }),
+    ),
+    status,
+  );
+  init();
+  draw();
+  return { pause: loop.stop, resume: loop.start };
+});
+
+/* Activation functions ----------------------------------------------------- */
+reg('activation', (stage) => {
+  const c = makeCanvas(stage, 1.5);
+  const FN = {
+    Step: (x) => (x >= 0 ? 1 : 0),
+    Sigmoid: (x) => sigmoid(x),
+    Tanh: (x) => Math.tanh(x),
+    ReLU: (x) => Math.max(0, x),
+    'Leaky ReLU': (x) => (x >= 0 ? x : 0.1 * x),
+  };
+  let name = 'Sigmoid',
+    xv = 0.8;
+  const status = note();
+  const draw = () => {
+    const { ctx } = c;
+    const { W, H } = c.state;
+    const t = theme();
+    ctx.clearRect(0, 0, W, H);
+    const px = (x) => 20 + ((x + 4) / 8) * (W - 40);
+    const py = (y) => H - 20 - ((y + 1.2) / 3.4) * (H - 40);
+    ctx.strokeStyle = t.rule;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(px(-4), py(0));
+    ctx.lineTo(px(4), py(0));
+    ctx.moveTo(px(0), py(-1.2));
+    ctx.lineTo(px(0), py(2.2));
+    ctx.stroke();
+    const fn = FN[name];
+    ctx.strokeStyle = PINK;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    for (let x = -4; x <= 4; x += 0.05) (x === -4 ? ctx.moveTo : ctx.lineTo).call(ctx, px(x), py(fn(x)));
+    ctx.stroke();
+    ctx.fillStyle = BLUE;
+    ctx.beginPath();
+    ctx.arc(px(xv), py(fn(xv)), 7, 0, 7);
+    ctx.fill();
+    status.textContent = `${name}(${xv.toFixed(1)}) = ${fn(xv).toFixed(2)}. This is the "should the neuron fire, and how much" curve.`;
+  };
+  const s = slider('Input x', -40, 40, xv * 10, (v) => { xv = v / 10; draw(); });
+  const fbar = bar(...Object.keys(FN).map((n) => button(n, () => { name = n; draw(); })));
+  stage.append(s.node, fbar, status);
+  draw();
+  return {};
+});
+
+/* K-means clustering ------------------------------------------------------- */
+reg('kmeans', (stage) => {
+  const c = makeCanvas(stage, 1.3);
+  let pts = [],
+    cents = [],
+    K = 3;
+  const status = note();
+  const COLS = [BLUE, PINK, MINT, '#ffd23f'];
+  const gen = () => {
+    pts = [];
+    const blob = (mx, my) => { for (let i = 0; i < 12; i++) pts.push({ x: mx + rand(-0.28, 0.28), y: my + rand(-0.28, 0.28), c: -1 }); };
+    blob(-0.5, 0.5); blob(0.55, 0.4); blob(0, -0.55);
+    seed();
+  };
+  const seed = () => {
+    cents = shuffle(pts).slice(0, K).map((p) => ({ x: p.x, y: p.y }));
+    pts.forEach((p) => (p.c = -1));
+    draw();
+    status.classList.remove('win');
+    status.textContent = `${K} centroids dropped. Press Step: colour each dot by its nearest, then slide centroids to the middle.`;
+  };
+  const step = () => {
+    pts.forEach((p) => {
+      let best = 0,
+        bd = 1e9;
+      cents.forEach((ct, i) => { const d = (p.x - ct.x) ** 2 + (p.y - ct.y) ** 2; if (d < bd) { bd = d; best = i; } });
+      p.c = best;
+    });
+    let moved = 0;
+    cents.forEach((ct, i) => {
+      const own = pts.filter((p) => p.c === i);
+      if (own.length) {
+        const nx = own.reduce((s, p) => s + p.x, 0) / own.length;
+        const ny = own.reduce((s, p) => s + p.y, 0) / own.length;
+        moved += Math.abs(nx - ct.x) + Math.abs(ny - ct.y);
+        ct.x = nx; ct.y = ny;
+      }
+    });
+    draw();
+    if (moved < 0.01) { status.textContent = 'Settled. The centroids stopped moving; the machine found the groups on its own.'; status.classList.add('win'); }
+    else status.textContent = 'Dots recoloured, centroids nudged toward their group. Keep stepping.';
+  };
+  const draw = () => {
+    const { ctx } = c;
+    const { W, H } = c.state;
+    const f = dataFrame(W, H);
+    ctx.clearRect(0, 0, W, H);
+    for (const p of pts) {
+      ctx.fillStyle = p.c < 0 ? theme().faint : COLS[p.c];
+      ctx.beginPath();
+      ctx.arc(f.x(p.x), f.y(p.y), 5, 0, 7);
+      ctx.fill();
+    }
+    cents.forEach((ct, i) => {
+      ctx.fillStyle = COLS[i];
+      ctx.strokeStyle = theme().fg;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(f.x(ct.x), f.y(ct.y), 11, 0, 7);
+      ctx.fill();
+      ctx.stroke();
+    });
+  };
+  const kbar = bar(el('span', { class: 'g-note' }, 'Groups:'), ...[2, 3, 4].map((k) => button(k, () => { K = k; seed(); })));
+  stage.append(kbar, bar(button('Step', step), button('New dots', gen)), status);
+  gen();
+  return {};
+});
+
+/* K nearest neighbours ----------------------------------------------------- */
+reg('knn', (stage) => {
+  const c = makeCanvas(stage, 1.3);
+  let train = [],
+    q = { x: 0, y: 0 },
+    K = 3;
+  const status = note();
+  const gen = () => {
+    train = [];
+    const blob = (mx, my, label) => { for (let i = 0; i < 9; i++) train.push({ x: mx + rand(-0.32, 0.32), y: my + rand(-0.32, 0.32), label }); };
+    blob(-0.45, 0.4, 0); blob(0.5, -0.35, 1);
+    draw();
+  };
+  const classify = (p) => {
+    const near = train.map((t) => ({ d: (t.x - p.x) ** 2 + (t.y - p.y) ** 2, label: t.label })).sort((a, b) => a.d - b.d).slice(0, K);
+    const votes = near.filter((n) => n.label === 1).length;
+    return { pred: votes > K / 2 ? 1 : 0, near };
+  };
+  const draw = () => {
+    const { ctx } = c;
+    const { W, H } = c.state;
+    const f = dataFrame(W, H);
+    ctx.clearRect(0, 0, W, H);
+    for (const t of train) {
+      ctx.fillStyle = t.label ? PINK : BLUE;
+      ctx.beginPath();
+      ctx.arc(f.x(t.x), f.y(t.y), 5, 0, 7);
+      ctx.fill();
+    }
+    const { pred, near } = classify(q);
+    const maxd = Math.sqrt(near[near.length - 1]?.d ?? 0);
+    ctx.strokeStyle = theme().faint;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.arc(f.x(q.x), f.y(q.y), maxd * (f.s / 2), 0, 7);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = pred ? PINK : BLUE;
+    ctx.strokeStyle = theme().fg;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(f.x(q.x), f.y(q.y), 10, 0, 7);
+    ctx.fill();
+    ctx.stroke();
+    status.textContent = `Its ${K} nearest neighbours vote: this point is ${pred ? 'pink' : 'blue'}. Drag it around and change K.`;
+  };
+  drag(c.wrap, {
+    down: (p) => moveQ(p),
+    move: (p) => moveQ(p),
+  });
+  const moveQ = (p) => {
+    const f = dataFrame(c.state.W, c.state.H);
+    q = { x: clamp(f.ix(p.x), -1, 1), y: clamp(f.iy(p.y), -1, 1) };
+    draw();
+  };
+  const s = slider('K neighbours', 1, 9, K, (v) => { K = v % 2 ? v : v + 1; draw(); });
+  status.textContent = 'The grey point is new. It copies the majority label of its K closest neighbours. Drag it.';
+  stage.append(s.node, bar(button('New dots', gen)), status);
+  gen();
+  return {};
+});
+
+/* Overfitting -------------------------------------------------------------- */
+reg('overfit', (stage) => {
+  const c = makeCanvas(stage, 1.4);
+  let deg = 3,
+    train = [],
+    test = [];
+  const status = note();
+  const truth = (x) => 0.55 * Math.sin(3.1 * x);
+  const gen = () => {
+    train = Array.from({ length: 11 }, () => { const x = rand(-1, 1); return { x, y: truth(x) + rand(-0.18, 0.18) }; });
+    test = Array.from({ length: 60 }, (_, i) => { const x = -1 + (2 * i) / 59; return { x, y: truth(x) }; });
+    draw();
+  };
+  const draw = () => {
+    const { ctx } = c;
+    const { W, H } = c.state;
+    const t = theme();
+    const px = (x) => 20 + ((x + 1) / 2) * (W - 40);
+    const py = (y) => H / 2 - y * (H * 0.36);
+    ctx.clearRect(0, 0, W, H);
+    // true curve
+    ctx.strokeStyle = t.rule;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let x = -1; x <= 1; x += 0.02) (x === -1 ? ctx.moveTo : ctx.lineTo).call(ctx, px(x), py(truth(x)));
+    ctx.stroke();
+    const coef = polyfit(train.map((p) => p.x), train.map((p) => p.y), deg);
+    ctx.strokeStyle = PINK;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let x = -1; x <= 1; x += 0.01) (x === -1 ? ctx.moveTo : ctx.lineTo).call(ctx, px(x), py(clamp(polyval(coef, x), -2, 2)));
+    ctx.stroke();
+    for (const p of train) {
+      ctx.fillStyle = BLUE;
+      ctx.beginPath();
+      ctx.arc(px(p.x), py(p.y), 5, 0, 7);
+      ctx.fill();
+    }
+    const trainErr = train.reduce((s, p) => s + (polyval(coef, p.x) - p.y) ** 2, 0) / train.length;
+    const testErr = test.reduce((s, p) => s + (clamp(polyval(coef, p.x), -3, 3) - p.y) ** 2, 0) / test.length;
+    const over = testErr > 0.05 && deg > 6;
+    status.classList.toggle('win', testErr < 0.02);
+    status.textContent = `Degree ${deg}. Fit on the dots: ${trainErr.toFixed(3)}. On unseen points: ${testErr.toFixed(3)}. ` + (over ? 'Too wiggly: it memorised the noise.' : deg < 2 ? 'Too stiff: it misses the shape.' : 'Nicely general.');
+  };
+  const s = slider('Model complexity', 1, 11, deg, (v) => { deg = v; draw(); });
+  status.textContent = 'The grey line is the real pattern; blue dots are noisy samples. Simple underfits, complex memorises the noise.';
+  stage.append(s.node, bar(button('New sample', gen)), status);
+  gen();
+  return {};
+});
+
+/* ========================================================================== *
+ *  AI ARCHITECTURES
+ * ========================================================================== */
+
+/* Softmax and temperature -------------------------------------------------- */
+reg('softmax', (stage) => {
+  const names = ['A', 'B', 'C', 'D'];
+  let logits = [2, 1, 0.2, -0.5];
+  let temp = 1;
+  const status = note();
+  const bars = el('div', { class: 'g-bars' });
+  const draw = () => {
+    const probs = softmaxArr(logits, temp);
+    bars.replaceChildren();
+    probs.forEach((p, i) => {
+      bars.append(
+        el('div', { class: 'g-bar-row' },
+          el('span', { class: 'g-bar-tag' }, names[i]),
+          el('div', { class: 'g-bar-track' }, el('div', { class: 'g-bar-fill', style: `width:${(p * 100).toFixed(1)}%;background:${CANDY[i]}` })),
+          el('span', { class: 'g-bar-num tnum' }, (p * 100).toFixed(0) + '%'),
+        ),
+      );
+    });
+    const top = probs.indexOf(Math.max(...probs));
+    status.textContent = `Scores become choices that add to 100%. Low temperature is confident (${names[top]} wins); high is random.`;
+  };
+  const sliders = logits.map((v, i) => slider(`Score ${names[i]}`, -30, 30, v * 10, (nv) => { logits[i] = nv / 10; draw(); }));
+  const st = slider('Temperature', 20, 300, temp * 100, (v) => { temp = v / 100; draw(); }, '%');
+  status.textContent = 'Softmax turns raw scores into probabilities. It is the last step of almost every classifier and language model.';
+  stage.append(bars, ...sliders.map((s) => s.node), st.node, status);
+  draw();
+  return {};
+});
+
+/* Attention: who looks at whom -------------------------------------------- */
+reg('attention', (stage) => {
+  // Each token carries a tiny "meaning" vector [animal, predator/energy, refers].
+  const toks = [
+    ['The', [0, 0, 0]], ['tiger', [1, 1, 0]], ['chased', [0, 0.3, 0]], ['the', [0, 0, 0]],
+    ['deer', [1, -0.6, 0]], ['because', [0, 0, 0]], ['it', [0.9, 0.9, 0.2]], ['was', [0, 0, 0]], ['hungry', [0.2, 0.9, 0]],
+  ];
+  let query = 6;
+  const status = note();
+  const row = el('div', { class: 'g-tokens' });
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const draw = () => {
+    const q = toks[query][1];
+    const scores = toks.map((t, i) => (i === query ? -9 : dot(q, t[1])));
+    const w = softmaxArr(scores.map((s) => s * 2.2));
+    row.replaceChildren();
+    toks.forEach(([word], i) => {
+      const strength = i === query ? 0 : w[i];
+      row.append(
+        el('button', {
+          type: 'button',
+          class: 'g-token' + (i === query ? ' q' : ''),
+          style: i === query ? '' : `background:rgba(168,41,15,${(strength * 0.9).toFixed(2)})`,
+          onClick: () => { query = i; draw(); },
+        }, word),
+      );
+    });
+    const ranked = toks.map(([w2], i) => ({ w2, s: i === query ? -1 : w[i] })).filter((r) => r.s > 0).sort((a, b) => b.s - a.s);
+    status.textContent = `"${toks[query][0]}" looks most at "${ranked[0]?.w2}"${ranked[1] ? ` and "${ranked[1].w2}"` : ''}. That weighted lookup is attention.`;
+  };
+  status.textContent = 'Click any word. It becomes the question, and the others light up by how much it should pay attention to them.';
+  stage.append(row, status);
+  draw();
+  return {};
+});
+
+/* Next-token: a tiny language model --------------------------------------- */
+reg('next-token', (stage) => {
+  const CORPUS = [
+    'the cat sat on the mat', 'the cat ran to the hat', 'the dog ran after the cat',
+    'twinkle twinkle little star', 'how i wonder what you are', 'up above the world so high',
+    'like a diamond in the sky', 'the sun is a big yellow star', 'the star is up in the sky',
+    'the little cat is on the mat',
+  ];
+  const model = new Map();
+  for (const line of CORPUS) {
+    const w = ['<start>', ...line.split(' ')];
+    for (let i = 0; i < w.length - 1; i++) {
+      if (!model.has(w[i])) model.set(w[i], new Map());
+      const m = model.get(w[i]);
+      m.set(w[i + 1], (m.get(w[i + 1]) || 0) + 1);
+    }
+  }
+  let words = [];
+  const status = note();
+  const sentence = el('p', { class: 'g-sentence' });
+  const choices = el('div', { class: 'g-bars' });
+  const draw = () => {
+    sentence.textContent = words.length ? words.join(' ') + ' ...' : '(press a word to begin)';
+    const last = words.length ? words[words.length - 1] : '<start>';
+    const m = model.get(last);
+    choices.replaceChildren();
+    if (!m) {
+      status.textContent = 'The model has never seen a word follow that one. Start over to write another line.';
+      return;
+    }
+    const total = [...m.values()].reduce((a, b) => a + b, 0);
+    const ranked = [...m.entries()].map(([w, n]) => ({ w, p: n / total })).sort((a, b) => b.p - a.p).slice(0, 5);
+    ranked.forEach(({ w, p }, i) => {
+      choices.append(
+        el('button', { type: 'button', class: 'g-bar-row g-bar-btn', onClick: () => { words.push(w); draw(); } },
+          el('span', { class: 'g-bar-tag' }, w),
+          el('div', { class: 'g-bar-track' }, el('div', { class: 'g-bar-fill', style: `width:${(p * 100).toFixed(0)}%;background:${CANDY[i % CANDY.length]}` })),
+          el('span', { class: 'g-bar-num tnum' }, (p * 100).toFixed(0) + '%'),
+        ),
+      );
+    });
+    status.textContent = 'This is all a language model does: guess the next word from the last one. Pick one to keep writing.';
+  };
+  stage.append(sentence, choices, bar(button('Start over', () => { words = []; draw(); })), status);
+  draw();
+  return {};
+});
+
+/* State space / Mamba: a memory that carries forward ----------------------- */
+reg('state-space', (stage) => {
+  const c = makeCanvas(stage, 1.7);
+  const loop = makeLoop(tick);
+  const seq = [0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0];
+  let decay = 0.75;
+  let phase = 0;
+  let state = 0;
+  let trace = [];
+  let idx = 0;
+  const status = note();
+  const reset = () => { phase = 0; state = 0; trace = []; idx = 0; };
+  function tick(dt) {
+    phase += dt * 2.2;
+    while (phase >= 1 && idx < seq.length) {
+      state = decay * state + seq[idx];
+      trace.push({ i: idx, s: state, spike: seq[idx] });
+      idx++;
+      phase -= 1;
+    }
+    draw();
+    if (idx >= seq.length) {
+      const remembers = state > 0.05;
+      status.classList.toggle('win', true);
+      status.textContent = `Sequence done. The state still reads ${state.toFixed(2)}: it ${remembers ? 'still remembers' : 'has forgotten'} the early spikes. Raise decay to remember longer.`;
+    }
+  }
+  function draw() {
+    const { ctx } = c;
+    const { W, H } = c.state;
+    const t = theme();
+    ctx.clearRect(0, 0, W, H);
+    const n = seq.length;
+    const step = (W - 40) / n;
+    const base = H - 26;
+    // input spikes
+    seq.forEach((v, i) => {
+      const x = 20 + step * (i + 0.5);
+      ctx.fillStyle = v ? PINK : t.rule;
+      ctx.fillRect(x - 4, base - v * 26, 8, v ? 26 : 3);
+    });
+    // state trace as a filled line
+    ctx.strokeStyle = BLUE;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    trace.forEach((p, k) => {
+      const x = 20 + step * (p.i + 0.5);
+      const y = base - clamp(p.s, 0, 4) * 40;
+      k === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    if (trace.length) {
+      const last = trace[trace.length - 1];
+      ctx.fillStyle = BLUE;
+      ctx.beginPath();
+      ctx.arc(20 + step * (last.i + 0.5), base - clamp(last.s, 0, 4) * 40, 6, 0, 7);
+      ctx.fill();
+    }
+    ctx.fillStyle = t.faint;
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('pink = input token   blue = the running memory (state)', 16, 16);
+  }
+  const s = slider('Memory (decay)', 30, 96, decay * 100, (v) => (decay = v / 100), '%');
+  status.textContent = 'Instead of looking at every word like attention, a state model keeps one running summary. Press Play.';
+  stage.append(s.node, bar(button('Play', () => { reset(); status.classList.remove('win'); }), button('Reset', reset)), status);
+  reset();
+  draw();
+  return { pause: loop.stop, resume: loop.start };
+});
+
+/* Model builder: stack layers, watch the parameters explode ---------------- */
+reg('model-builder', (stage) => {
+  const KINDS = { Embedding: 'emb', Attention: 'attn', FeedForward: 'ff', Conv: 'conv', Recurrent: 'rnn' };
+  const WIDTHS = { Small: 64, Medium: 256, Large: 1024, Huge: 4096 };
+  const params1 = (kind, w) => ({ emb: 10000 * w, attn: 4 * w * w, ff: 8 * w * w, conv: 9 * w * w, rnn: 4 * w * w }[kind]);
+  let layers = [{ kind: 'emb', w: 256 }, { kind: 'attn', w: 256 }, { kind: 'ff', w: 256 }];
+  const status = note();
+  const list = el('div', { class: 'g-layers' });
+  const readout = el('div', { class: 'g-readout' });
+  const fmt = (n) => (n >= 1e9 ? (n / 1e9).toFixed(1) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : String(n));
+  const verdict = (p) => {
+    if (p < 1e5) return ['Tiny', 'Tell a cat from a dog, on a good day.'];
+    if (p < 5e6) return ['Small', 'Finish your sentences and sort your email.'];
+    if (p < 3e8) return ['Medium', 'Write a passable poem and answer trivia.'];
+    if (p < 2e10) return ['Large', 'Hold a real conversation and write code.'];
+    return ['Huge', 'Argue with you about the code it just wrote.'];
+  };
+  const total = () => layers.reduce((s, l) => s + params1(l.kind, l.w), 0);
+  const draw = () => {
+    list.replaceChildren();
+    layers.forEach((l, i) => {
+      const name = Object.keys(KINDS).find((k) => KINDS[k] === l.kind);
+      const widthName = Object.keys(WIDTHS).find((k) => WIDTHS[k] === l.w) || 'Medium';
+      list.append(
+        el('div', { class: 'g-layer' },
+          el('span', { class: 'g-layer-name' }, name),
+          el('span', { class: 'g-layer-w' }, `${l.w} wide`),
+          el('span', { class: 'g-layer-p tnum' }, fmt(params1(l.kind, l.w))),
+          button('wider', () => { const ws = Object.values(WIDTHS); l.w = ws[Math.min(ws.length - 1, ws.indexOf(l.w) + 1)] || 4096; draw(); }, 'g-mini'),
+          button('narrower', () => { const ws = Object.values(WIDTHS); l.w = ws[Math.max(0, ws.indexOf(l.w) - 1)] || 64; draw(); }, 'g-mini'),
+          button('remove', () => { layers.splice(i, 1); draw(); }, 'g-mini'),
+        ),
+      );
+    });
+    const p = total();
+    const [cls, can] = verdict(p);
+    readout.replaceChildren(
+      el('div', { class: 'g-readout-big tnum' }, fmt(p) + ' parameters'),
+      el('div', { class: 'g-readout-cls' }, `Size class: ${cls}`),
+      el('div', { class: 'g-readout-can' }, 'It could probably: ' + can),
+    );
+    status.textContent = `${layers.length} layers, ${fmt(p)} parameters. Every layer you widen multiplies the count. That is why big models cost so much.`;
+  };
+  const add = bar(el('span', { class: 'g-note' }, 'Add:'), ...Object.keys(KINDS).map((k) => button(k, () => { layers.push({ kind: KINDS[k], w: 256 }); draw(); }, 'g-mini')));
+  status.textContent = 'Stack layers to build a model. Watch the parameter counter, and what the machine might be able to do.';
+  stage.append(readout, list, add, bar(button('Clear', () => { layers = []; draw(); })), status);
+  draw();
+  return {};
+});
+
+/* Embeddings: a map of meaning --------------------------------------------- */
+reg('embeddings', (stage) => {
+  const c = makeCanvas(stage, 1.25);
+  const WORDS = {
+    cat: [-0.6, 0.5], dog: [-0.78, 0.44], kitten: [-0.55, 0.66], puppy: [-0.72, 0.6], horse: [-0.88, 0.28],
+    apple: [0.6, 0.6], banana: [0.78, 0.52], bread: [0.55, 0.44], cake: [0.72, 0.7],
+    man: [0.15, -0.35], woman: [0.5, -0.35], king: [0.15, -0.68], queen: [0.5, -0.68],
+  };
+  const keys = Object.keys(WORDS);
+  let sel = 'cat';
+  let analogy = null;
+  const status = note();
+  const draw = () => {
+    const { ctx } = c;
+    const { W, H } = c.state;
+    const t = theme();
+    const f = dataFrame(W, H, 30);
+    ctx.clearRect(0, 0, W, H);
+    ctx.font = '13px sans-serif';
+    ctx.textAlign = 'center';
+    // nearest neighbours of sel
+    const near = keys.filter((k) => k !== sel)
+      .map((k) => ({ k, d: (WORDS[k][0] - WORDS[sel][0]) ** 2 + (WORDS[k][1] - WORDS[sel][1]) ** 2 }))
+      .sort((a, b) => a.d - b.d).slice(0, 3).map((n) => n.k);
+    for (const nk of near) {
+      ctx.strokeStyle = t.rule;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(f.x(WORDS[sel][0]), f.y(WORDS[sel][1]));
+      ctx.lineTo(f.x(WORDS[nk][0]), f.y(WORDS[nk][1]));
+      ctx.stroke();
+    }
+    for (const k of keys) {
+      const isSel = k === sel;
+      const isNear = near.includes(k);
+      ctx.fillStyle = isSel ? PINK : isNear ? BLUE : t.faint;
+      ctx.beginPath();
+      ctx.arc(f.x(WORDS[k][0]), f.y(WORDS[k][1]), isSel ? 6 : 4, 0, 7);
+      ctx.fill();
+      ctx.fillStyle = isSel ? PINK : t.fg;
+      ctx.fillText(k, f.x(WORDS[k][0]), f.y(WORDS[k][1]) - 9);
+    }
+    if (analogy) {
+      ctx.fillStyle = MINT;
+      ctx.strokeStyle = MINT;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(f.x(analogy[0]), f.y(analogy[1]), 7, 0, 7);
+      ctx.stroke();
+      ctx.fillText('king - man + woman', f.x(analogy[0]), f.y(analogy[1]) + 20);
+    }
+    status.textContent = `"${sel}" sits nearest ${near.join(', ')}. Words that mean similar things land close together.`;
+  };
+  drag(c.wrap, {
+    down: (p) => {
+      const f = dataFrame(c.state.W, c.state.H, 30);
+      let best = null,
+        bd = 1e9;
+      for (const k of keys) {
+        const d = (f.x(WORDS[k][0]) - p.x) ** 2 + (f.y(WORDS[k][1]) - p.y) ** 2;
+        if (d < bd) { bd = d; best = k; }
+      }
+      if (bd < 900) { sel = best; analogy = null; draw(); }
+    },
+  });
+  status.textContent = 'A map of meaning. Tap a word to see its nearest neighbours. Try the famous analogy below.';
+  stage.append(bar(button('king - man + woman = ?', () => {
+    analogy = [WORDS.king[0] - WORDS.man[0] + WORDS.woman[0], WORDS.king[1] - WORDS.man[1] + WORDS.woman[1]];
+    sel = 'queen';
+    draw();
+    status.textContent = 'The arrow lands right on "queen". Meaning has directions you can add and subtract.';
+  })), status);
+  draw();
+  return {};
+});
+
+/* ========================================================================== *
+ *  LOGIC PUZZLES
+ * ========================================================================== */
+
+/* River crossing: wolf, goat, cabbage -------------------------------------- */
+reg('river-crossing', (stage) => {
+  const ITEMS = { farmer: '\u{1F9D1}‍\u{1F33E}', wolf: '\u{1F43A}', goat: '\u{1F410}', cabbage: '\u{1F96C}' };
+  let pos = { farmer: 'L', wolf: 'L', goat: 'L', cabbage: 'L' };
+  let over = false;
+  const status = note();
+  const banks = el('div', { class: 'g-banks' });
+  const danger = () => {
+    // something is eaten if the farmer is away and a bad pair shares a bank
+    const away = (a, b) => pos[a] === pos[b] && pos.farmer !== pos[a];
+    if (away('wolf', 'goat')) return 'The wolf ate the goat!';
+    if (away('goat', 'cabbage')) return 'The goat ate the cabbage!';
+    return null;
+  };
+  const draw = () => {
+    banks.replaceChildren();
+    ['L', 'R'].forEach((side) => {
+      const bank = el('div', { class: 'g-bank' + (pos.farmer === side ? ' here' : '') });
+      bank.append(el('div', { class: 'g-bank-label' }, side === 'L' ? 'Start' : 'Goal'));
+      Object.keys(ITEMS).forEach((k) => {
+        if (pos[k] !== side) return;
+        const canMove = !over && k !== 'farmer' && pos[k] === pos.farmer;
+        bank.append(
+          el('button', {
+            type: 'button',
+            class: 'g-riv' + (k === 'farmer' ? ' farmer' : '') + (canMove ? ' can' : ''),
+            disabled: !canMove && k !== 'farmer',
+            title: k,
+            onClick: () => canMove && cross(k),
+          }, ITEMS[k]),
+        );
+      });
+      banks.append(bank);
+    });
+    if (!over) status.textContent = pos.wolf === 'R' && pos.goat === 'R' && pos.cabbage === 'R' ? '' : 'Row things across. Never leave wolf with goat, or goat with cabbage, without you.';
+    if (pos.farmer === 'R' && pos.wolf === 'R' && pos.goat === 'R' && pos.cabbage === 'R') {
+      status.textContent = 'Everyone across, nothing eaten. Solved!';
+      status.classList.add('win');
+      over = true;
+    }
+  };
+  const cross = (item) => {
+    const to = pos.farmer === 'L' ? 'R' : 'L';
+    pos.farmer = to;
+    if (item) pos[item] = to;
+    const d = danger();
+    if (d) { status.textContent = d + ' Press reset.'; status.classList.remove('win'); over = true; draw(); return; }
+    draw();
+  };
+  const reset = () => { pos = { farmer: 'L', wolf: 'L', goat: 'L', cabbage: 'L' }; over = false; status.classList.remove('win'); draw(); };
+  status.textContent = 'Row things across. Never leave wolf with goat, or goat with cabbage, without you.';
+  stage.append(banks, bar(button('Row across empty', () => !over && cross(null)), button('Reset', reset)), status);
+  draw();
+  return {};
+});
+
+/* Missionaries and cannibals ----------------------------------------------- */
+reg('missionaries', (stage) => {
+  let L = { m: 3, c: 3 },
+    R = { m: 0, c: 0 },
+    boatSide = 'L',
+    load = { m: 0, c: 0 },
+    over = false;
+  const status = note();
+  const view = el('div', { class: 'g-mc' });
+  const safe = (b) => b.m === 0 || b.m >= b.c;
+  const here = () => (boatSide === 'L' ? L : R);
+  const draw = () => {
+    view.replaceChildren();
+    const mkBank = (b, side) => {
+      const bank = el('div', { class: 'g-bank' + (boatSide === side ? ' here' : '') });
+      bank.append(el('div', { class: 'g-bank-label' }, side === 'L' ? 'Start' : 'Goal'));
+      bank.append(el('div', { class: 'g-mc-count' }, '\u{1F464}'.repeat(b.m) || '-'));
+      bank.append(el('div', { class: 'g-mc-count' }, '\u{1F479}'.repeat(b.c) || '-'));
+      return bank;
+    };
+    view.append(mkBank(L, 'L'), el('div', { class: 'g-mc-boat' }, `\u{1F6F6} ${'\u{1F464}'.repeat(load.m)}${'\u{1F47F}'.repeat(load.c)}`), mkBank(R, 'R'));
+    if (!over) status.textContent = `Boat at ${boatSide === 'L' ? 'start' : 'goal'}. Load 1 or 2, never let cannibals outnumber missionaries.`;
+  };
+  const controls = el('div', { class: 'g-bar' });
+  const adj = (t, d) => {
+    const b = here();
+    if (d > 0 && load.m + load.c >= 2) return;
+    if (d > 0 && b[t] - load[t] <= 0) return;
+    if (d < 0 && load[t] <= 0) return;
+    load[t] += d;
+    draw();
+  };
+  const cross = () => {
+    if (load.m + load.c === 0) { status.textContent = 'The boat needs at least one person to row.'; return; }
+    const from = here();
+    const to = boatSide === 'L' ? R : L;
+    from.m -= load.m; from.c -= load.c;
+    to.m += load.m; to.c += load.c;
+    boatSide = boatSide === 'L' ? 'R' : 'L';
+    load = { m: 0, c: 0 };
+    if (!safe(L) || !safe(R)) { status.textContent = 'The cannibals outnumbered the missionaries. Press reset.'; status.classList.remove('win'); over = true; draw(); return; }
+    if (R.m === 3 && R.c === 3) { status.textContent = 'All six safely across. Solved!'; status.classList.add('win'); over = true; }
+    draw();
+  };
+  const reset = () => { L = { m: 3, c: 3 }; R = { m: 0, c: 0 }; boatSide = 'L'; load = { m: 0, c: 0 }; over = false; status.classList.remove('win'); draw(); };
+  controls.append(
+    button('+ missionary', () => adj('m', 1)), button('- missionary', () => adj('m', -1)),
+    button('+ cannibal', () => adj('c', 1)), button('- cannibal', () => adj('c', -1)),
+  );
+  stage.append(view, controls, bar(button('Row across', cross), button('Reset', reset)), status);
+  draw();
+  return {};
+});
+
+/* Water jugs --------------------------------------------------------------- */
+reg('water-jugs', (stage) => {
+  const CAP = [5, 3];
+  const TARGET = 4;
+  let jug = [0, 0];
+  const status = note();
+  const view = el('div', { class: 'g-jugs' });
+  const draw = () => {
+    view.replaceChildren();
+    jug.forEach((v, i) => {
+      const j = el('div', { class: 'g-jug' });
+      j.append(el('div', { class: 'g-jug-fill', style: `height:${(v / CAP[i]) * 100}%` }));
+      const wrap = el('div', { class: 'g-jug-wrap' }, j, el('div', { class: 'g-jug-cap' }, `${v} / ${CAP[i]} L`));
+      view.append(wrap);
+    });
+    if (jug.includes(TARGET)) { status.textContent = `You measured exactly ${TARGET} litres. Solved!`; status.classList.add('win'); }
+    else { status.classList.remove('win'); status.textContent = `Get exactly ${TARGET} litres in either jug using fill, empty, and pour.`; }
+  };
+  const pour = (a, b) => {
+    const amt = Math.min(jug[a], CAP[b] - jug[b]);
+    jug[a] -= amt; jug[b] += amt;
+  };
+  stage.append(
+    view,
+    bar(
+      button('Fill 5L', () => { jug[0] = CAP[0]; draw(); }),
+      button('Fill 3L', () => { jug[1] = CAP[1]; draw(); }),
+      button('Empty 5L', () => { jug[0] = 0; draw(); }),
+      button('Empty 3L', () => { jug[1] = 0; draw(); }),
+    ),
+    bar(
+      button('Pour 5L into 3L', () => { pour(0, 1); draw(); }),
+      button('Pour 3L into 5L', () => { pour(1, 0); draw(); }),
+      button('Reset', () => { jug = [0, 0]; draw(); }),
+    ),
+    status,
+  );
+  draw();
+  return {};
+});
+
+/* Sokoban ------------------------------------------------------------------ */
+reg('sokoban', (stage) => {
+  const LEVELS = [
+    ['#####', '#@$.#', '#####'],
+    ['######', '#@ $.#', '#  $ #', '#  . #', '######'],
+    ['#######', '#.$@$.#', '#######'],
+  ];
+  let level = 0,
+    grid = [],
+    px = 0,
+    py = 0,
+    pushes = 0;
+  const status = note();
+  const board = el('div', { class: 'g-sok' });
+  const targets = new Set();
+  const load = (n) => {
+    level = ((n % LEVELS.length) + LEVELS.length) % LEVELS.length;
+    grid = LEVELS[level].map((r) => r.split(''));
+    targets.clear();
+    pushes = 0;
+    for (let y = 0; y < grid.length; y++)
+      for (let x = 0; x < grid[y].length; x++) {
+        const ch = grid[y][x];
+        if (ch === '.' || ch === '*' || ch === '+') targets.add(y + ',' + x);
+        if (ch === '@' || ch === '+') { px = x; py = y; grid[y][x] = ch === '+' ? '.' : ' '; }
+        if (ch === '*') grid[y][x] = '$';
+      }
+    draw();
+  };
+  const at = (x, y) => (grid[y] && grid[y][x]) || '#';
+  const isBox = (x, y) => at(x, y) === '$';
+  const isFree = (x, y) => at(x, y) === ' ' || at(x, y) === '.';
+  const move = (dx, dy) => {
+    const nx = px + dx,
+      ny = py + dy;
+    if (isBox(nx, ny)) {
+      const bx = nx + dx,
+        by = ny + dy;
+      if (!isFree(bx, by)) return;
+      grid[by][bx] = '$';
+      grid[ny][nx] = targets.has(ny + ',' + nx) ? '.' : ' ';
+      pushes++;
+    } else if (!isFree(nx, ny)) return;
+    px = nx; py = ny;
+    draw();
+  };
+  const won = () => targets.size > 0 && [...targets].every((t) => { const [y, x] = t.split(',').map(Number); return grid[y][x] === '$'; });
+  const draw = () => {
+    board.style.setProperty('--w', String(grid[0].length));
+    board.replaceChildren();
+    for (let y = 0; y < grid.length; y++)
+      for (let x = 0; x < grid[y].length; x++) {
+        const isP = x === px && y === py;
+        const ch = grid[y][x];
+        const tgt = targets.has(y + ',' + x);
+        let cls = 'g-sok-cell',
+          txt = '';
+        if (ch === '#') cls += ' wall';
+        else if (isP) { cls += ' player'; txt = '\u{1F642}'; }
+        else if (ch === '$') { cls += tgt ? ' box on' : ' box'; txt = '\u{1F4E6}'; }
+        else if (tgt) { cls += ' target'; txt = '·'; }
+        board.append(el('div', { class: cls }, txt));
+      }
+    if (won()) { status.textContent = `Level solved in ${pushes} pushes!`; status.classList.add('win'); }
+    else { status.classList.remove('win'); status.textContent = 'Push every box onto a dot. You can only push, never pull.'; }
+  };
+  const pad = el('div', { class: 'g-dpad' },
+    el('span', {}),
+    button('↑', () => move(0, -1)),
+    el('span', {}),
+    button('←', () => move(-1, 0)),
+    button('↺', () => load(level), 'g-mini'),
+    button('→', () => move(1, 0)),
+    el('span', {}),
+    button('↓', () => move(0, 1)),
+    el('span', {}),
+  );
+  stage.append(board, pad, bar(button('Next level', () => load(level + 1))), status);
+  load(0);
+  return {};
+});
+
+/* Sudoku 4x4 --------------------------------------------------------------- */
+reg('sudoku4', (stage) => {
+  let sol = [],
+    grid = [],
+    fixed = [];
+  const status = note();
+  const board = el('div', { class: 'g-sudoku' });
+  const gen = () => {
+    const base = [[1, 2, 3, 4], [3, 4, 1, 2], [2, 1, 4, 3], [4, 3, 2, 1]];
+    const perm = shuffle([1, 2, 3, 4]);
+    sol = base.map((r) => r.map((v) => perm[v - 1]));
+    // shuffle rows within bands and cols within stacks (keeps validity)
+    if (Math.random() < 0.5) [sol[0], sol[1]] = [sol[1], sol[0]];
+    if (Math.random() < 0.5) [sol[2], sol[3]] = [sol[3], sol[2]];
+    grid = sol.map((r) => r.slice());
+    fixed = sol.map((r) => r.map(() => true));
+    let holes = 8;
+    while (holes > 0) {
+      const y = randInt(0, 3),
+        x = randInt(0, 3);
+      if (fixed[y][x]) { fixed[y][x] = false; grid[y][x] = 0; holes--; }
+    }
+    draw();
+  };
+  const valid = () => {
+    const ok = (arr) => new Set(arr).size === 4 && !arr.includes(0);
+    for (let i = 0; i < 4; i++) {
+      if (!ok(grid[i])) return false;
+      if (!ok(grid.map((r) => r[i]))) return false;
+    }
+    for (const [by, bx] of [[0, 0], [0, 2], [2, 0], [2, 2]]) {
+      const box = [grid[by][bx], grid[by][bx + 1], grid[by + 1][bx], grid[by + 1][bx + 1]];
+      if (!ok(box)) return false;
+    }
+    return true;
+  };
+  const conflict = (y, x) => {
+    const v = grid[y][x];
+    if (!v) return false;
+    for (let i = 0; i < 4; i++) {
+      if (i !== x && grid[y][i] === v) return true;
+      if (i !== y && grid[i][x] === v) return true;
+    }
+    const by = y - (y % 2),
+      bx = x - (x % 2);
+    for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) if ((by + dy !== y || bx + dx !== x) && grid[by + dy][bx + dx] === v) return true;
+    return false;
+  };
+  const draw = () => {
+    board.replaceChildren();
+    for (let y = 0; y < 4; y++)
+      for (let x = 0; x < 4; x++) {
+        const v = grid[y][x];
+        const cls = 'g-scell' + (fixed[y][x] ? ' fixed' : '') + (conflict(y, x) ? ' bad' : '') + ((x === 1 || x === 3) ? ' vr' : '') + ((y === 1 || y === 3) ? ' hr' : '');
+        board.append(
+          el('button', {
+            type: 'button',
+            class: cls,
+            disabled: fixed[y][x],
+            onClick: () => { if (!fixed[y][x]) { grid[y][x] = (grid[y][x] % 4) + 1; draw(); } },
+          }, v || ''),
+        );
+      }
+    if (valid()) { status.textContent = 'Every row, column, and box has 1 to 4. Solved!'; status.classList.add('win'); }
+    else { status.classList.remove('win'); status.textContent = 'Fill the grid so each row, column, and 2x2 box holds 1, 2, 3, 4. Click a cell to change it.'; }
+  };
+  stage.append(board, bar(button('New puzzle', gen)), status);
+  gen();
+  return {};
+});
+
+/* ========================================================================== *
+ *  MATHS FOR MACHINES
+ * ========================================================================== */
+
+/* Derivative: the slope at a point ----------------------------------------- */
+reg('derivative', (stage) => {
+  const c = makeCanvas(stage, 1.5);
+  const f = (x) => 0.6 * Math.sin(2 * x);
+  const df = (x) => 1.2 * Math.cos(2 * x);
+  let x0 = 0.3;
+  const status = note();
+  const px = (x) => 20 + ((x + 1.5) / 3) * (c.state.W - 40);
+  const py = (y) => c.state.H / 2 - y * (c.state.H * 0.34);
+  const draw = () => {
+    const { ctx } = c;
+    const { W, H } = c.state;
+    const t = theme();
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = t.rule;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(px(-1.5), py(0));
+    ctx.lineTo(px(1.5), py(0));
+    ctx.stroke();
+    ctx.strokeStyle = t.fg;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let x = -1.5; x <= 1.5; x += 0.02) (x === -1.5 ? ctx.moveTo : ctx.lineTo).call(ctx, px(x), py(f(x)));
+    ctx.stroke();
+    const m = df(x0);
+    ctx.strokeStyle = PINK;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(px(x0 - 0.6), py(f(x0) - m * 0.6));
+    ctx.lineTo(px(x0 + 0.6), py(f(x0) + m * 0.6));
+    ctx.stroke();
+    ctx.fillStyle = BLUE;
+    ctx.beginPath();
+    ctx.arc(px(x0), py(f(x0)), 7, 0, 7);
+    ctx.fill();
+    const flat = Math.abs(m) < 0.08;
+    status.classList.toggle('win', flat);
+    status.textContent = `Slope here = ${m.toFixed(2)}. ` + (flat ? 'Flat: this is a peak or valley, exactly where gradient descent wants to stop.' : m > 0 ? 'Going uphill.' : 'Going downhill.');
+  };
+  const s = slider('Point x', -150, 150, x0 * 100, (v) => { x0 = v / 100; draw(); });
+  status.textContent = 'The pink line is the slope of the curve at the blue dot. That slope is the derivative, and it drives all training.';
+  stage.append(s.node, status);
+  draw();
+  return {};
+});
+
+/* Integral: area as a stack of rectangles ---------------------------------- */
+reg('integral', (stage) => {
+  const c = makeCanvas(stage, 1.5);
+  const f = (x) => 0.55 + 0.4 * Math.sin(1.8 * x);
+  let n = 6;
+  const status = note();
+  const A = 0,
+    B = 2;
+  const px = (x) => 24 + (x / B) * (c.state.W - 48);
+  const py = (y) => c.state.H - 22 - y * (c.state.H - 44);
+  const draw = () => {
+    const { ctx } = c;
+    const { W, H } = c.state;
+    const t = theme();
+    ctx.clearRect(0, 0, W, H);
+    const dx = (B - A) / n;
+    let approx = 0;
+    for (let i = 0; i < n; i++) {
+      const xm = A + (i + 0.5) * dx;
+      const h = f(xm);
+      approx += h * dx;
+      ctx.fillStyle = 'rgba(77,163,255,0.28)';
+      ctx.strokeStyle = BLUE;
+      ctx.lineWidth = 1;
+      ctx.fillRect(px(A + i * dx), py(h), px(A + dx) - px(A), py(0) - py(h));
+      ctx.strokeRect(px(A + i * dx), py(h), px(A + dx) - px(A), py(0) - py(h));
+    }
+    ctx.strokeStyle = t.fg;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let x = A; x <= B; x += 0.01) (x === A ? ctx.moveTo : ctx.lineTo).call(ctx, px(x), py(f(x)));
+    ctx.stroke();
+    // true area by fine sampling
+    let truth = 0;
+    for (let x = A; x < B; x += 0.001) truth += f(x + 0.0005) * 0.001;
+    const err = Math.abs(approx - truth);
+    status.classList.toggle('win', err < 0.01);
+    status.textContent = `${n} rectangles estimate the area at ${approx.toFixed(3)}. The true area is ${truth.toFixed(3)}. More slices, less error.`;
+  };
+  const s = slider('Rectangles', 2, 40, n, (v) => { n = v; draw(); });
+  status.textContent = 'The area under a curve is a sum of thin rectangles. Add more and the estimate closes in. That is integration.';
+  stage.append(s.node, status);
+  draw();
+  return {};
+});
+
+/* Vectors and the dot product ---------------------------------------------- */
+reg('vectors', (stage) => {
+  const c = makeCanvas(stage, 1.2);
+  let a = { x: 0.6, y: 0.4 },
+    b = { x: 0.5, y: -0.4 },
+    sel = null;
+  const status = note();
+  const draw = () => {
+    const { ctx } = c;
+    const { W, H } = c.state;
+    const t = theme();
+    const f = dataFrame(W, H, 24);
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = t.rule;
+    ctx.beginPath();
+    ctx.moveTo(f.x(-1), f.y(0));
+    ctx.lineTo(f.x(1), f.y(0));
+    ctx.moveTo(f.x(0), f.y(-1));
+    ctx.lineTo(f.x(0), f.y(1));
+    ctx.stroke();
+    const arrow = (v, col) => {
+      ctx.strokeStyle = col;
+      ctx.fillStyle = col;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(f.x(0), f.y(0));
+      ctx.lineTo(f.x(v.x), f.y(v.y));
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(f.x(v.x), f.y(v.y), 7, 0, 7);
+      ctx.fill();
+    };
+    arrow(a, BLUE);
+    arrow(b, PINK);
+    const dot = a.x * b.x + a.y * b.y;
+    const ma = Math.hypot(a.x, a.y),
+      mb = Math.hypot(b.x, b.y);
+    const ang = (Math.acos(clamp(dot / (ma * mb || 1), -1, 1)) * 180) / Math.PI;
+    status.textContent = `Dot product ${dot.toFixed(2)}, angle ${ang.toFixed(0)}°. ` + (Math.abs(dot) < 0.04 ? 'At 90° the dot product is zero: the vectors ignore each other.' : dot > 0 ? 'Positive: they point the same way. This is how attention scores similarity.' : 'Negative: they point apart.');
+    status.classList.toggle('win', Math.abs(dot) < 0.04);
+  };
+  drag(c.wrap, {
+    down: (p) => {
+      const f = dataFrame(c.state.W, c.state.H, 24);
+      const da = (f.x(a.x) - p.x) ** 2 + (f.y(a.y) - p.y) ** 2;
+      const db = (f.x(b.x) - p.x) ** 2 + (f.y(b.y) - p.y) ** 2;
+      sel = da < db ? a : b;
+      pt(p);
+    },
+    move: (p) => sel && pt(p),
+    up: () => (sel = null),
+  });
+  const pt = (p) => {
+    const f = dataFrame(c.state.W, c.state.H, 24);
+    sel.x = clamp(f.ix(p.x), -1, 1);
+    sel.y = clamp(f.iy(p.y), -1, 1);
+    draw();
+  };
+  status.textContent = 'Drag the two arrows. The dot product measures how much they point the same way. It is the heart of attention.';
+  stage.append(status);
+  draw();
+  return {};
+});
+
+/* Matrix transform --------------------------------------------------------- */
+reg('matrix', (stage) => {
+  const c = makeCanvas(stage, 1.2);
+  let m = [1, 0, 0, 1];
+  const status = note();
+  const draw = () => {
+    const { ctx } = c;
+    const { W, H } = c.state;
+    const t = theme();
+    const f = dataFrame(W, H, 24);
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = t.rule;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(f.x(-1), f.y(0));
+    ctx.lineTo(f.x(1), f.y(0));
+    ctx.moveTo(f.x(0), f.y(-1));
+    ctx.lineTo(f.x(0), f.y(1));
+    ctx.stroke();
+    const unit = [[0, 0], [0.6, 0], [0.6, 0.6], [0, 0.6]];
+    const tf = ([x, y]) => [m[0] * x + m[1] * y, m[2] * x + m[3] * y];
+    // original
+    ctx.strokeStyle = t.faint;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    unit.forEach(([x, y], i) => (i ? ctx.lineTo : ctx.moveTo).call(ctx, f.x(x), f.y(y)));
+    ctx.closePath();
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // transformed
+    ctx.strokeStyle = PINK;
+    ctx.fillStyle = 'rgba(255,93,143,0.18)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    unit.map(tf).forEach(([x, y], i) => (i ? ctx.lineTo : ctx.moveTo).call(ctx, f.x(x), f.y(y)));
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // basis vectors
+    const bx = tf([0.6, 0]),
+      by = tf([0, 0.6]);
+    const drawB = (v, col) => { ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(f.x(0), f.y(0)); ctx.lineTo(f.x(v[0]), f.y(v[1])); ctx.stroke(); };
+    drawB(bx, BLUE);
+    drawB(by, MINT);
+    const det = m[0] * m[3] - m[1] * m[2];
+    status.textContent = `Determinant ${det.toFixed(2)}: the shape's area is scaled by ${Math.abs(det).toFixed(2)}${det < 0 ? ', and flipped' : ''}. A neural layer is a matrix like this.`;
+  };
+  const names = ['a', 'b', 'c', 'd'];
+  const sl = m.map((v, i) => slider(names[i], -20, 20, v * 10, (nv) => { m[i] = nv / 10; draw(); }));
+  const presets = bar(
+    button('Rotate', () => setM([0, -1, 1, 0])),
+    button('Scale', () => setM([1.6, 0, 0, 1.6])),
+    button('Shear', () => setM([1, 0.8, 0, 1])),
+    button('Reset', () => setM([1, 0, 0, 1])),
+  );
+  const setM = (nm) => { m = nm.slice(); sl.forEach((s, i) => s.set(m[i] * 10)); draw(); };
+  status.textContent = 'A 2x2 matrix bends space. Change its four numbers and watch the square rotate, stretch, and shear.';
+  stage.append(...sl.map((s) => s.node), presets, status);
+  draw();
+  return {};
+});
+
+/* ========================================================================== *
+ *  MORE PHYSICS
+ * ========================================================================== */
+
+/* Spring: Hooke's law and simple harmonic motion --------------------------- */
+reg('spring', (stage) => {
+  const c = makeCanvas(stage, 1.7);
+  const loop = makeLoop(tick);
+  let k = 8,
+    x = 0.6,
+    v = 0,
+    mass = 1,
+    dragging = false;
+  const status = note();
+  function tick(dt) {
+    if (!dragging) {
+      const a = (-k / mass) * x;
+      v += a * dt;
+      v *= 0.999;
+      x += v * dt;
+    }
+    draw();
+  }
+  function draw() {
+    const { ctx } = c;
+    const { W, H } = c.state;
+    const t = theme();
+    ctx.clearRect(0, 0, W, H);
+    const midY = H / 2;
+    const restX = W * 0.5;
+    const massX = restX + x * (W * 0.3);
+    // wall
+    ctx.fillStyle = t.rule;
+    ctx.fillRect(20, midY - 40, 8, 80);
+    // coil
+    ctx.strokeStyle = t.faint;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(28, midY);
+    const coils = 14;
+    for (let i = 0; i <= coils; i++) {
+      const px = 28 + ((massX - 28) * i) / coils;
+      ctx.lineTo(px, midY + (i % 2 ? -12 : 12) * (i > 0 && i < coils ? 1 : 0));
+    }
+    ctx.lineTo(massX, midY);
+    ctx.stroke();
+    // mass
+    ctx.fillStyle = PINK;
+    ctx.fillRect(massX - 18, midY - 18, 36, 36);
+    const T = 2 * Math.PI * Math.sqrt(mass / k);
+    ctx.fillStyle = t.faint;
+    ctx.font = '13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`stiffness k = ${k.toFixed(0)}   period T = ${T.toFixed(2)}s`, W / 2, H - 14);
+  }
+  drag(c.wrap, {
+    down: (p) => { dragging = true; setX(p); },
+    move: (p) => dragging && setX(p),
+    up: () => { dragging = false; v = 0; },
+  });
+  const setX = (p) => {
+    const { W } = c.state;
+    x = clamp((p.x - W * 0.5) / (W * 0.3), -1, 1);
+  };
+  const s = slider('Stiffness', 2, 30, k, (v2) => (k = v2));
+  status.textContent = 'Pull the block and let go. A stiffer spring snaps back faster. Period depends on stiffness and mass, never amplitude.';
+  stage.append(s.node, status);
+  draw();
+  return { pause: loop.stop, resume: loop.start };
+});
+
+/* Elastic collision of two carts ------------------------------------------- */
+reg('collide', (stage) => {
+  const c = makeCanvas(stage, 2.0);
+  const loop = makeLoop(tick);
+  let m1 = 1,
+    m2 = 3;
+  let a, b;
+  const status = note();
+  const reset = () => {
+    a = { x: 0.18, v: 0.9, m: m1 };
+    b = { x: 0.7, v: -0.3, m: m2 };
+    status.classList.remove('win');
+  };
+  const size = (m) => 18 + Math.cbrt(m) * 16;
+  function tick(dt) {
+    const { W } = c.state;
+    a.x += a.v * dt * 0.4;
+    b.x += b.v * dt * 0.4;
+    const ra = size(a.m) / W,
+      rb = size(b.m) / W;
+    // walls
+    if (a.x < ra) { a.x = ra; a.v = Math.abs(a.v); }
+    if (b.x > 1 - rb) { b.x = 1 - rb; b.v = -Math.abs(b.v); }
+    if (a.x < ra) a.v = Math.abs(a.v);
+    // collision
+    if (a.x + ra > b.x - rb && a.v > b.v) {
+      const va = a.v,
+        vb = b.v;
+      a.v = ((a.m - b.m) * va + 2 * b.m * vb) / (a.m + b.m);
+      b.v = ((b.m - a.m) * vb + 2 * a.m * va) / (a.m + b.m);
+    }
+    if (b.x < rb) { b.x = rb; b.v = Math.abs(b.v); }
+    draw();
+  }
+  function draw() {
+    const { ctx } = c;
+    const { W, H } = c.state;
+    const t = theme();
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = t.rule;
+    ctx.beginPath();
+    ctx.moveTo(0, H - 20);
+    ctx.lineTo(W, H - 20);
+    ctx.stroke();
+    const box = (o, col) => {
+      const s = size(o.m);
+      ctx.fillStyle = col;
+      ctx.fillRect(o.x * W - s / 2, H - 20 - s, s, s);
+    };
+    box(a, BLUE);
+    box(b, PINK);
+    const p = (a.m * a.v + b.m * b.v).toFixed(2);
+    ctx.fillStyle = t.faint;
+    ctx.font = '13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`total momentum ${p} (conserved)`, W / 2, 18);
+  }
+  const s1 = slider('Blue mass', 1, 9, m1, (v) => { m1 = v; reset(); });
+  const s2 = slider('Pink mass', 1, 9, m2, (v) => { m2 = v; reset(); });
+  status.textContent = 'Two carts collide and bounce elastically. A heavy one barely notices a light one. Momentum never changes.';
+  stage.append(s1.node, s2.node, bar(button('Launch', reset)), status);
+  reset();
+  draw();
+  return { pause: loop.stop, resume: loop.start };
+});
+
 /* --- a labelled slider control -------------------------------------------- */
 function slider(label, min, max, val, onInput, unit = '') {
   const out = el('span', { class: 'g-slider-val tnum' }, Math.round(val) + unit);
@@ -1757,42 +3352,123 @@ function slider(label, min, max, val, onInput, unit = '') {
     input,
     out,
   );
-  return { node, input };
+  const set = (v) => {
+    input.value = String(v);
+    out.textContent = Math.round(Number(v)) + unit;
+  };
+  return { node, input, set };
 }
 
-/* --- bootstrap ------------------------------------------------------------- */
+/* --- bootstrap: the searchable, paginated gallery -------------------------- */
 function boot() {
-  const cards = document.querySelectorAll('.game[data-game]');
+  const root = document.querySelector('.surprised');
+  if (!root) return;
+  const cards = [...root.querySelectorAll('.game[data-game]')];
+  const search = root.querySelector('#arcade-search');
+  const chips = [...root.querySelectorAll('.arcade-chip[data-cat]')];
+  const pager = root.querySelector('#arcade-pager');
+  const countEl = root.querySelector('#arcade-count');
+  const heading = root.querySelector('#arcade-heading');
+  const empty = root.querySelector('#arcade-empty');
+  const grid = root.querySelector('#arcade-grid');
+  const PAGE = 12;
+  let cat = 'all';
+  let q = '';
+  let page = 0;
+
+  const mount = (card) => {
+    if (card.__inited) return;
+    card.__inited = true;
+    const stage = card.querySelector('[data-stage]');
+    const factory = GAMES[card.dataset.game];
+    if (!stage || !factory) return;
+    stage.classList.add('is-ready');
+    stage.replaceChildren();
+    try {
+      card.__handle = factory(stage) || {};
+    } catch (err) {
+      console.error('[surprised]', card.dataset.game, err);
+      stage.append(el('p', { class: 'g-note' }, 'This one hit a snag on your browser.'));
+    }
+  };
+
+  // Pause a running game once it scrolls out of view; resume when it returns.
   const io = new IntersectionObserver(
     (entries) => {
-      for (const entry of entries) {
-        const card = entry.target;
-        const stage = card.querySelector('[data-stage]');
-        if (!stage) continue;
-        if (entry.isIntersecting) {
-          if (!card.__inited) {
-            card.__inited = true;
-            const id = card.dataset.game;
-            const factory = GAMES[id];
-            if (!factory) continue;
-            stage.classList.add('is-ready');
-            stage.replaceChildren();
-            try {
-              card.__handle = factory(stage) || {};
-            } catch (err) {
-              console.error('[surprised]', id, err);
-              stage.append(el('p', { class: 'g-note' }, 'This one hit a snag on your browser.'));
-            }
-          }
-          card.__handle && card.__handle.resume && card.__handle.resume();
-        } else {
-          card.__handle && card.__handle.pause && card.__handle.pause();
-        }
+      for (const e of entries) {
+        const card = e.target;
+        if (card.classList.contains('is-hidden')) continue;
+        const h = card.__handle;
+        if (!h) continue;
+        if (e.isIntersecting) h.resume && h.resume();
+        else h.pause && h.pause();
       }
     },
-    { rootMargin: '260px 0px' },
+    { rootMargin: '200px 0px' },
   );
   cards.forEach((c) => io.observe(c));
+
+  const matches = (card) =>
+    (cat === 'all' || card.dataset.cat === cat) && (!q || (card.dataset.search || '').includes(q));
+
+  const pbtn = (label, fn, disabled, active) =>
+    el('button', { type: 'button', class: 'arcade-page' + (active ? ' on' : ''), disabled, onClick: fn }, label);
+
+  const toGrid = () => grid && grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  function render() {
+    const shown = cards.filter(matches);
+    const pages = Math.max(1, Math.ceil(shown.length / PAGE));
+    page = clamp(page, 0, pages - 1);
+    const start = page * PAGE;
+    const onPage = new Set(shown.slice(start, start + PAGE));
+    for (const card of cards) {
+      const on = onPage.has(card);
+      card.classList.toggle('is-hidden', !on);
+      if (on) {
+        mount(card);
+        card.__handle && card.__handle.resume && card.__handle.resume();
+      } else {
+        card.__handle && card.__handle.pause && card.__handle.pause();
+      }
+    }
+    const activeChip = chips.find((c) => c.dataset.cat === cat);
+    if (heading) heading.textContent = activeChip ? activeChip.dataset.label : 'All games';
+    if (countEl) countEl.textContent = shown.length
+      ? `${shown.length} game${shown.length > 1 ? 's' : ''}` + (cat !== 'all' || q ? ' shown' : '')
+      : 'nothing matches';
+    if (empty) empty.hidden = shown.length > 0;
+    chips.forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.cat === cat)));
+    if (pager) {
+      pager.replaceChildren();
+      if (pages > 1) {
+        pager.append(pbtn('Prev', () => { page--; render(); toGrid(); }, page === 0));
+        for (let i = 0; i < pages; i++) pager.append(pbtn(String(i + 1), () => { page = i; render(); toGrid(); }, false, i === page));
+        pager.append(pbtn('Next', () => { page++; render(); toGrid(); }, page === pages - 1));
+      }
+    }
+  }
+
+  chips.forEach((ch) => ch.addEventListener('click', () => { cat = ch.dataset.cat; page = 0; render(); }));
+  if (search) search.addEventListener('input', () => { q = search.value.trim().toLowerCase(); page = 0; render(); });
+
+  const jump = () => {
+    const m = location.hash.match(/^#game-(.+)$/);
+    if (!m) return;
+    const card = cards.find((c) => c.dataset.game === m[1]);
+    if (!card) return;
+    cat = 'all';
+    q = '';
+    if (search) search.value = '';
+    const idx = cards.filter(matches).indexOf(card);
+    page = Math.max(0, Math.floor(idx / PAGE));
+    render();
+    card.scrollIntoView({ block: 'center' });
+  };
+
+  render();
+  if (location.hash) jump();
+  window.addEventListener('hashchange', jump);
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

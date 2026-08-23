@@ -189,8 +189,8 @@ async function main() {
   });
   cards.set('/surprised/', {
     eyebrow: 'A surprise arcade',
-    title: 'Two dozen tiny games that each teach one idea.',
-    foot: 'Logic  ·  physics  ·  maths  ·  played in the browser',
+    title: 'Little games that teach, from fractions to neural networks.',
+    foot: 'Machine learning  ·  logic  ·  physics  ·  maths  ·  in the browser',
   });
 
   // A card per series, because those are real reading paths people share. The
