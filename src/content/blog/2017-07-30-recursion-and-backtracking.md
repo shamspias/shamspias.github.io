@@ -1,5 +1,6 @@
 ---
 title: "Recursion and Backtracking: Trusting a Function You Have Not Finished Writing"
+seoTitle: "Recursion and Backtracking, Made Mechanical"
 description: "Recursion is hard because everyone traces it. The habit that makes it mechanical: write the contract, trust the smaller call, never trace the stack."
 date: 2017-07-30
 permalink: "/posts/2017/07/recursion-and-backtracking/"

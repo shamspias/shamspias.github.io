@@ -1,5 +1,6 @@
 ---
 title: "Prefix Sums and Two Pointers: The Array Tricks You Will Use Forever"
+seoTitle: "Prefix Sums and Two Pointers"
 description: "Two techniques that turn a quadratic loop into a linear one, on the humblest data structure there is. Range sums in constant time, and the sliding window."
 date: 2016-07-09
 permalink: "/posts/2016/07/prefix-sums-and-two-pointers/"
