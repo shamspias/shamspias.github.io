@@ -2,6 +2,7 @@
 import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import { DEFAULT_LOCALE, LOCALES, LOCALE_META, delocalise, localise, t, type Locale } from '../i18n';
 
 interface Props {
   title: string;
@@ -17,14 +18,43 @@ interface Props {
   bareTitle?: boolean;
   /** Omit the canonical link. Only the 404 wants this. */
   noCanonical?: boolean;
+  /** The language this page is written in. */
+  locale?: Locale;
+  /**
+   * The languages this particular page exists in. Defaults to all of them,
+   * which is right for every page that is not an article: the chrome is
+   * translated, so the page exists in three languages by construction.
+   */
+  available?: readonly Locale[];
 }
 
-const { title, description, article, math, noindex, schema, keywords, bareTitle, noCanonical } =
-  Astro.props;
+const {
+  title,
+  description,
+  article,
+  math,
+  noindex,
+  schema,
+  keywords,
+  bareTitle,
+  noCanonical,
+  locale = DEFAULT_LOCALE,
+  available = LOCALES,
+} = Astro.props;
+
+const meta = LOCALE_META[locale];
+
+// Every language's address for this same page, derived from the canonical
+// English path. One map serves three purposes: the hreflang set, the switcher,
+// and the language rule in the head.
+const canonicalPath = delocalise(Astro.url.pathname).path;
+const hrefs = Object.fromEntries(
+  available.map((l) => [l, localise(canonicalPath, l)]),
+) as Partial<Record<Locale, string>>;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={meta.tag} dir={meta.dir}>
   <head>
     <BaseHead
       title={title}
@@ -35,15 +65,18 @@ const { title, description, article, math, noindex, schema, keywords, bareTitle,
       keywords={keywords}
       bareTitle={bareTitle}
       noCanonical={noCanonical}
+      locale={locale}
+      available={available}
+      hrefs={hrefs}
     />
     {schema && <script type="application/ld+json" set:html={JSON.stringify(schema)} />}
   </head>
   <body>
-    <a class="skip-link" href="#main">Skip to content</a>
-    <Header />
+    <a class="skip-link" href="#main">{t(locale).skipToContent}</a>
+    <Header locale={locale} hrefs={hrefs} />
     <main class="shell" id="main">
       <slot />
     </main>
-    <Footer />
+    <Footer locale={locale} />
   </body>
 </html>

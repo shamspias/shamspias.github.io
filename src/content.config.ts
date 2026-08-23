@@ -20,6 +20,13 @@ const blog = defineCollection({
     permalink: z
       .string()
       .regex(/^\/posts\/\d{4}\/\d{2}\/[a-z0-9-]+\/$/, 'permalink must look like /posts/YYYY/MM/slug/'),
+    /**
+     * The language this file is written in. English files sit in the collection
+     * root and carry no prefix in their URL; a translation sits in a folder
+     * named after its language and is served under `/<lang>` + the same
+     * permalink, so the two versions of a post are always one prefix apart.
+     */
+    lang: z.enum(['en', 'bn', 'ar']).default('en'),
     tags: z.array(z.string()).default([]),
     /** Multi-part runs are grouped and cross-linked by these two fields. */
     series: z.string().optional(),

@@ -2,6 +2,8 @@
 import { Font } from 'astro:assets';
 import { SITE } from '../consts';
 import { ogCard } from '../lib/seo';
+import { DEFAULT_LOCALE, LOCALES, LOCALE_META, t, type Locale } from '../i18n';
+import { LANGUAGE_TO_LOCALE, LOCALE_STORAGE_KEY, ZONE_TO_LOCALE } from '../i18n/config';
 import '../styles/global.css';
 
 interface Props {
@@ -18,6 +20,10 @@ interface Props {
   bareTitle?: boolean;
   /** The 404 page: there is no preferred URL for a page that does not exist. */
   noCanonical?: boolean;
+  locale?: Locale;
+  available?: readonly Locale[];
+  /** This page's address in each language it exists in. */
+  hrefs?: Partial<Record<Locale, string>>;
 }
 
 const {
@@ -29,9 +35,15 @@ const {
   keywords = [],
   bareTitle = false,
   noCanonical = false,
+  locale = DEFAULT_LOCALE,
+  available = LOCALES,
+  hrefs = {},
 } = Astro.props;
 
-const canonical = new URL(Astro.url.pathname, Astro.site ?? SITE.url).href;
+const meta = LOCALE_META[locale];
+const strings = t(locale);
+const origin = Astro.site ?? new URL(SITE.url);
+const canonical = new URL(Astro.url.pathname, origin).href;
 
 // A result is cut around sixty characters. The brand suffix earns its place on a
 // short title and steals the end of a long one, so it is dropped when the page
@@ -39,12 +51,12 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? SITE.url).href;
 const suffix = ` · ${SITE.name}`;
 const fullTitle =
   title === SITE.name
-    ? `${SITE.name} · ${SITE.role}`
+    ? `${SITE.name} · ${strings.role}`
     : bareTitle || title.length + suffix.length > 62
       ? title
       : title + suffix;
 
-const card = ogCard(Astro.url.pathname, title);
+const card = ogCard(Astro.url.pathname, title, locale);
 
 // Google reads this to decide how much of the page it may show. Left off, it
 // defaults to a truncated snippet and a thumbnail-sized image.
@@ -53,6 +65,34 @@ const robots = noindex
   : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
 
 const keywordList = [...new Set([...keywords, ...(article?.tags ?? [])])];
+
+// Every version points at every other one and at itself, which is what the
+// specification requires: a set with a missing return reference is ignored.
+// A page that exists in one language is not a set, so it gets nothing: an
+// hreflang pointing only at itself says nothing, and pointing at an address
+// that was never generated is worse than saying nothing.
+const alternateLinks =
+  available.length > 1
+    ? [
+        ...available.map((l) => ({
+          hreflang: LOCALE_META[l].tag,
+          href: new URL(hrefs[l] ?? Astro.url.pathname, origin).href,
+        })),
+        ...(available.includes(DEFAULT_LOCALE)
+          ? [
+              {
+                hreflang: 'x-default',
+                href: new URL(hrefs[DEFAULT_LOCALE] ?? '/', origin).href,
+              },
+            ]
+          : []),
+      ]
+    : [];
+
+// The two locales whose scripts the latin faces cannot set. Loaded only on the
+// pages written in them, so an English reader never pays for either.
+const needsBengali = locale === 'bn';
+const needsArabic = locale === 'ar';
 ---
 
 <meta charset="utf-8" />
@@ -64,6 +104,8 @@ const keywordList = [...new Set([...keywords, ...(article?.tags ?? [])])];
 <meta name="robots" content={robots} />
 <meta name="googlebot" content={robots} />
 {keywordList.length > 0 && <meta name="keywords" content={keywordList.join(', ')} />}
+
+{alternateLinks.map((a) => <link rel="alternate" hreflang={a.hreflang} href={a.href} />)}
 
 <meta name="author" content={SITE.name} />
 <link rel="author" href={SITE.url} />
@@ -81,7 +123,12 @@ const keywordList = [...new Set([...keywords, ...(article?.tags ?? [])])];
 <meta property="og:image:width" content={String(card.width)} />
 <meta property="og:image:height" content={String(card.height)} />
 <meta property="og:image:alt" content={card.alt} />
-<meta property="og:locale" content="en_GB" />
+<meta property="og:locale" content={meta.og} />
+{
+  available
+    .filter((l) => l !== locale)
+    .map((l) => <meta property="og:locale:alternate" content={LOCALE_META[l].og} />)
+}
 {
   article && (
     <>
@@ -115,6 +162,8 @@ const keywordList = [...new Set([...keywords, ...(article?.tags ?? [])])];
 <Font cssVariable="--font-display" />
 <Font cssVariable="--font-text" />
 <Font cssVariable="--font-mono" />
+{needsBengali && <Font cssVariable="--font-bengali" />}
+{needsArabic && <Font cssVariable="--font-arabic" />}
 
 {math && <link rel="stylesheet" href="/katex/katex.min.css" />}
 
@@ -126,5 +175,75 @@ const keywordList = [...new Set([...keywords, ...(article?.tags ?? [])])];
       const t = localStorage.getItem('theme');
       if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
     } catch {}
+  })();
+</script>
+
+{/* The language rule.
+    A folder of static files has no server, so there is nothing to read a
+    country off a request. The best signal a browser gives is its time zone,
+    which is a place rather than a preference, and that is what this uses:
+    Bangladesh gets Bangla, the Arabic-speaking countries get Arabic, everyone
+    else gets English. A stored choice always wins, `?lang=` always wins over
+    that, and a language this page does not exist in is never navigated to. */}
+<script
+  is:inline
+  define:vars={{
+    here: locale,
+    hrefs,
+    zones: ZONE_TO_LOCALE,
+    languages: LANGUAGE_TO_LOCALE,
+    key: LOCALE_STORAGE_KEY,
+    fallback: DEFAULT_LOCALE,
+  }}
+>
+  (() => {
+    const store = (value) => {
+      try {
+        localStorage.setItem(key, value);
+      } catch {}
+    };
+    const stored = (() => {
+      try {
+        return localStorage.getItem(key);
+      } catch {
+        return null;
+      }
+    })();
+
+    // An explicit ?lang= is a decision, it is remembered, and it ends the
+    // matter: falling through to the rules below would let a previously stored
+    // choice overrule the one just made in the address bar.
+    const forced = new URLSearchParams(location.search).get('lang');
+    if (forced && hrefs[forced]) {
+      store(forced);
+      if (forced !== here) location.replace(hrefs[forced] + location.hash);
+      return;
+    }
+
+    // Landing on a prefixed page is itself a decision: somebody followed a link
+    // to `/ar/...` or typed it. Remember it and stay put. Without this, a deep
+    // link to the Arabic site would be unusable from Bangladesh, because the
+    // rule below would send every visitor straight back to Bangla.
+    if (here !== fallback) {
+      if (!stored) store(here);
+      return;
+    }
+
+    let want = stored && hrefs[stored] ? stored : null;
+
+    if (!want) {
+      // Where the reader is, then what they read, then English.
+      let zone = '';
+      try {
+        zone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+      } catch {}
+      const byZone = zones[zone];
+      const byLanguage = (navigator.languages || [navigator.language || ''])
+        .map((tag) => languages[String(tag).slice(0, 2).toLowerCase()])
+        .find(Boolean);
+      want = byZone || byLanguage || fallback;
+    }
+
+    if (want !== here && hrefs[want]) location.replace(hrefs[want] + location.hash);
   })();
 </script>

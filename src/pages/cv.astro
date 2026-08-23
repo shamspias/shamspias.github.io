@@ -127,6 +127,7 @@ const RESEARCH = [
   title="Curriculum Vitae"
   description="Shamsuddin Ahmed, senior software engineer: five-plus years on backend systems, production ML infrastructure and agent harnesses in Go and Python."
   noindex
+  available={['en']}
 >
   <div class="wrap cv">
     <header class="cv__head">
@@ -410,7 +411,7 @@ const RESEARCH = [
 
   .points > li {
     position: relative;
-    padding-left: 1.1em;
+    padding-inline-start: 1.1em;
     font-size: var(--t-sm);
     line-height: 1.62;
     color: var(--fg-muted);
@@ -420,7 +421,7 @@ const RESEARCH = [
   .points > li::before {
     content: '';
     position: absolute;
-    left: 0;
+    inset-inline-start: 0;
     top: 0.78em;
     width: 0.42em;
     height: var(--rule-w);

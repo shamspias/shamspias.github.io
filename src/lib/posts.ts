@@ -1,33 +1,61 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 import { SERIES_ORDER } from '../consts';
+import { DEFAULT_LOCALE, formatDateIn, localise, shortDateIn, type Locale } from '../i18n';
 
 export type Post = CollectionEntry<'blog'>;
 
 const isPublished = (p: Post) => import.meta.env.DEV || !p.data.draft;
 
-/** Every published post, newest first. */
-export async function allPosts(): Promise<Post[]> {
-  const posts = (await getCollection('blog')).filter(isPublished);
+/**
+ * Every published post in one language, newest first.
+ *
+ * The collection holds all three languages, so a page that forgets to say which
+ * one it wants would list the same post three times. The parameter is therefore
+ * required in spirit and defaulted to English only because English is where
+ * every existing caller already was.
+ */
+export async function allPosts(locale: Locale = DEFAULT_LOCALE): Promise<Post[]> {
+  const posts = (await getCollection('blog')).filter(
+    (p) => isPublished(p) && p.data.lang === locale,
+  );
   return posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 }
 
-/** The path a post lives at. Read straight off the frontmatter, never derived. */
-export const urlOf = (p: Post) => p.data.permalink;
+/** Every post in every language, for the cross-language lookups. */
+export async function everyPost(): Promise<Post[]> {
+  return (await getCollection('blog')).filter(isPublished);
+}
+
+/**
+ * The path a post lives at, in its own language. The permalink in the
+ * frontmatter is always the canonical English shape; the language prefix is
+ * applied here so it is applied the same way everywhere.
+ */
+export const urlOf = (p: Post) => localise(p.data.permalink, p.data.lang);
 
 /** `/posts/2026/02/slug/` -> `2026/02/slug`, the rest-param for the route. */
 export const routeParam = (p: Post) => p.data.permalink.slice('/posts/'.length).replace(/\/$/, '');
 
-export function formatDate(d: Date): string {
-  return d.toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
+/**
+ * Which languages a given post exists in, keyed by the permalink they share.
+ * This is what the language switcher needs: not "which languages does the site
+ * have" but "which languages does this page have", so it can offer the same
+ * post rather than dropping the reader on a home page.
+ */
+export async function translationsOf(permalink: string): Promise<Map<Locale, Post>> {
+  const found = new Map<Locale, Post>();
+  for (const p of await everyPost()) {
+    if (p.data.permalink === permalink) found.set(p.data.lang, p);
+  }
+  return found;
 }
 
-export function shortDate(d: Date): string {
-  return d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+export function formatDate(d: Date, locale: Locale = DEFAULT_LOCALE): string {
+  return formatDateIn(d, locale);
+}
+
+export function shortDate(d: Date, locale: Locale = DEFAULT_LOCALE): string {
+  return shortDateIn(d, locale);
 }
 
 export const isoDate = (d: Date) => d.toISOString().slice(0, 10);

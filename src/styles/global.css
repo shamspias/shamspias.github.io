@@ -259,6 +259,52 @@ time,
   font-variant-numeric: tabular-nums;
 }
 
+/* --- scripts --------------------------------------------------------------
+   The three faces this site is set in cover latin and nothing else, so a Bangla
+   or Arabic page has to bring its own. Both are served only on the pages written
+   in them, and both replace the display face too: Fraunces has no Bengali and no
+   Arabic, so a heading would silently fall back mid-word.
+
+   The small tracked uppercase label is a latin device. Neither script has a case
+   to raise, and pushing their letters apart breaks the joins that make them
+   legible, so on those pages the label is set in the text face at its own size. */
+
+html[lang='bn'] {
+  --face-text: var(--font-bengali), Kohinoor Bangla, Nirmala UI, Vrinda, serif;
+  --face-display: var(--font-bengali), Kohinoor Bangla, Nirmala UI, Vrinda, serif;
+}
+
+html[lang='ar'] {
+  --face-text: var(--font-arabic), Geeza Pro, Segoe UI, Tahoma, serif;
+  --face-display: var(--font-arabic), Geeza Pro, Segoe UI, Tahoma, serif;
+}
+
+html[lang='bn'] :is(.label, .eyebrow),
+html[lang='ar'] :is(.label, .eyebrow) {
+  font-family: var(--face-text);
+  font-size: var(--t-xs);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Arabic reads right to left, but code, ASCII diagrams and mathematics do not.
+   A shell transcript mirrored into RTL is not a translation, it is a broken
+   transcript, so every one of those boxes is pinned back to left-to-right. */
+html[dir='rtl'] :is(pre, code, samp, kbd, .katex, .katex-display, .figure-svg, .tnum, time) {
+  direction: ltr;
+  text-align: start;
+}
+
+html[dir='rtl'] :is(pre, code) {
+  unicode-bidi: isolate;
+}
+
+/* A bullet is drawn with a pseudo-element at a negative inline offset, which
+   flips correctly, but the glyph itself should not be mirrored. */
+html[dir='rtl'] .prose :is(ul, ol) {
+  padding-inline-start: 1.35em;
+}
+
 /* --- layout primitives ---------------------------------------------------- */
 
 .shell {
@@ -309,7 +355,7 @@ time,
 .skip-link {
   position: absolute;
   top: var(--s-2);
-  left: var(--s-2);
+  inset-inline-start: var(--s-2);
   z-index: 20;
   transform: translateY(-200%);
   background: var(--bg);
@@ -453,7 +499,7 @@ time,
 /* A deep-link target that stays out of the way until the heading is hovered. */
 .heading-anchor {
   float: left;
-  margin-left: -1.1em;
+  margin-inline-start: -1.1em;
   width: 1.1em;
   text-decoration: none;
   color: var(--fg-faint);
@@ -501,7 +547,7 @@ time,
 
 .prose ul,
 .prose ol {
-  padding-left: 1.35em;
+  padding-inline-start: 1.35em;
 }
 
 .prose li + li {
@@ -524,7 +570,7 @@ time,
 .prose ul > li::before {
   content: '';
   position: absolute;
-  left: -1em;
+  inset-inline-start: -1em;
   top: 0.72em;
   width: 0.32em;
   height: var(--rule-w);
@@ -547,7 +593,7 @@ time,
 }
 
 .prose li > input[type='checkbox'] {
-  margin-right: 0.5em;
+  margin-inline-end: 0.5em;
   accent-color: var(--accent);
 }
 
@@ -556,8 +602,8 @@ time,
 }
 
 .prose blockquote {
-  border-left: 2px solid var(--rule-strong);
-  padding-left: var(--s-5);
+  border-inline-start: 2px solid var(--rule-strong);
+  padding-inline-start: var(--s-5);
   color: var(--fg-muted);
   font-family: var(--face-display);
   font-size: var(--t-md);
@@ -681,7 +727,7 @@ time,
 
 .prose th,
 .prose td {
-  text-align: left;
+  text-align: start;
   vertical-align: top;
   padding: var(--s-3) var(--s-4);
   border-bottom: var(--rule-w) solid var(--rule);
@@ -704,12 +750,12 @@ time,
 
 .prose td:first-child,
 .prose th:first-child {
-  padding-left: 0;
+  padding-inline-start: 0;
 }
 
 .prose td:last-child,
 .prose th:last-child {
-  padding-right: 0;
+  padding-inline-end: 0;
 }
 
 /* --- prose: plates ------------------------------------------------------- */

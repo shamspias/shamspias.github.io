@@ -234,6 +234,7 @@ const projectsSchema = graph(
   description={PROJECTS_DESCRIPTION}
   keywords={KEYWORDS}
   schema={projectsSchema}
+  available={['en']}
 >
   <div class="wrap page">
     <header class="page__head">
@@ -393,7 +394,7 @@ const projectsSchema = graph(
 
   .project__stack {
     color: var(--fg-faint);
-    text-align: right;
+    text-align: end;
     flex: none;
     max-width: 18ch;
   }
@@ -414,7 +415,7 @@ const projectsSchema = graph(
 
   .points > li {
     position: relative;
-    padding-left: 1.1em;
+    padding-inline-start: 1.1em;
     font-size: var(--t-sm);
     line-height: 1.62;
     color: var(--fg-muted);
@@ -424,7 +425,7 @@ const projectsSchema = graph(
   .points > li::before {
     content: '';
     position: absolute;
-    left: 0;
+    inset-inline-start: 0;
     top: 0.78em;
     width: 0.42em;
     height: var(--rule-w);

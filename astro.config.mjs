@@ -73,6 +73,11 @@ const THIN_TAGS = (() => {
 export default defineConfig({
   site: 'https://shamspias.com',
 
+  // No `i18n` block. The three languages are routed by a rest parameter that
+  // this site generates itself, so English keeps the unprefixed addresses it
+  // has always had and the integration's middleware is not in the way. The
+  // locale list, the direction and the strings all live in src/i18n.
+
   // Jekyll served every page as a directory with a trailing slash. Keeping that
   // shape means every existing URL, and every link in every post, still resolves.
   trailingSlash: 'always',
@@ -151,6 +156,34 @@ export default defineConfig({
       styles: ['normal'],
       subsets: ['latin'],
       fallbacks: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
+      display: 'swap',
+    },
+    {
+      provider: fontProviders.fontsource(),
+      // Bangla. Literata's latin subset cannot set a single Bengali glyph, so a
+      // Bangla page without this face falls back to whatever the device has,
+      // which on a desktop is often nothing. Noto Serif Bengali is a serif, so
+      // it sits beside Literata rather than arguing with it. Loaded only on the
+      // Bangla pages.
+      name: 'Noto Serif Bengali',
+      cssVariable: '--font-bengali',
+      weights: ['400 700'],
+      styles: ['normal'],
+      subsets: ['bengali'],
+      fallbacks: ['Kohinoor Bangla', 'Nirmala UI', 'Vrinda', 'serif'],
+      display: 'swap',
+    },
+    {
+      provider: fontProviders.fontsource(),
+      // Arabic. Naskh rather than Kufi: it is the style Arabic prose is read
+      // in, and its proportions are close enough to Literata's that a mixed
+      // line does not look like two documents. Loaded only on the Arabic pages.
+      name: 'Noto Naskh Arabic',
+      cssVariable: '--font-arabic',
+      weights: ['400 700'],
+      styles: ['normal'],
+      subsets: ['arabic'],
+      fallbacks: ['Geeza Pro', 'Segoe UI', 'Tahoma', 'serif'],
       display: 'swap',
     },
   ],

@@ -1,0 +1,184 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Base from '../../../layouts/Base.astro';
+import PostEntry from '../../../components/PostEntry.astro';
+import { allPosts, groupBySeries, plainTitle, slugifyTag, urlOf } from '../../../lib/posts';
+import { ID, abs, breadcrumb, clamp, graph, itemList, person, website } from '../../../lib/seo';
+import { LOCALES, localeParam, localise, num, t, type Locale } from '../../../i18n';
+import { seriesBlurb } from '../../../i18n/series';
+
+// One page per series per language, and only where that language has posts in
+// that series. A Bangla series page listing English parts would be a worse
+// answer than no page at all.
+export const getStaticPaths = (async () => {
+  // A series page exists in a language only where that language has parts of it,
+  // so the language alternates are gathered first and handed to every page.
+  const byLocale = new Map<Locale, ReturnType<typeof groupBySeries>>();
+  const languagesOf = new Map<string, Locale[]>();
+  for (const locale of LOCALES) {
+    const grouped = groupBySeries(await allPosts(locale));
+    byLocale.set(locale, grouped);
+    for (const s of grouped) {
+      const key = slugifyTag(s.name);
+      languagesOf.set(key, [...(languagesOf.get(key) ?? []), locale]);
+    }
+  }
+
+  const paths = [];
+  for (const locale of LOCALES) {
+    for (const s of byLocale.get(locale) ?? []) {
+      paths.push({
+        params: { locale: localeParam(locale), series: slugifyTag(s.name) },
+        props: {
+          locale,
+          name: s.name,
+          posts: s.posts,
+          available: languagesOf.get(slugifyTag(s.name)) ?? [locale],
+        },
+      });
+    }
+  }
+  return paths;
+}) satisfies GetStaticPaths;
+
+const { locale, name, posts, available } = Astro.props as {
+  locale: Locale;
+  name: string;
+  posts: Awaited<ReturnType<typeof allPosts>>;
+  available: Locale[];
+};
+const strings = t(locale);
+const SITE_AUTHOR = 'Shamsuddin Ahmed';
+const first = posts[0];
+const last = posts[posts.length - 1];
+const span =
+  first && last && first !== last
+    ? `${num(locale, first.data.date.getUTCFullYear())}–${num(locale, last.data.date.getUTCFullYear())}`
+    : first
+      ? num(locale, first.data.date.getUTCFullYear())
+      : '';
+
+const url = localise(`/series/${slugifyTag(name)}/`, locale);
+const subjects = [...new Set(posts.flatMap((p) => p.data.tags))];
+
+// Trimmed to fit a snippet: the series name, its length, and the first line of
+// what it is actually about.
+const opening = seriesBlurb(name, locale) ?? posts[0]?.data.description ?? '';
+const description = clamp(
+  `${name}: ${strings.partsInOrder(posts.length)}, ${SITE_AUTHOR}. ${opening}`,
+);
+
+const id = abs(url);
+const schema = graph(
+  person(),
+  website(),
+  {
+    '@type': ['CollectionPage', 'CreativeWorkSeries'],
+    '@id': id,
+    url: id,
+    name,
+    description,
+    inLanguage: locale,
+    isPartOf: { '@id': ID.website },
+    author: { '@id': ID.person },
+    publisher: { '@id': ID.person },
+    numberOfItems: posts.length,
+    about: subjects.map((t) => ({ '@type': 'Thing', name: t })),
+    keywords: subjects.join(', '),
+    breadcrumb: { '@id': `${id}#breadcrumb` },
+    mainEntity: { '@id': `${id}#list` },
+    ...(first ? { startDate: first.data.date.toISOString().slice(0, 10) } : {}),
+    ...(last ? { endDate: last.data.date.toISOString().slice(0, 10) } : {}),
+  },
+  breadcrumb([
+    { name: strings.home, url: localise('/', locale) },
+    { name: strings.series, url: localise('/series/', locale) },
+    { name, url },
+  ]),
+  // A series reads forwards, so the list is ascending, unlike every other index
+  // on the site.
+  itemList(
+    id,
+    posts.map((p) => ({ name: plainTitle(p.data.title), url: urlOf(p) })),
+    { itemListOrder: 'https://schema.org/ItemListOrderAscending' },
+  ),
+);
+---
+
+<Base
+  title={name}
+  description={description}
+  keywords={subjects}
+  schema={schema}
+  locale={locale}
+  available={available}
+>
+  <div class="wrap page">
+    <header class="page__head">
+      <p class="label">
+        {strings.series} &nbsp;·&nbsp; {strings.nParts(posts.length)} &nbsp;·&nbsp;
+        <span class="tnum">{span}</span>
+      </p>
+      <h1 class="display page__title">{name}</h1>
+      <p class="lede page__lede">{seriesBlurb(name, locale) ?? strings.seriesInOrder}</p>
+    </header>
+
+    <div class="list">
+      {posts.map((post) => <PostEntry post={post} variant="card" />)}
+    </div>
+
+    <p class="page__back">
+      <a href={localise('/series/', locale)}>{strings.allSeries}</a>
+      <span class="page__sep" aria-hidden="true"></span>
+      <a href={localise('/writing/', locale)}>{strings.allWriting}</a>
+    </p>
+  </div>
+</Base>
+
+<style>
+  .page {
+    padding-block: var(--s-8) var(--s-6);
+  }
+
+  .page__head {
+    max-width: 56ch;
+    margin-bottom: var(--s-7);
+  }
+
+  .page__title {
+    font-size: var(--t-2xl);
+    margin-block: var(--s-3) var(--s-4);
+  }
+
+  .page__lede {
+    max-width: 52ch;
+  }
+
+  .list {
+    border-top: var(--rule-w) solid var(--rule-strong);
+    max-width: 76ch;
+  }
+
+  .page__back {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    margin-top: var(--s-7);
+    font-size: var(--t-sm);
+  }
+
+  .page__back a {
+    color: var(--fg-strong);
+    text-decoration-color: var(--accent);
+  }
+
+  .page__back a:hover {
+    color: var(--accent);
+  }
+
+  .page__sep {
+    width: var(--s-5);
+    border-top: var(--rule-w) solid var(--rule-strong);
+  }
+</style>

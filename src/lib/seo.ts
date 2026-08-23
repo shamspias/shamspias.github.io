@@ -12,6 +12,7 @@
  */
 import { readdirSync } from 'node:fs';
 import { SITE, SOCIAL } from '../consts';
+import { DEFAULT_LOCALE, LOCALES, LOCALE_META, delocalise, localise, t, type Locale } from '../i18n';
 
 /* --- identity ----------------------------------------------------------- */
 
@@ -55,23 +56,32 @@ const CARDS: Set<string> = (() => {
   }
 })();
 
-export const cardSlug = (pathname: string) =>
-  pathname.replace(/^\/|\/$/g, '').replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'home';
+/**
+ * The card slug for a path. The language prefix is stripped first: a card is
+ * keyed by the page it belongs to, and a translated page shares the card of the
+ * page it translates unless a card of its own has been rendered.
+ */
+export const cardSlug = (pathname: string) => {
+  const { locale, path } = delocalise(pathname);
+  const base = path.replace(/^\/|\/$/g, '').replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'home';
+  return locale === DEFAULT_LOCALE ? base : `${locale}-${base}`;
+};
 
 /** The card a page shares, and the alt text that goes with it. */
-export function ogCard(pathname: string, title: string) {
-  const slug = cardSlug(pathname);
-  const fallback = pathname.startsWith('/tags/')
-    ? 'tags'
-    : pathname.startsWith('/series/')
-      ? 'series'
-      : 'home';
-  const use = CARDS.has(slug) ? slug : CARDS.has(fallback) ? fallback : null;
+export function ogCard(pathname: string, title: string, locale: Locale = DEFAULT_LOCALE) {
+  const { path } = delocalise(pathname);
+  const english = cardSlug(path);
+  const section = path.startsWith('/tags/') ? 'tags' : path.startsWith('/series/') ? 'series' : 'home';
+
+  // In order: a card for this page in this language, the English card for the
+  // same page, the card for the section, the site card.
+  const candidates = [cardSlug(pathname), english, section];
+  const use = candidates.find((c) => CARDS.has(c));
   return {
     url: use ? abs(`/og/${use}.png`) : abs('/og.png'),
     width: 1200,
     height: 630,
-    alt: `${title} — ${SITE.name}, ${SITE.role}`,
+    alt: `${title} — ${SITE.name}, ${t(locale).role}`,
   };
 }
 
@@ -171,6 +181,26 @@ export const itemList = (
   ...extra,
 });
 
+/**
+ * The `hreflang` set for a page.
+ *
+ * Every language version points at every other one and at itself, which is what
+ * the specification requires: a set where one member is missing the return
+ * reference is ignored. `x-default` names the version a crawler should show when
+ * it has no better idea, and that is English.
+ */
+export function alternates(path: string, available: readonly Locale[] = LOCALES) {
+  const rows = available.map((locale) => ({
+    locale,
+    hreflang: LOCALE_META[locale].tag,
+    href: abs(localise(path, locale)),
+  }));
+  if (available.includes(DEFAULT_LOCALE)) {
+    rows.push({ locale: DEFAULT_LOCALE, hreflang: 'x-default', href: abs(localise(path, DEFAULT_LOCALE)) });
+  }
+  return rows;
+}
+
 /** Wraps a set of nodes as the page's single JSON-LD block. */
 export const graph = (...nodes: unknown[]) => ({
   '@context': 'https://schema.org',
@@ -188,6 +218,7 @@ export function collectionPage({
   trail,
   items,
   about,
+  locale = DEFAULT_LOCALE,
 }: {
   url: string;
   name: string;
@@ -195,6 +226,7 @@ export function collectionPage({
   trail: { name: string; url: string }[];
   items: { name: string; url: string }[];
   about?: string[];
+  locale?: Locale;
 }) {
   const id = abs(url);
   return graph(
@@ -206,7 +238,7 @@ export function collectionPage({
       url: id,
       name,
       description,
-      inLanguage: 'en',
+      inLanguage: LOCALE_META[locale].tag,
       isPartOf: { '@id': ID.website },
       author: { '@id': ID.person },
       about: about?.length ? about.map((t) => ({ '@type': 'Thing', name: t })) : undefined,

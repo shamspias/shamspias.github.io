@@ -1,18 +1,29 @@
 ---
 import { SITE, SOCIAL } from '../consts';
 import { allPosts, groupBySeries } from '../lib/posts';
+import { DEFAULT_LOCALE, localise, num, t, type Locale } from '../i18n';
 
-const posts = await allPosts();
+interface Props {
+  locale?: Locale;
+}
+
+const { locale = DEFAULT_LOCALE } = Astro.props;
+const strings = t(locale);
+
+// Counted in the language of the page: a Bangla footer that says "39 posts"
+// while listing Bangla ones would be counting the wrong shelf.
+const posts = await allPosts(locale);
 const seriesCount = groupBySeries(posts).length;
 
 const year = new Date().getUTCFullYear();
-const span = year > SITE.since ? `${SITE.since}–${year}` : `${year}`;
+const span =
+  year > SITE.since ? `${num(locale, SITE.since)}–${num(locale, year)}` : num(locale, year);
 ---
 
 <footer class="site-footer">
   <div class="wrap site-footer__inner">
     <div class="site-footer__block">
-      <p class="label site-footer__heading">Elsewhere</p>
+      <p class="label site-footer__heading">{strings.elsewhere}</p>
       <ul class="site-footer__links">
         {
           SOCIAL.map((s) => (
@@ -33,27 +44,33 @@ const span = year > SITE.since ? `${SITE.since}–${year}` : `${year}`;
     </div>
 
     <div class="site-footer__block">
-      <p class="label site-footer__heading">Read</p>
+      <p class="label site-footer__heading">{strings.read}</p>
       <ul class="site-footer__links">
         <li>
-          <a href="/writing/">All writing<span class="site-footer__handle">{posts.length} posts</span></a>
+          <a href={localise('/writing/', locale)}>
+            {strings.allWriting}
+            <span class="site-footer__handle">{strings.nPosts(posts.length)}</span>
+          </a>
         </li>
         <li>
-          <a href="/series/">Series<span class="site-footer__handle">{seriesCount} runs</span></a>
+          <a href={localise('/series/', locale)}>
+            {strings.series}
+            <span class="site-footer__handle">{strings.nSeries(seriesCount)}</span>
+          </a>
         </li>
-        <li><a href="/tags/">Tags<span class="site-footer__handle">by subject</span></a></li>
+        <li>
+          <a href={localise('/tags/', locale)}>
+            {strings.subjects}
+            <span class="site-footer__handle">{strings.bySubject}</span>
+          </a>
+        </li>
       </ul>
     </div>
 
     <div class="site-footer__block site-footer__colophon">
-      <p class="label site-footer__heading">This site</p>
-      <p>
-        Written and built by hand. Static files, no tracking, no cookies, and nothing that
-        needs your consent.
-      </p>
-      <p class="site-footer__legal">
-        &copy; {span} {SITE.name}. Words and code are mine; the code is MIT.
-      </p>
+      <p class="label site-footer__heading">{strings.thisSite}</p>
+      <p>{strings.colophon}</p>
+      <p class="site-footer__legal">{strings.legal(span, SITE.name)}</p>
     </div>
   </div>
 </footer>

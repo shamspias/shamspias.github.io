@@ -1,0 +1,160 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Base from '../../../layouts/Base.astro';
+import PostEntry from '../../../components/PostEntry.astro';
+import { allPosts, plainTitle, slugifyTag, tagCounts, urlOf } from '../../../lib/posts';
+import { clamp, collectionPage } from '../../../lib/seo';
+import { LOCALES, localeParam, localise, t, type Locale } from '../../../i18n';
+
+// One page per subject per language, built from that language's posts only.
+export const getStaticPaths = (async () => {
+  // Which languages have anything under each subject. A subject page exists in
+  // a language only if that language has posts in it, so the alternates and the
+  // language switcher have to be built from this rather than from the locale
+  // list: offering `/bn/tags/docking/` when no Bangla post is tagged docking
+  // would be advertising a page that was never generated.
+  const byLocale = new Map<Locale, Awaited<ReturnType<typeof allPosts>>>();
+  const languagesOf = new Map<string, Locale[]>();
+  for (const locale of LOCALES) {
+    const posts = await allPosts(locale);
+    byLocale.set(locale, posts);
+    for (const row of tagCounts(posts)) {
+      languagesOf.set(row.slug, [...(languagesOf.get(row.slug) ?? []), locale]);
+    }
+  }
+
+  const paths = [];
+  for (const locale of LOCALES) {
+    const posts = byLocale.get(locale) ?? [];
+    for (const row of tagCounts(posts)) {
+      paths.push({
+        params: { locale: localeParam(locale), tag: row.slug },
+        props: {
+          locale,
+          tag: row.tag,
+          available: languagesOf.get(row.slug) ?? [locale],
+          posts: posts.filter((p) => p.data.tags.some((x) => slugifyTag(x) === row.slug)),
+        },
+      });
+    }
+  }
+  return paths;
+}) satisfies GetStaticPaths;
+
+const { locale, tag, posts, available } = Astro.props as {
+  locale: Locale;
+  tag: string;
+  available: Locale[];
+  posts: Awaited<ReturnType<typeof allPosts>>;
+};
+const strings = t(locale);
+
+const url = localise(`/tags/${slugifyTag(tag)}/`, locale);
+
+// A tag page holding one post is a copy of that post's title and blurb at a
+// second address. It stays on the site and stays crawlable, so a reader and a
+// crawler can both follow it, but it is kept out of the index: ninety-five
+// near-duplicate pages competing with the posts they point at helps nobody.
+const thin = posts.length < 2;
+
+// A snippet has to say something. "4 posts on docking" is a label, not a
+// description, so the titles of the pieces themselves carry it: they are the
+// words a reader searching this subject would actually have typed.
+const sample = posts
+  .slice(0, 3)
+  .map((p) => plainTitle(p.data.title).replace(/[.:].*$/, '').trim())
+  .join('; ');
+const description = clamp(strings.tagDesc(tag, posts.length, sample));
+
+// The neighbouring subjects, which is how a thin index page earns its keep: it
+// tells a crawler what else this one sits beside.
+const neighbours = [
+  ...new Set(posts.flatMap((p) => p.data.tags).filter((other) => other !== tag)),
+].slice(0, 12);
+
+const schema = collectionPage({
+  url,
+  name: `${tag} · ${strings.writing} · Shamsuddin Ahmed`,
+  description,
+  locale,
+  trail: [
+    { name: strings.home, url: localise('/', locale) },
+    { name: strings.subjects, url: localise('/tags/', locale) },
+    { name: tag, url },
+  ],
+  items: posts.map((p) => ({ name: plainTitle(p.data.title), url: urlOf(p) })),
+  about: [tag, ...neighbours],
+});
+---
+
+<Base
+  title={tag}
+  description={description}
+  keywords={[tag, ...neighbours]}
+  schema={schema}
+  noindex={thin}
+  locale={locale}
+  available={available}
+>
+  <div class="wrap page">
+    <header class="page__head">
+      <p class="label">
+        {strings.subject} &nbsp;·&nbsp; {strings.nPosts(posts.length)}
+      </p>
+      <h1 class="display page__title">{tag}</h1>
+    </header>
+
+    <div class="list">
+      {posts.map((post) => <PostEntry post={post} variant="card" />)}
+    </div>
+
+    <p class="page__back">
+      <a href={localise('/tags/', locale)}>{strings.subjects}</a>
+      <span class="page__sep" aria-hidden="true"></span>
+      <a href={localise('/writing/', locale)}>{strings.allWriting}</a>
+    </p>
+  </div>
+</Base>
+
+<style>
+  .page {
+    padding-block: var(--s-8) var(--s-6);
+  }
+
+  .page__head {
+    margin-bottom: var(--s-6);
+  }
+
+  .page__title {
+    font-size: var(--t-2xl);
+    margin-top: var(--s-3);
+  }
+
+  .list {
+    border-top: var(--rule-w) solid var(--rule-strong);
+    max-width: 76ch;
+  }
+
+  .page__back {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    margin-top: var(--s-7);
+    font-size: var(--t-sm);
+  }
+
+  .page__back a {
+    color: var(--fg-strong);
+    text-decoration-color: var(--accent);
+  }
+
+  .page__back a:hover {
+    color: var(--accent);
+  }
+
+  .page__sep {
+    width: var(--s-5);
+    border-top: var(--rule-w) solid var(--rule-strong);
+  }
+</style>

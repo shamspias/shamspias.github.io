@@ -1,19 +1,25 @@
 ---
-import Base from '../../layouts/Base.astro';
-import PostEntry from '../../components/PostEntry.astro';
-import { allPosts, byYear, groupBySeries, plainTitle, slugifyTag, tagCounts, urlOf } from '../../lib/posts';
-import { ID, abs, breadcrumb, graph, itemList, person, website } from '../../lib/seo';
+import type { GetStaticPaths } from 'astro';
+import Base from '../../../layouts/Base.astro';
+import PostEntry from '../../../components/PostEntry.astro';
+import { allPosts, byYear, groupBySeries, plainTitle, slugifyTag, tagCounts, urlOf } from '../../../lib/posts';
+import { ID, abs, breadcrumb, graph, itemList, person, website } from '../../../lib/seo';
+import { localePaths, localise, t, yearIn, type Locale } from '../../../i18n';
 
-const posts = await allPosts();
+export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
+
+const { locale } = Astro.props as { locale: Locale };
+const strings = t(locale);
+
+const posts = await allPosts(locale);
 const years = byYear(posts);
 const series = groupBySeries(posts);
 const tags = tagCounts(posts).slice(0, 14);
 
-const subjects = tagCounts(posts).slice(0, 20).map((t) => t.tag);
-const id = abs('/writing/');
-const description =
-  'Long-form notes on agent harnesses, LLM infrastructure, machine learning for biology, ' +
-  'computer vision, and the AI foundations that sit underneath all of it.';
+const subjects = tagCounts(posts).slice(0, 20).map((s) => s.tag);
+const url = localise('/writing/', locale);
+const id = abs(url);
+const description = strings.writingDesc;
 
 // The blog node is the one every post points back at with isPartOf, which is
 // what ties thirty-nine separate articles together into one body of work.
@@ -22,9 +28,9 @@ const schema = graph(
   website(),
   {
     '@type': 'Blog',
-    '@id': ID.blog,
+    '@id': locale === 'en' ? ID.blog : `${id}#blog`,
     url: id,
-    name: 'Writing by Shamsuddin Ahmed',
+    name: `${strings.writing} · Shamsuddin Ahmed`,
     description,
     inLanguage: 'en',
     isPartOf: { '@id': ID.website },
@@ -43,8 +49,8 @@ const schema = graph(
     })),
   },
   breadcrumb([
-    { name: 'Home', url: '/' },
-    { name: 'Writing', url: '/writing/' },
+    { name: strings.home, url: localise('/', locale) },
+    { name: strings.writing, url },
   ]),
   itemList(
     id,
@@ -53,28 +59,33 @@ const schema = graph(
 );
 ---
 
-<Base title="Writing" description={description} keywords={subjects} schema={schema}>
+<Base
+  title={strings.writing}
+  description={description}
+  keywords={subjects}
+  schema={schema}
+  locale={locale}
+>
   <div class="wrap page">
     <header class="page__head">
-      <p class="label">{posts.length} posts &nbsp;·&nbsp; {years.length} years</p>
-      <h1 class="display page__title">Writing</h1>
-      <p class="lede page__lede">
-        I write to understand things, not to look clever. Everything here explains a hard idea the way
-        I wish someone had explained it to me, with analogies, runnable code, and honest numbers.
+      <p class="label">
+        {strings.nPosts(posts.length)} &nbsp;·&nbsp; {strings.nYears(years.length)}
       </p>
+      <h1 class="display page__title">{strings.writing}</h1>
+      <p class="lede page__lede">{strings.writingLede}</p>
     </header>
 
     {/* At wide viewports the index gets a stationary margin column carrying the
         series and tag indexes. Below that they sit above the list, collapsed. */}
     <div class="page__grid">
-      <aside class="rail" aria-label="Browse by series and subject">
+      <aside class="rail" aria-label={strings.browseAria}>
         <nav class="rail__block">
-          <h2 class="label rail__head">Series</h2>
+          <h2 class="label rail__head">{strings.series}</h2>
           <ul class="rail__list">
             {
               series.map((s) => (
                 <li>
-                  <a href={`/series/${slugifyTag(s.name)}/`}>
+                  <a href={localise(`/series/${slugifyTag(s.name)}/`, locale)}>
                     {s.name}
                     <span class="rail__n tnum">{s.posts.length}</span>
                   </a>
@@ -85,29 +96,37 @@ const schema = graph(
         </nav>
 
         <nav class="rail__block">
-          <h2 class="label rail__head">Subjects</h2>
+          <h2 class="label rail__head">{strings.subjects}</h2>
           <ul class="rail__list rail__list--inline">
             {
-              tags.map((t) => (
+              tags.map((tag) => (
                 <li>
-                  <a href={`/tags/${t.slug}/`}>
-                    {t.tag}
-                    <span class="rail__n tnum">{t.count}</span>
+                  <a href={localise(`/tags/${tag.slug}/`, locale)}>
+                    {tag.tag}
+                    <span class="rail__n tnum">{tag.count}</span>
                   </a>
                 </li>
               ))
             }
-            <li><a href="/tags/">All subjects &rarr;</a></li>
+            <li>
+              <a href={localise('/tags/', locale)}>{strings.allSubjectsArrow} &rarr;</a>
+            </li>
           </ul>
         </nav>
       </aside>
 
       <div class="index">
+        {posts.length === 0 && (
+          <p class="index__empty">
+            {strings.emptyIndex}{' '}
+            <a href="/writing/" hreflang="en">{strings.readInEnglish}</a>
+          </p>
+        )}
         {
           years.map(({ year, posts: inYear }) => (
             <section class="index__year">
               <h2 class="index__year-label label tnum" id={`y${year}`}>
-                {year}
+                {yearIn(year, locale)}
               </h2>
               <div class="index__list">
                 {inYear.map((post) => (
@@ -123,6 +142,11 @@ const schema = graph(
 </Base>
 
 <style>
+  .index__empty {
+    padding-block: var(--s-6);
+    color: var(--fg-muted);
+  }
+
   .page {
     padding-block: var(--s-8) var(--s-6);
   }

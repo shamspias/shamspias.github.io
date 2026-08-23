@@ -14,14 +14,13 @@ export const SITE = {
 } as const;
 
 /**
- * The CV is deliberately absent. It stays reachable at /cv/ for anyone given
- * the link, but it is not advertised in the nav, the footer, the sitemap or to
- * search engines.
+ * The nav is built in the header, per language, from the translated labels in
+ * src/i18n. It is two links: Writing and Projects.
+ *
+ * The CV is deliberately absent from it. It stays reachable at /cv/ for anyone
+ * given the link, but it is not advertised in the nav, the footer, the sitemap
+ * or to search engines.
  */
-export const NAV = [
-  { label: 'Writing', href: '/writing/' },
-  { label: 'Projects', href: '/projects/' },
-] as const;
 
 export const SOCIAL = [
   { label: 'GitHub', href: 'https://github.com/shamspias', handle: 'shamspias' },

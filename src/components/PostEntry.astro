@@ -1,6 +1,7 @@
 ---
 import type { Post } from '../lib/posts';
 import { isoDate, shortDate, urlOf } from '../lib/posts';
+import { ordinalIn } from '../i18n';
 
 interface Props {
   post: Post;
@@ -9,21 +10,19 @@ interface Props {
 }
 
 const { post, variant = 'index' } = Astro.props;
-const { title, description, date, series, seriesOrder } = post.data;
+const { title, description, date, series, seriesOrder, lang } = post.data;
 ---
 
 <article class:list={['entry', `entry--${variant}`]}>
   <a class="entry-link" href={urlOf(post)}>
-    <time class="entry__date label tnum" datetime={isoDate(date)}>{shortDate(date)}</time>
+    <time class="entry__date label tnum" datetime={isoDate(date)}>{shortDate(date, lang)}</time>
     <h3 class="entry-title entry__title">{title}</h3>
     {variant === 'card' && <p class="entry__desc">{description}</p>}
     {
       series && (
         <p class="entry__series label">
           {series}
-          <span class="entry__series-n">
-            {String(seriesOrder ?? 0).padStart(2, '0')}
-          </span>
+          <span class="entry__series-n">{ordinalIn(seriesOrder ?? 0, lang)}</span>
         </p>
       )
     }

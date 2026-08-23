@@ -1,0 +1,112 @@
+---
+/**
+ * The language switcher.
+ *
+ * Three links, no framework, each pointing at the same page in another
+ * language. Where a page has no version in a language the link is absent rather
+ * than pointing at a home page, because sending a reader who clicked "বাংলা" on
+ * an article to the front page is worse than telling them it is not there.
+ *
+ * Clicking one records the choice, which is what stops the language rule in the
+ * head from overruling a reader who has already decided.
+ */
+import { LOCALES, LOCALE_META, t, type Locale } from '../i18n';
+import { LOCALE_STORAGE_KEY } from '../i18n/config';
+
+interface Props {
+  /** The language of the page this switcher is on. */
+  current: Locale;
+  /** Where each language's version of this page lives. Missing means absent. */
+  hrefs: Partial<Record<Locale, string>>;
+}
+
+const { current, hrefs } = Astro.props;
+const strings = t(current);
+const shown = LOCALES.filter((l) => hrefs[l]);
+---
+
+{
+  shown.length > 1 && (
+    <nav class="lang" aria-label={strings.languageOf} data-lang-switch>
+      <ul class="lang__list">
+        {shown.map((locale) => {
+          const meta = LOCALE_META[locale];
+          const isCurrent = locale === current;
+          return (
+            <li>
+              <a
+                href={hrefs[locale]}
+                hreflang={meta.tag}
+                lang={meta.tag}
+                dir={meta.dir}
+                data-lang={locale}
+                aria-current={isCurrent ? 'true' : undefined}
+                title={meta.endonym}
+              >
+                {meta.short}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  )
+}
+
+<script is:inline define:vars={{ key: LOCALE_STORAGE_KEY }}>
+  // A click is a decision. Once it is stored, the language rule in the head
+  // stops choosing for this reader, in this browser, until they choose again.
+  document.querySelector('[data-lang-switch]')?.addEventListener('click', (event) => {
+    const link = event.target instanceof Element ? event.target.closest('a[data-lang]') : null;
+    if (!link) return;
+    try {
+      localStorage.setItem(key, link.dataset.lang);
+    } catch {}
+  });
+</script>
+
+<style>
+  .lang__list {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s-2);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .lang a {
+    display: inline-block;
+    font-family: var(--face-mono);
+    font-size: var(--t-2xs);
+    letter-spacing: var(--tr-wide);
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--fg-faint);
+    padding: 0.15rem 0.3rem;
+    border: 1px solid transparent;
+    transition:
+      color var(--dur-fast) var(--ease),
+      border-color var(--dur-fast) var(--ease);
+  }
+
+  /* The endonyms are set in their own scripts, which are not uppercase and do
+     not want the tracking a latin label wants. */
+  .lang a[lang='bn'],
+  .lang a[lang='ar'] {
+    font-family: var(--face-text);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: var(--t-xs);
+  }
+
+  .lang a:hover {
+    color: var(--fg-strong);
+    border-color: var(--rule-strong);
+  }
+
+  .lang a[aria-current='true'] {
+    color: var(--fg-strong);
+    border-color: var(--accent);
+  }
+</style>

@@ -4,13 +4,30 @@
  * should follow their system, and there must be a way back to that.
  * system -> light -> dark -> system
  */
+import { DEFAULT_LOCALE, t, type Locale } from '../i18n';
+
+interface Props {
+  locale?: Locale;
+}
+
+const { locale = DEFAULT_LOCALE } = Astro.props;
+const strings = t(locale);
+
+// The three labels are read out by a screen reader, so they are passed into the
+// script rather than assembled from an English word and a translated one.
+const labels = {
+  system: strings.themeSystem,
+  light: strings.themeLight,
+  dark: strings.themeDark,
+};
 ---
 
 <button
   class="theme-toggle"
   type="button"
-  aria-label="Change colour theme"
-  title="Change colour theme"
+  aria-label={strings.theme}
+  title={strings.theme}
+  data-theme-labels={JSON.stringify(labels)}
   data-theme-toggle
 >
   <svg class="theme-toggle__icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -26,7 +43,7 @@
       <path d="M9.6 1.7A6.3 6.3 0 1 0 14.3 9 5 5 0 0 1 9.6 1.7Z" />
     </g>
   </svg>
-  <span class="visually-hidden" data-theme-label>System theme</span>
+  <span class="visually-hidden" data-theme-label>{strings.themeSystem}</span>
 </button>
 
 <style>
@@ -89,7 +106,11 @@
     for (const button of document.querySelectorAll<HTMLElement>('[data-theme-toggle]')) {
       button.dataset.state = state;
       const label = button.querySelector('[data-theme-label]');
-      if (label) label.textContent = `${state === 'system' ? 'System' : state === 'light' ? 'Light' : 'Dark'} theme`;
+      if (!label) continue;
+      try {
+        const names = JSON.parse(button.dataset.themeLabels ?? '{}');
+        if (names[state]) label.textContent = names[state];
+      } catch {}
     }
   };
 

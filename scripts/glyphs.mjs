@@ -42,7 +42,16 @@ if (files.length === 0) {
   process.exit(1);
 }
 
-/** Identify the mono face by its advance-width uniformity, not by its name. */
+/**
+ * The face under test is the one the diagrams are set in.
+ *
+ * Advance-width uniformity looked like the principled way to find it, but it is
+ * not a test: Noto Naskh Arabic carries latin glyphs at a single advance too, so
+ * it was picked up and then failed for lacking box-drawing characters it has no
+ * business carrying. The mono family is named in astro.config.mjs, so name it
+ * here as well and assert it was found.
+ */
+const MONO_FAMILY = /commit\s*mono/i;
 const monos = [];
 for (const f of files) {
   let font;
@@ -55,14 +64,22 @@ for (const f of files) {
     const g = font.layout(c).glyphs[0];
     return g ? g.advanceWidth : null;
   };
-  const [zero, wide, narrow] = [adv('0'), adv('W'), adv('i')];
-  if (zero && zero === wide && zero === narrow) {
-    monos.push({ file: f, font, advance: zero, upm: font.unitsPerEm, glyphs: font.numGlyphs });
+  if (!MONO_FAMILY.test(font.familyName ?? '')) continue;
+
+  // Having found it by name, still check it is monospaced: a diagram drawn with
+  // a proportional face shears, and that is the failure this script exists for.
+  const probe = [...'0WimlM.@#'].map(adv);
+  const first = probe[0];
+  if (!first || !probe.every((w) => w === first)) {
+    console.log(`\n${font.familyName}: latin advances are not uniform, so diagrams will shear`);
+    monos.push({ file: f, font, advance: first ?? 0, upm: font.unitsPerEm, glyphs: font.numGlyphs });
+    continue;
   }
+  monos.push({ file: f, font, advance: first, upm: font.unitsPerEm, glyphs: font.numGlyphs });
 }
 
 if (monos.length === 0) {
-  console.log('no monospaced face found among the emitted fonts');
+  console.log(`no face matching ${MONO_FAMILY} among the emitted fonts`);
   process.exit(1);
 }
 

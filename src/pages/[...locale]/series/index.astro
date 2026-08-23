@@ -1,0 +1,197 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Base from '../../../layouts/Base.astro';
+import { allPosts, groupBySeries, shortDate, slugifyTag, urlOf } from '../../../lib/posts';
+import { collectionPage } from '../../../lib/seo';
+import { localePaths, localise, ordinalIn, t, type Locale } from '../../../i18n';
+import { seriesBlurb } from '../../../i18n/series';
+
+export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
+
+const { locale } = Astro.props as { locale: Locale };
+const strings = t(locale);
+
+const posts = await allPosts(locale);
+const series = groupBySeries(posts);
+const totalParts = series.reduce((n, s) => n + s.posts.length, 0);
+const url = localise('/series/', locale);
+
+const seriesSchema = collectionPage({
+  url,
+  name: `${strings.series} · Shamsuddin Ahmed`,
+  description: strings.seriesLede,
+  locale,
+  trail: [
+    { name: strings.home, url: localise('/', locale) },
+    { name: strings.series, url },
+  ],
+  items: series.map((s) => ({
+    name: `${s.name} (${strings.nParts(s.posts.length)})`,
+    url: localise(`/series/${slugifyTag(s.name)}/`, locale),
+  })),
+  about: series.map((s) => s.name),
+})
+---
+
+<Base
+  title={strings.series}
+  description={strings.seriesLede}
+  keywords={series.map((s) => s.name)}
+  schema={seriesSchema}
+  locale={locale}
+>
+  <div class="wrap page">
+    <header class="page__head">
+      <p class="label">
+        {strings.nSeries(series.length)} &nbsp;·&nbsp; {strings.nPosts(totalParts)}
+      </p>
+      <h1 class="display page__title">{strings.series}</h1>
+      <p class="lede page__lede">{strings.seriesLede}</p>
+    </header>
+
+    <div class="runs">
+      {
+        series.map((s) => (
+          <section class="run">
+            <div class="run__head">
+              <h2 class="run__title">
+                <a href={localise(`/series/${slugifyTag(s.name)}/`, locale)}>{s.name}</a>
+              </h2>
+              <p class="run__count label tnum">{strings.nParts(s.posts.length)}</p>
+            </div>
+            {seriesBlurb(s.name, locale) && <p class="run__blurb">{seriesBlurb(s.name, locale)}</p>}
+            <ol class="run__list">
+              {s.posts.map((p) => (
+                <li class="run__item">
+                  <span class="run__n label tnum">{ordinalIn(p.data.seriesOrder ?? 0, locale)}</span>
+                  <a class="run__link" href={urlOf(p)}>{p.data.title}</a>
+                  <time class="run__date label tnum" datetime={p.data.date.toISOString().slice(0, 10)}>
+                    {shortDate(p.data.date, locale)}
+                  </time>
+                </li>
+              ))}
+            </ol>
+          </section>
+        ))
+      }
+    </div>
+  </div>
+</Base>
+
+<style>
+  .page {
+    padding-block: var(--s-8) var(--s-6);
+  }
+
+  .page__head {
+    max-width: 56ch;
+    margin-bottom: var(--s-8);
+  }
+
+  .page__title {
+    font-size: var(--t-2xl);
+    margin-block: var(--s-3) var(--s-4);
+  }
+
+  .page__lede {
+    max-width: 52ch;
+  }
+
+  .runs {
+    display: grid;
+    gap: var(--s-9);
+  }
+
+  .run {
+    max-width: 76ch;
+  }
+
+  .run__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-4);
+    padding-bottom: var(--s-3);
+    border-bottom: var(--rule-w) solid var(--rule-strong);
+  }
+
+  .run__title {
+    font-family: var(--face-display);
+    font-size: var(--t-xl);
+    font-weight: 500;
+    letter-spacing: var(--tr-snug);
+    line-height: var(--lh-snug);
+  }
+
+  .run__title a {
+    color: var(--fg-strong);
+    text-decoration: none;
+  }
+
+  .run__title a:hover {
+    color: var(--accent);
+  }
+
+  .run__count {
+    color: var(--fg-faint);
+    white-space: nowrap;
+  }
+
+  .run__blurb {
+    margin-top: var(--s-4);
+    color: var(--fg-muted);
+    max-width: 62ch;
+    text-wrap: pretty;
+  }
+
+  .run__list {
+    list-style: none;
+    margin: var(--s-5) 0 0;
+    padding: 0;
+  }
+
+  .run__item {
+    display: grid;
+    grid-template-columns: 2.25rem minmax(0, 1fr);
+    gap: var(--s-1) var(--s-3);
+    align-items: baseline;
+    padding-block: var(--s-3);
+    border-bottom: var(--rule-w) solid var(--rule);
+  }
+
+  .run__item:last-child {
+    border-bottom: 0;
+  }
+
+  .run__n {
+    color: var(--accent);
+  }
+
+  .run__link {
+    font-family: var(--face-display);
+    font-size: var(--t-base);
+    color: var(--fg-strong);
+    text-decoration-color: var(--rule-strong);
+    text-wrap: pretty;
+  }
+
+  .run__link:hover {
+    color: var(--accent);
+  }
+
+  .run__date {
+    grid-column: 2;
+    color: var(--fg-faint);
+  }
+
+  @media (min-width: 46rem) {
+    .run__item {
+      grid-template-columns: 2.25rem minmax(0, 1fr) 6.5rem;
+    }
+
+    .run__date {
+      grid-column: 3;
+      text-align: end;
+    }
+  }
+</style>

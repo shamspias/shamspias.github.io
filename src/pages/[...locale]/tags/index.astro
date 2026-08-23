@@ -1,52 +1,65 @@
 ---
-import Base from '../../layouts/Base.astro';
-import { allPosts, tagCounts } from '../../lib/posts';
-import { collectionPage } from '../../lib/seo';
+import type { GetStaticPaths } from 'astro';
+import Base from '../../../layouts/Base.astro';
+import { allPosts, tagCounts } from '../../../lib/posts';
+import { collectionPage } from '../../../lib/seo';
+import { localePaths, localise, num, t, type Locale } from '../../../i18n';
 
-const posts = await allPosts();
+export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
+
+const { locale } = Astro.props as { locale: Locale };
+const strings = t(locale);
+
+const posts = await allPosts(locale);
 const tags = tagCounts(posts);
 const max = tags[0]?.count ?? 1;
-
-const TAGS_DESCRIPTION =
-  'Every subject written about here, from agent harnesses and LLM serving to peptides, ' +
-  'docking, pose estimation and the classical AI foundations.';
+const url = localise('/tags/', locale);
 
 const tagsSchema = collectionPage({
-  url: '/tags/',
-  name: 'Subjects written about by Shamsuddin Ahmed',
-  description: TAGS_DESCRIPTION,
+  url,
+  name: `${strings.subjects} · Shamsuddin Ahmed`,
+  description: strings.subjectsLede,
+  locale,
   trail: [
-    { name: 'Home', url: '/' },
-    { name: 'Subjects', url: '/tags/' },
+    { name: strings.home, url: localise('/', locale) },
+    { name: strings.subjects, url },
   ],
-  items: tags.map((t) => ({ name: `${t.tag} (${t.count})`, url: `/tags/${t.slug}/` })),
-  about: tags.slice(0, 30).map((t) => t.tag),
+  items: tags.map((row) => ({
+    name: `${row.tag} (${row.count})`,
+    url: localise(`/tags/${row.slug}/`, locale),
+  })),
+  about: tags.slice(0, 30).map((row) => row.tag),
 });
 ---
 
 <Base
-  title="Subjects"
-  description={TAGS_DESCRIPTION}
-  keywords={tags.slice(0, 25).map((t) => t.tag)}
+  title={strings.subjects}
+  description={strings.subjectsLede}
+  keywords={tags.slice(0, 25).map((row) => row.tag)}
   schema={tagsSchema}
+  locale={locale}
 >
   <div class="wrap page">
     <header class="page__head">
-      <p class="label">{tags.length} subjects &nbsp;·&nbsp; {posts.length} posts</p>
-      <h1 class="display page__title">Subjects</h1>
-      <p class="lede page__lede">
-        The whole index, heaviest first. The rule beside each one is its share of the archive.
+      <p class="label">
+        {num(locale, tags.length)} {strings.subjects} &nbsp;·&nbsp; {strings.nPosts(posts.length)}
       </p>
+      <h1 class="display page__title">{strings.subjects}</h1>
+      <p class="lede page__lede">{strings.subjectsLede}</p>
     </header>
 
     <ul class="tags">
       {
-        tags.map((t) => (
+        tags.map((row) => (
           <li class="tag">
-            <a class="tag__link" href={`/tags/${t.slug}/`}>
-              <span class="tag__name">{t.tag}</span>
-              <span class="tag__bar" aria-hidden="true" style={`--w:${Math.max(6, (t.count / max) * 100)}%`} />
-              <span class="tag__n label tnum">{String(t.count).padStart(2, '0')}</span>
+            <a class="tag__link" href={localise(`/tags/${row.slug}/`, locale)}>
+              <span class="tag__name">{row.tag}</span>
+              <span
+                class="tag__bar"
+                aria-hidden="true"
+                style={`--w:${Math.max(6, (row.count / max) * 100)}%`}
+              />
+              <span class="tag__n label tnum">{num(locale, row.count)}</span>
             </a>
           </li>
         ))

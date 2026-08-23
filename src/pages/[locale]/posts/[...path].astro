@@ -1,0 +1,40 @@
+---
+/**
+ * Every translated post, at `/<lang>` plus the English permalink.
+ *
+ * Only languages that actually have the post get a page. A route that existed
+ * for every language would publish an empty shell for every untranslated
+ * article, which is worse than a language link that is simply not offered.
+ */
+import type { GetStaticPaths } from 'astro';
+import PostPage from '../../../components/PostPage.astro';
+import { allPosts, routeParam, seriesOf, translationsOf, urlOf } from '../../../lib/posts';
+import { DEFAULT_LOCALE, LOCALES, type Locale } from '../../../i18n';
+
+export const getStaticPaths = (async () => {
+  const paths = [];
+  for (const locale of LOCALES) {
+    if (locale === DEFAULT_LOCALE) continue;
+    const posts = await allPosts(locale);
+    for (const [i, post] of posts.entries()) {
+      const found = await translationsOf(post.data.permalink);
+      const hrefs = Object.fromEntries(
+        [...found].map(([l, p]) => [l, urlOf(p)]),
+      ) as Partial<Record<Locale, string>>;
+      paths.push({
+        params: { locale, path: routeParam(post) },
+        props: {
+          post,
+          newer: posts[i - 1] ?? null,
+          older: posts[i + 1] ?? null,
+          siblings: post.data.series ? seriesOf(posts, post.data.series) : [],
+          hrefs,
+        },
+      });
+    }
+  }
+  return paths;
+}) satisfies GetStaticPaths;
+---
+
+<PostPage {...Astro.props} />

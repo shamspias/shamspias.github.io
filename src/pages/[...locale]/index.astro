@@ -1,15 +1,35 @@
 ---
+import type { GetStaticPaths } from 'astro';
 import { Image } from 'astro:assets';
-import Base from '../layouts/Base.astro';
-import PostEntry from '../components/PostEntry.astro';
-import portrait from '../assets/shamsuddin-ahmed.png';
-import { SITE, SOCIAL } from '../consts';
-import { allPosts, groupBySeries, plainTitle, urlOf } from '../lib/posts';
-import { ID, abs, breadcrumb, graph, itemList, person, website } from '../lib/seo';
+import Base from '../../layouts/Base.astro';
+import PostEntry from '../../components/PostEntry.astro';
+import portrait from '../../assets/shamsuddin-ahmed.png';
+import { SITE } from '../../consts';
+import { allPosts, groupBySeries, plainTitle, slugifyTag, urlOf } from '../../lib/posts';
+import { ID, abs, breadcrumb, graph, itemList, person, website } from '../../lib/seo';
+import { localePaths, localise, t, type Locale } from '../../i18n';
+import { HOME } from '../../i18n/content/home';
 
-const posts = await allPosts();
+export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
+
+const { locale } = Astro.props as { locale: Locale };
+const strings = t(locale);
+const home = HOME[locale];
+
+const posts = await allPosts(locale);
 const recent = posts.slice(0, 6);
 const series = groupBySeries(posts);
+
+// The thread links point at series pages, and a series page exists in a language
+// only where that language has parts of it. Where it does not, the link goes to
+// the English page and says so, rather than at an address that was never built.
+const seriesSlugs = new Set(series.map((s) => slugifyTag(s.name)));
+const linkFor = (href: string) => {
+  if (href.startsWith('http')) return { href, foreign: false };
+  const slug = href.startsWith('/series/') ? href.slice('/series/'.length).replace(/\/$/, '') : null;
+  if (slug && !seriesSlugs.has(slug)) return { href, foreign: locale !== 'en' };
+  return { href: localise(href, locale), foreign: false };
+};
 
 // One graph, so the person, the site and this page are stated once and pointed
 // at from every other page rather than repeated with slight differences.
@@ -18,112 +38,44 @@ const schema = graph(
   website(),
   {
     '@type': 'ProfilePage',
-    '@id': abs('/'),
-    url: abs('/'),
-    name: `${SITE.name} · ${SITE.role}`,
-    description: SITE.description,
-    inLanguage: 'en',
+    '@id': abs(localise('/', locale)),
+    url: abs(localise('/', locale)),
+    name: `${SITE.name} · ${strings.role}`,
+    description: strings.siteDescription,
+    inLanguage: locale,
     isPartOf: { '@id': ID.website },
     mainEntity: { '@id': ID.person },
     about: { '@id': ID.person },
-    breadcrumb: { '@id': `${abs('/')}#breadcrumb` },
-    hasPart: { '@id': `${abs('/')}#list` },
+    breadcrumb: { '@id': `${abs(localise('/', locale))}#breadcrumb` },
+    hasPart: { '@id': `${abs(localise('/', locale))}#list` },
     image: {
       '@type': 'ImageObject',
       url: new URL(portrait.src, SITE.url).href,
       width: portrait.width,
       height: portrait.height,
-      caption: `${SITE.name}, ${SITE.role}`,
+      caption: `${SITE.name}, ${strings.role}`,
     },
   },
-  breadcrumb([{ name: 'Home', url: '/' }]),
+  breadcrumb([{ name: strings.home, url: localise('/', locale) }]),
   itemList(
-    abs('/'),
+    abs(localise('/', locale)),
     recent.map((p) => ({ name: plainTitle(p.data.title), url: urlOf(p) })),
   ),
-);
-
-const NOW = [
-  {
-    role: 'Senior Software Engineer',
-    org: 'Mevrik',
-    href: 'https://mevrik.com',
-    when: 'Since Aug 2026',
-    what:
-      'An AI customer-experience platform used by telecom operators and several hundred smaller ' +
-      'businesses. I work on the AI side: agents, retrieval, and the serving infrastructure underneath.',
-  },
-  {
-    role: 'Founder',
-    org: 'AlgolyzerLab',
-    href: 'https://algolyzerlab.com',
-    when: 'Since 2024',
-    what:
-      'A small studio for applied AI that does not fit a product roadmap: sports science for elite ' +
-      'cricket, clinical software for doctors, agriculture AI, and research engineering.',
-  },
-];
-
-const THREADS = [
-  {
-    n: '01',
-    title: 'Agent harnesses',
-    body:
-      'A model is only as useful as the surface you hand it. Most teams give an LLM raw tables and ' +
-      'generated specs instead of the intent-named operations their own code already has.',
-    links: [
-      { label: 'Reins', href: 'https://github.com/shamspias/reins' },
-      { label: 'Veldra', href: 'https://github.com/shamspias/customizable-gpt-chatbot' },
-      { label: 'The series', href: '/series/agent-harness/' },
-    ],
-  },
-  {
-    n: '02',
-    title: 'Machine learning for biology',
-    body:
-      'Anti-inflammatory peptide prediction, and structure-aware virtual screening of natural ' +
-      'products against understudied viral proteases. Both taught the same lesson: the dataset you ' +
-      'choose decides the result long before the model does.',
-    links: [
-      { label: 'DeepNatProtease', href: 'https://github.com/shamspias/DeepNatProtease' },
-      { label: 'The series', href: '/series/machine-learning-for-biology/' },
-    ],
-  },
-  {
-    n: '03',
-    title: 'Systems that stay explainable',
-    body:
-      'Small, readable, zero-magic tools I actually use: perceptual image compression, a terminal ' +
-      'system monitor, actor-model agent swarms. Single binaries, no framework underneath.',
-    links: [
-      { label: 'Fennec', href: 'https://github.com/shamspias/fennec' },
-      { label: 'VoidMon', href: 'https://github.com/shamspias/voidmon' },
-      { label: 'Clawkido', href: 'https://github.com/shamspias/clawkido' },
-    ],
-  },
-];
+)
 ---
 
-<Base title={SITE.name} description={SITE.description} schema={schema}>
+<Base title={SITE.name} description={strings.siteDescription} schema={schema} locale={locale}>
   {/* --- masthead ------------------------------------------------------- */}
   <section class="wrap hero">
     <div class="hero__body">
-      <p class="label hero__meta">{SITE.role} &nbsp;·&nbsp; {SITE.location}</p>
-      <h1 class="display hero__title">
-        I build the layer between a language model and software that already exists.
-      </h1>
+      <p class="label hero__meta">{strings.role} &nbsp;·&nbsp; {home.location}</p>
+      <h1 class="display hero__title">{home.heroTitle}</h1>
       <div class="hero__prose stack">
-        <p>
-          Five-plus years on the same stubborn question: how do you take something that works in a
-          notebook and make it survive real users? Mostly that has meant backend systems, production
-          machine learning, and the harness layer in between. Lately a fourth thread has crept in,
-          machine learning for biology, where the datasets are small, the labels are noisy, and being
-          honest about your numbers matters more than beating a leaderboard.
-        </p>
+        <p>{home.heroProse}</p>
         <p class="hero__cta">
-          <a href="/writing/">Read the writing</a>
+          <a href={localise('/writing/', locale)}>{home.ctaWriting}</a>
           <span class="hero__sep" aria-hidden="true"></span>
-          <a href="/projects/">See the projects</a>
+          <a href="/projects/" hreflang="en">{home.ctaProjects}</a>
           <span class="hero__sep" aria-hidden="true"></span>
           <a href="https://github.com/shamspias" rel="me noopener">GitHub</a>
         </p>
@@ -133,7 +85,7 @@ const THREADS = [
     <figure class="hero__portrait">
       <Image
         src={portrait}
-        alt={`${SITE.name}, photographed in Dhaka`}
+        alt={home.portraitAlt}
         widths={[220, 340, 468]}
         sizes="(min-width: 64rem) 17rem, (min-width: 46rem) 13rem, 8.5rem"
         loading="eager"
@@ -144,15 +96,16 @@ const THREADS = [
 
   {/* --- what I'm working on ------------------------------------------- */}
   <section class="bleed"><div class="wrap section">
-    <h2 class="eyebrow section__head" id="now">Now</h2>
+    <h2 class="eyebrow section__head" id="now">{home.sectionNow}</h2>
     <ul class="roles">
       {
-        NOW.map((r) => (
+        home.now.map((r) => (
           <li class="role">
             <p class="role__when label tnum">{r.when}</p>
             <div class="role__body">
               <h3 class="role__title">
-                {r.role},{' '}
+                {r.role}
+                {strings.comma}
                 {r.href ? (
                   <a href={r.href} rel="noopener">
                     {r.org}
@@ -171,21 +124,28 @@ const THREADS = [
 
   {/* --- the three threads --------------------------------------------- */}
   <section class="bleed"><div class="wrap section">
-    <h2 class="eyebrow section__head" id="threads">What I think about</h2>
+    <h2 class="eyebrow section__head" id="threads">{home.sectionThreads}</h2>
     <ol class="threads">
       {
-        THREADS.map((t) => (
+        home.threads.map((thread) => (
           <li class="thread">
-            <p class="thread__n label tnum">{t.n}</p>
+            <p class="thread__n label tnum">{thread.n}</p>
             <div class="thread__body">
-              <h3 class="thread__title">{t.title}</h3>
-              <p class="thread__what">{t.body}</p>
+              <h3 class="thread__title">{thread.title}</h3>
+              <p class="thread__what">{thread.body}</p>
               <p class="thread__links">
-                {t.links.map((l) => (
-                  <a href={l.href} rel={l.href.startsWith('http') ? 'noopener' : undefined}>
-                    {l.label}
-                  </a>
-                ))}
+                {thread.links.map((l) => {
+                  const link = linkFor(l.href);
+                  return (
+                    <a
+                      href={link.href}
+                      hreflang={link.foreign ? 'en' : undefined}
+                      rel={l.href.startsWith('http') ? 'noopener' : undefined}
+                    >
+                      {l.label}
+                    </a>
+                  );
+                })}
               </p>
             </div>
           </li>
@@ -196,14 +156,14 @@ const THREADS = [
 
   {/* --- recent writing ------------------------------------------------- */}
   <section class="bleed"><div class="wrap section">
-    <h2 class="eyebrow section__head" id="recent">Recent writing</h2>
+    <h2 class="eyebrow section__head" id="recent">{home.sectionRecent}</h2>
     <div class="recent">
       {recent.map((post) => <PostEntry post={post} variant="card" />)}
     </div>
     <p class="section__more">
-      <a href="/writing/">All {posts.length} posts</a>
+      <a href={localise('/writing/', locale)}>{home.allPosts(strings.nPosts(posts.length))}</a>
       <span class="hero__sep" aria-hidden="true"></span>
-      <a href="/series/">{series.length} series</a>
+      <a href={localise('/series/', locale)}>{home.seriesLink(strings.nSeries(series.length))}</a>
     </p>
   </div></section>
 </Base>

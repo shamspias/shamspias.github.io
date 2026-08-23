@@ -49,6 +49,17 @@ const PAGES = [
   '/posts/2026/01/joint-angle-accuracy/',
   '/posts/2026/06/triangulation-and-cameras/',
   '/posts/2026/08/kinetix-clinical-agent/',
+  // The other two languages. Arabic is the one that matters most here: the
+  // whole layout mirrors, so an overflow that does not exist in English can
+  // appear at the other edge.
+  '/bn/',
+  '/bn/writing/',
+  '/bn/series/',
+  '/bn/tags/',
+  '/ar/',
+  '/ar/writing/',
+  '/ar/series/',
+  '/ar/tags/',
 ];
 
 /** Runs in the page. Reports overflow and the elements responsible. */
@@ -116,7 +127,13 @@ for (const vp of VIEWPORTS) {
   await page.setViewport({ width: vp.width, height: vp.height, deviceScaleFactor: 1 });
 
   for (const p of PAGES) {
-    const res = await page.goto(BASE + p, { waitUntil: 'load' });
+    // Pin the language. Without this the page's own language rule redirects the
+    // browser (this machine's time zone is Asia/Dhaka, so `/` becomes `/bn/`)
+    // and the navigation under test is replaced mid-flight. `?lang=` is the
+    // site's documented override, so using it here exercises real code.
+    const want = /^\/(bn|ar)\//.test(p) ? p.slice(1, 3) : 'en';
+    const url = `${BASE}${p}${p.includes('?') ? '&' : '?'}lang=${want}`;
+    const res = await page.goto(url, { waitUntil: 'load' });
     if (!res || res.status() >= 400) {
       console.log(`✗ ${vp.name} ${p} — HTTP ${res?.status()}`);
       failures++;
