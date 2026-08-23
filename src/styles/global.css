@@ -92,9 +92,10 @@ textarea {
   /* Font stacks are wired to the Astro Fonts API variables, each of which
      already carries a metric-matched fallback so there is no layout shift. */
   --face-text: var(--font-text), Iowan Old Style, Charter, Georgia, serif;
-  --face-display: var(--face-text);
+  --face-display: var(--font-display), Iowan Old Style, Palatino, Georgia, serif;
+  /* No sans exists on this site; the alias is kept so a stray reference to it
+     resolves to the text face rather than to the browser default. */
   --face-sans: var(--face-text);
-  /* Kept only so the mono label mixin below reads clearly. */
   --face-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   /* A ~1.22 scale, fluid from 360px to 1600px. The 4K uplift is a second step
@@ -114,8 +115,8 @@ textarea {
   --lh-body: 1.68;
   --lh-mono: 1.6;
 
-  --tr-tight: -0.022em;
-  --tr-snug: -0.012em;
+  --tr-tight: -0.028em;
+  --tr-snug: -0.016em;
   --tr-wide: 0.08em;
   --tr-caps: 0.13em;
 
@@ -355,7 +356,7 @@ time,
 
 .display {
   font-family: var(--face-display);
-  font-weight: 600;
+  font-weight: 500;
   line-height: var(--lh-tight);
   letter-spacing: var(--tr-tight);
   text-wrap: balance;
@@ -414,7 +415,7 @@ time,
 
 .prose > h2 {
   font-size: var(--t-xl);
-  font-weight: 600;
+  font-weight: 550;
   margin-top: var(--s-9);
   padding-top: var(--s-4);
   border-top: var(--rule-w) solid var(--rule);
@@ -439,7 +440,7 @@ time,
 
 .prose > h3 {
   font-size: var(--t-lg);
-  font-weight: 600;
+  font-weight: 550;
   margin-top: var(--s-7);
 }
 

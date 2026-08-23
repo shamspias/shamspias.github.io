@@ -38,6 +38,20 @@ export default defineConfig({
   fonts: [
     {
       provider: fontProviders.fontsource(),
+      // Fraunces sets the titles and headings. It is high-contrast and slightly
+      // odd in a way a default face never is, which is the whole reason it is
+      // here, and its latin subset costs 36 kB. It is not used for body text:
+      // Literata was cut for reading on a screen and Fraunces was not.
+      name: 'Fraunces',
+      cssVariable: '--font-display',
+      weights: ['400 700'],
+      styles: ['normal'],
+      subsets: ['latin'],
+      fallbacks: ['Iowan Old Style', 'Palatino', 'Georgia', 'serif'],
+      display: 'swap',
+    },
+    {
+      provider: fontProviders.fontsource(),
       name: 'Literata',
       cssVariable: '--font-text',
       weights: ['400 700'],

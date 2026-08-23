@@ -34,6 +34,7 @@ export const SOCIAL = [
  * listed here still renders; it just sorts after the known ones.
  */
 export const SERIES_ORDER = [
+  'Biomechanics from Video',
   'Agent Harness',
   'Machine Learning for Biology',
   'Vision in the Real World',

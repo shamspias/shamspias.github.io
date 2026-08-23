@@ -46,7 +46,7 @@ const NOW = [
   {
     role: 'Founder',
     org: 'AlgolyzerLab',
-    href: null,
+    href: 'https://algolyzerlab.com',
     when: 'Since 2024',
     what:
       'A small studio for applied AI that does not fit a product roadmap: sports science for elite ' +
@@ -258,15 +258,37 @@ const THREADS = [
 
   /* A cut-out betrays itself at the bottom, where the crop slices straight
      through the jacket and the figure sits on the page like a sticker. The fix
-     is not a better matte: it is to stop the image ending. The mask dissolves
-     the lower third into the paper, so the figure emerges from the page instead
-     of being pasted onto it, and the eye never finds an edge to disbelieve.
-     The sides and shoulders stay crisp, because those edges are real. */
+     is not a better matte: it is to stop the image ending.
+
+     Two things make that work. The source PNG carries 30% empty canvas below
+     the figure, so the fade has somewhere to finish; without it the gradient
+     has to complete inside the jacket and the crop line and the end of the fade
+     land on the same row, which is the straight edge you were seeing. And the
+     gradient is eased over five stops rather than linear over two, because a
+     linear ramp reads as a band while an eased one reads as depth.
+
+     Sides and shoulders stay crisp. Those edges are real. */
   .hero__portrait :global(img) {
     width: 100%;
     filter: saturate(0.82) contrast(1.04);
-    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 72%, transparent 100%);
-    mask-image: linear-gradient(to bottom, #000 0%, #000 72%, transparent 100%);
+    /* The figure occupies the top 75% of this canvas, so the crop through the
+       jacket sits at 75%. The ramp therefore has to reach zero BEFORE that, not
+       after it: a fade that is still 76% opaque where the jacket ends leaves
+       exactly the straight edge it was meant to hide. Solid to 34%, gone by
+       70%, five stops so it reads as depth rather than as a band. */
+    --fade:
+      linear-gradient(
+        to bottom,
+        #000 0%,
+        #000 34%,
+        rgba(0, 0, 0, 0.92) 44%,
+        rgba(0, 0, 0, 0.66) 53%,
+        rgba(0, 0, 0, 0.34) 61%,
+        rgba(0, 0, 0, 0.10) 66%,
+        transparent 70%
+      );
+    -webkit-mask-image: var(--fade);
+    mask-image: var(--fade);
   }
 
   /* On the dark ground the figure needs lifting off a near-black page. A flat

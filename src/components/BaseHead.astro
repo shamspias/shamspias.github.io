@@ -57,6 +57,7 @@ const ogImage = new URL('/og.png', Astro.site ?? SITE.url).href;
     of a family at once. Astro emits a metric-matched fallback for each face, so
     `font-display: swap` swaps without shifting the layout, and the browser
     fetches only the instances a given page actually uses. */}
+<Font cssVariable="--font-display" />
 <Font cssVariable="--font-text" />
 <Font cssVariable="--font-mono" />
 
