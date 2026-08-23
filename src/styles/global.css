@@ -261,9 +261,9 @@ time,
 
 /* --- scripts --------------------------------------------------------------
    The three faces this site is set in cover latin and nothing else, so a Bangla
-   or Arabic page has to bring its own. Both are served only on the pages written
-   in them, and both replace the display face too: Fraunces has no Bengali and no
-   Arabic, so a heading would silently fall back mid-word.
+   page has to bring its own. It is served only on the pages written in it, and
+   replaces the display face too: Fraunces has no Bengali, so a heading would
+   silently fall back mid-word.
 
    The small tracked uppercase label is a latin device. Neither script has a case
    to raise, and pushing their letters apart breaks the joins that make them
@@ -274,35 +274,11 @@ html[lang='bn'] {
   --face-display: var(--font-bengali), Kohinoor Bangla, Nirmala UI, Vrinda, serif;
 }
 
-html[lang='ar'] {
-  --face-text: var(--font-arabic), Geeza Pro, Segoe UI, Tahoma, serif;
-  --face-display: var(--font-arabic), Geeza Pro, Segoe UI, Tahoma, serif;
-}
-
-html[lang='bn'] :is(.label, .eyebrow),
-html[lang='ar'] :is(.label, .eyebrow) {
+html[lang='bn'] :is(.label, .eyebrow) {
   font-family: var(--face-text);
   font-size: var(--t-xs);
   letter-spacing: 0;
   text-transform: none;
-}
-
-/* Arabic reads right to left, but code, ASCII diagrams and mathematics do not.
-   A shell transcript mirrored into RTL is not a translation, it is a broken
-   transcript, so every one of those boxes is pinned back to left-to-right. */
-html[dir='rtl'] :is(pre, code, samp, kbd, .katex, .katex-display, .figure-svg, .tnum, time) {
-  direction: ltr;
-  text-align: start;
-}
-
-html[dir='rtl'] :is(pre, code) {
-  unicode-bidi: isolate;
-}
-
-/* A bullet is drawn with a pseudo-element at a negative inline offset, which
-   flips correctly, but the glyph itself should not be mirrored. */
-html[dir='rtl'] .prose :is(ul, ol) {
-  padding-inline-start: 1.35em;
 }
 
 /* --- layout primitives ---------------------------------------------------- */

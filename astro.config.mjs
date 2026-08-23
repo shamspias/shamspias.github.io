@@ -195,19 +195,6 @@ export default defineConfig({
       fallbacks: ['Kohinoor Bangla', 'Nirmala UI', 'Vrinda', 'serif'],
       display: 'swap',
     },
-    {
-      provider: fontProviders.fontsource(),
-      // Arabic. Naskh rather than Kufi: it is the style Arabic prose is read
-      // in, and its proportions are close enough to Literata's that a mixed
-      // line does not look like two documents. Loaded only on the Arabic pages.
-      name: 'Noto Naskh Arabic',
-      cssVariable: '--font-arabic',
-      weights: ['400 700'],
-      styles: ['normal'],
-      subsets: ['arabic'],
-      fallbacks: ['Geeza Pro', 'Segoe UI', 'Tahoma', 'serif'],
-      display: 'swap',
-    },
   ],
 
   markdown: {

@@ -49,19 +49,13 @@ const PAGES = [
   '/posts/2026/01/joint-angle-accuracy/',
   '/posts/2026/06/triangulation-and-cameras/',
   '/posts/2026/08/kinetix-clinical-agent/',
-  // The other two languages. Arabic is the one that matters most here: the
-  // whole layout mirrors, so an overflow that does not exist in English can
-  // appear at the other edge.
+  // The other language, Bangla, whose pages are worth a spot check for any
+  // overflow the English layout does not have.
   '/bn/',
   '/bn/writing/',
   '/bn/series/',
   '/bn/tags/',
-  '/ar/',
-  '/ar/writing/',
-  '/ar/series/',
-  '/ar/tags/',
   '/bn/posts/2016/02/counting-the-steps/',
-  '/ar/posts/2016/02/counting-the-steps/',
 ];
 
 /** Runs in the page. Reports overflow and the elements responsible. */

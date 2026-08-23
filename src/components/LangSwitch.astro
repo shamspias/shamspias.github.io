@@ -90,10 +90,9 @@ const shown = LOCALES.filter((l) => hrefs[l]);
       border-color var(--dur-fast) var(--ease);
   }
 
-  /* The endonyms are set in their own scripts, which are not uppercase and do
+  /* The endonym is set in its own script, which is not uppercase and does
      not want the tracking a latin label wants. */
-  .lang a[lang='bn'],
-  .lang a[lang='ar'] {
+  .lang a[lang='bn'] {
     font-family: var(--face-text);
     text-transform: none;
     letter-spacing: 0;

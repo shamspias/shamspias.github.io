@@ -27,7 +27,7 @@ const CODE_MAX = 110;
 // Every canonical URL on the site, so cross-links can be checked. A post that
 // exists in Bangla is reachable at /bn + its permalink, so the prefixed forms
 // count as real addresses too.
-const LOCALES = ['bn', 'ar'];
+const LOCALES = ['bn'];
 const permalinks = new Set();
 for (const f of files) {
   const raw = readFileSync(f, 'utf8');
@@ -46,7 +46,6 @@ const OTHER_PAGES = new Set([
 const CLOSING = {
   en: /^#{2,3} .*short version/im,
   bn: /^#{2,3} .*(সংক্ষেপে|সারসংক্ষেপ)/im,
-  ar: /^#{2,3} .*(باختصار|الخلاصة)/im,
 };
 
 let problems = 0;

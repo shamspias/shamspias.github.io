@@ -1,0 +1,1042 @@
+---
+import Base from '../layouts/Base.astro';
+import { ID, abs, breadcrumb, graph, itemList, person, website } from '../lib/seo';
+
+/**
+ * A hidden little arcade. Two dozen self-contained games, each one an idea from
+ * logic, physics, or maths made pokeable. Every game lives in src/scripts and
+ * mounts into its card on demand; this file is the shell and the copy.
+ *
+ * It is the one page on the site that ships client JavaScript, because a game
+ * you cannot play is not a game. It is published in English only: the games are
+ * interactive, not prose, so there is nothing to translate but the labels.
+ */
+
+type Game = {
+  id: string;
+  title: string;
+  tag: string;
+  learn: string;
+  how: string;
+};
+
+type Group = { key: string; title: string; blurb: string; games: Game[] };
+
+const GROUPS: Group[] = [
+  {
+    key: 'logic',
+    title: 'Logic and strategy',
+    blurb: 'Puzzles with a right answer hiding in plain sight, and one game a computer has solved completely.',
+    games: [
+      {
+        id: 'lights-out',
+        title: 'Lights Out',
+        tag: 'Parity',
+        learn: 'Every light is wired to its neighbours, so turning them all off is really a puzzle about even and odd.',
+        how: 'Tap a light to flip it and its four neighbours. Get the whole board dark.',
+      },
+      {
+        id: 'hanoi',
+        title: 'Tower of Hanoi',
+        tag: 'Recursion',
+        learn: 'Moving a tall stack is the same problem one disc smaller, done twice. That is recursion you can watch.',
+        how: 'Tap a peg to lift its top disc, tap another to set it down. Never rest a big disc on a smaller one.',
+      },
+      {
+        id: 'fifteen',
+        title: 'Fifteen Puzzle',
+        tag: 'Planning',
+        learn: 'Fifteen tiles and one gap. Order has to be built move by move, each of which looks like a step backward.',
+        how: 'Click a tile next to the gap to slide it in. Arrange the numbers 1 to 15.',
+      },
+      {
+        id: 'nim',
+        title: 'Nim',
+        tag: 'Game theory',
+        learn: 'A fully solved game. The winner is fixed in advance by the exclusive-or of the piles, not by luck.',
+        how: 'Take any number of stones from one pile. Take the very last stone to win. The computer plays perfectly.',
+      },
+      {
+        id: 'mastermind',
+        title: 'Mastermind',
+        tag: 'Deduction',
+        learn: 'Each guess is an experiment, and the feedback shrinks a space of over a thousand codes toward one.',
+        how: 'Guess the four hidden colours. A dark key means right colour and place; a pale key means right colour, wrong place.',
+      },
+      {
+        id: 'logic-gates',
+        title: 'Logic Gates',
+        tag: 'Boolean logic',
+        learn: 'AND, OR, XOR. The whole of digital logic is a handful of these little truth machines wired together.',
+        how: 'Flip the input switches or swap the gate until the bulb matches the goal.',
+      },
+    ],
+  },
+  {
+    key: 'physics',
+    title: 'Physics you can poke',
+    blurb: 'Little sandboxes running the real equations: gravity, torque, oscillation, and elastic collisions.',
+    games: [
+      {
+        id: 'projectile',
+        title: 'The Cannon',
+        tag: 'Projectiles',
+        learn: 'Gravity pulls down at the same rate whatever the sideways speed, and that is exactly what bends the path into a parabola.',
+        how: 'Set the angle and the power, then fire to land on the target.',
+      },
+      {
+        id: 'orbit',
+        title: 'Orbits',
+        tag: 'Gravity',
+        learn: 'An orbit is just falling forever and always missing. Too slow and you crash in; too fast and you escape.',
+        how: 'Drag anywhere and release to fling a planet past the star. Find the speed that makes it loop.',
+      },
+      {
+        id: 'pendulum',
+        title: 'Pendulums',
+        tag: 'Oscillation',
+        learn: 'A pendulum keeps time by its length alone. The weight of the bob never enters the period; longer just means slower.',
+        how: 'Set two different lengths, pull them back, and watch one beat slower than the other.',
+      },
+      {
+        id: 'incline',
+        title: 'The Ramp',
+        tag: 'Acceleration',
+        learn: 'On a slope the useful part of gravity is g times the sine of the angle. Steeper means a bigger push down the ramp.',
+        how: 'Change the ramp angle and drop the ball. The acceleration reads out as you go.',
+      },
+      {
+        id: 'bounce',
+        title: 'Bounce Box',
+        tag: 'Collisions',
+        learn: 'When two equal balls hit, they swap the speed along the line between them. Energy sloshes around and barely leaks away.',
+        how: 'Drag to fling a ball. Add a few more and watch them knock each other about.',
+      },
+      {
+        id: 'balance',
+        title: 'Balance Beam',
+        tag: 'Torque',
+        learn: 'What tips a lever is not weight but weight times distance from the pivot. That product is torque.',
+        how: 'Click to the left or right of the pivot to drop a weight. Make the two sides balance.',
+      },
+    ],
+  },
+  {
+    key: 'maths',
+    title: 'Numbers and shapes',
+    blurb: 'Arithmetic, primes, fractions, lines, and angles, each turned into something with a score.',
+    games: [
+      {
+        id: 'primes',
+        title: 'Prime Sieve',
+        tag: 'Number theory',
+        learn: 'Cross out every multiple and the primes are simply whatever is left standing. The trick is 2000 years old.',
+        how: 'Click a number to strike out its multiples. Keep going until only the primes survive.',
+      },
+      {
+        id: 'times-table',
+        title: 'Times Lightning',
+        tag: 'Mental maths',
+        learn: 'Instant recall of the multiplication table is a muscle. Here are thirty seconds of reps for it.',
+        how: 'Pick the right product before the clock runs down. A wrong tap costs you two seconds.',
+      },
+      {
+        id: 'fractions',
+        title: 'Fraction Match',
+        tag: 'Fractions',
+        learn: 'A fraction is a slice of a whole, and many different fractions name the very same slice.',
+        how: 'Read the shaded pie and pick the fraction that matches, reduced to lowest terms.',
+      },
+      {
+        id: 'guess-line',
+        title: 'Line of Best Fit',
+        tag: 'Algebra',
+        learn: 'A straight line is a slope and a height. Threading one through a cloud of points is what regression does.',
+        how: 'Tune the slope and the intercept to fit the dots, chasing the lowest error you can.',
+      },
+      {
+        id: 'estimate',
+        title: 'Dot Estimator',
+        tag: 'Number sense',
+        learn: 'You can feel roughly how many things are there without counting them. That sense sharpens with practice.',
+        how: 'The dots flash for a moment. Guess how many there were, then check.',
+      },
+      {
+        id: 'pattern',
+        title: 'Next in Line',
+        tag: 'Sequences',
+        learn: 'Add, multiply, square, or Fibonacci. Spotting the rule behind a run of numbers is the heart of the thing.',
+        how: 'Work out the rule and choose the number that comes next.',
+      },
+      {
+        id: 'angle',
+        title: 'Angle Aim',
+        tag: 'Geometry',
+        learn: 'Degrees measure turning. Ninety is a right angle, and every target sits at one exact angle from the corner.',
+        how: 'Point the arrow at the dot and read the angle off the protractor.',
+      },
+    ],
+  },
+  {
+    key: 'mind',
+    title: 'Mind and senses',
+    blurb: 'Memory, reflex, and attention, measured on you.',
+    games: [
+      {
+        id: 'simon',
+        title: 'Simon',
+        tag: 'Working memory',
+        learn: 'Holding a growing sequence in your head is working memory, stretched one extra step every round.',
+        how: 'Watch the pads light up in order, then repeat the pattern back. It grows by one each time.',
+      },
+      {
+        id: 'memory-match',
+        title: 'Memory Match',
+        tag: 'Recall',
+        learn: 'Where was that pair? Memory for places improves surprisingly fast with a little play.',
+        how: 'Flip two cards. If they match they stay face up. Clear the board in as few moves as you can.',
+      },
+      {
+        id: 'reaction',
+        title: 'Reaction Time',
+        tag: 'Reflex',
+        learn: 'From a flash of light to your click is about a fifth of a second. Here you can measure your own.',
+        how: 'Wait for green, then click as fast as you can. Clicking too early sends you back.',
+      },
+      {
+        id: 'stroop',
+        title: 'Stroop Test',
+        tag: 'Attention',
+        learn: 'Reading is so automatic that naming the ink of a colour word fights the word itself. That clash is the Stroop effect.',
+        how: 'Click the colour of the ink, not the word it spells. Thirty seconds on the clock.',
+      },
+      {
+        id: 'binary',
+        title: 'Binary Blocks',
+        tag: 'Number systems',
+        learn: 'Every whole number is a sum of powers of two, which is all a computer ever counts in. Eight switches reach 255.',
+        how: 'Flip the switches so their place values add up to the target number.',
+      },
+    ],
+  },
+];
+
+const ALL = GROUPS.flatMap((g) => g.games);
+const COUNT = ALL.length;
+
+const DESCRIPTION =
+  'Two dozen tiny browser games that each teach one idea, from logic and gravity to primes, ' +
+  'fractions, and reaction time. Free, no install, played right on the page.';
+
+const KEYWORDS = [
+  'educational games',
+  'learning games',
+  'physics games',
+  'math games',
+  'logic puzzles',
+  'brain games',
+  'browser games',
+  'interactive learning',
+  'game theory',
+  'learn by playing',
+] as const;
+
+const url = abs('/surprised/');
+const surprisedSchema = graph(
+  person(),
+  website(),
+  {
+    '@type': ['CollectionPage', 'WebApplication'],
+    '@id': url,
+    url,
+    name: 'Surprised: little games that teach',
+    description: DESCRIPTION,
+    inLanguage: 'en',
+    isPartOf: { '@id': ID.website },
+    author: { '@id': ID.person },
+    applicationCategory: 'GameApplication',
+    operatingSystem: 'Any modern web browser',
+    browserRequirements: 'Requires JavaScript',
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    keywords: KEYWORDS.join(', '),
+    breadcrumb: { '@id': `${url}#breadcrumb` },
+    mainEntity: { '@id': `${url}#list` },
+  },
+  breadcrumb([
+    { name: 'Home', url: '/' },
+    { name: 'Surprised', url: '/surprised/' },
+  ]),
+  itemList(
+    url,
+    ALL.map((g) => ({ name: g.title, url: `/surprised/#game-${g.id}` })),
+    {
+      itemListOrder: 'https://schema.org/ItemListOrderAscending',
+      itemListElement: ALL.map((g, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        item: {
+          '@type': 'Game',
+          name: g.title,
+          description: g.learn,
+          url: `${url}#game-${g.id}`,
+          author: { '@id': ID.person },
+          genre: g.tag,
+        },
+      })),
+    },
+  ),
+);
+---
+
+<Base
+  title="Surprised"
+  description={DESCRIPTION}
+  keywords={KEYWORDS}
+  schema={surprisedSchema}
+  available={['en']}
+>
+  <div class="surprised wrap page">
+    <header class="page__head arcade-hero">
+      <p class="label">A surprise arcade &nbsp;·&nbsp; {COUNT} little games</p>
+      <h1 class="display page__title">Surprised</h1>
+      <p class="lede page__lede">
+        You found the arcade. Two dozen tiny games, each one smuggling in a single idea from
+        <em>logic</em>, <em>physics</em>, or <em>maths</em>. Nothing to install, nothing to sign up
+        for. They run right here, on this page, and most take under a minute to get.
+      </p>
+      <nav class="arcade-jump" aria-label="Jump to a category">
+        {GROUPS.map((g) => <a href={`#${g.key}`} class="arcade-chip">{g.title}</a>)}
+      </nav>
+      <p class="arcade-noscript">These games need JavaScript. If nothing appears in the tiles below, it is switched off.</p>
+    </header>
+
+    {
+      GROUPS.map((g, gi) => (
+        <section class="arcade-group" id={g.key} data-group={g.key}>
+          <div class="arcade-group__head">
+            <h2 class="eyebrow arcade-group__title">
+              <span class="arcade-group__n tnum">{String(gi + 1).padStart(2, '0')}</span>
+              {g.title}
+            </h2>
+            <p class="arcade-group__blurb">{g.blurb}</p>
+          </div>
+          <div class="arcade-grid">
+            {g.games.map((game) => (
+              <article class="gamecard game" id={`game-${game.id}`} data-game={game.id}>
+                <div class="gamecard__bar">
+                  <h3 class="gamecard__title">{game.title}</h3>
+                  <span class="gamecard__tag">{game.tag}</span>
+                </div>
+                <div class="gamecard__stage" data-stage>
+                  <p class="gamecard__placeholder">Loading…</p>
+                </div>
+                <p class="gamecard__how">{game.how}</p>
+                <details class="gamecard__learn">
+                  <summary>What it teaches</summary>
+                  <p>{game.learn}</p>
+                </details>
+              </article>
+            ))}
+          </div>
+        </section>
+      ))
+    }
+
+    <footer class="arcade-foot">
+      <p>
+        Every game here is a few dozen lines of plain JavaScript, no libraries, drawn with the same
+        care as the rest of the site. If one breaks on your browser, that is a bug worth an email.
+        Otherwise, go on, one more round.
+      </p>
+    </footer>
+  </div>
+
+  <script>
+    import '../scripts/surprised.js';
+  </script>
+
+  <style>
+    /* --- page shell -------------------------------------------------------- */
+    .arcade-hero {
+      max-width: var(--measure);
+    }
+    .arcade-jump {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s-2);
+      margin-top: var(--s-5);
+    }
+    .arcade-chip {
+      display: inline-block;
+      padding: 0.35em 0.8em;
+      border: var(--rule-w) solid var(--rule-strong);
+      border-radius: 999px;
+      font-size: var(--t-xs);
+      font-family: var(--face-mono);
+      letter-spacing: var(--tr-wide);
+      text-transform: uppercase;
+      color: var(--fg-muted);
+      text-decoration: none;
+      transition:
+        color var(--dur-fast) var(--ease),
+        border-color var(--dur-fast) var(--ease),
+        background var(--dur-fast) var(--ease);
+    }
+    .arcade-chip:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: var(--accent-wash);
+    }
+    .arcade-noscript {
+      margin-top: var(--s-4);
+      font-size: var(--t-sm);
+      color: var(--fg-faint);
+    }
+
+    .arcade-group {
+      margin-top: var(--s-9);
+      scroll-margin-top: var(--s-6);
+    }
+    .arcade-group__head {
+      max-width: var(--measure);
+      margin-bottom: var(--s-5);
+    }
+    .arcade-group__title {
+      display: flex;
+      align-items: baseline;
+      gap: var(--s-3);
+    }
+    .arcade-group__n {
+      color: var(--accent);
+    }
+    .arcade-group__blurb {
+      margin-top: var(--s-2);
+      color: var(--fg-muted);
+      font-size: var(--t-sm);
+    }
+
+    .arcade-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+      gap: var(--s-5);
+    }
+
+    .gamecard {
+      display: flex;
+      flex-direction: column;
+      border: var(--rule-w) solid var(--rule);
+      border-radius: 14px;
+      background: var(--bg);
+      padding: var(--s-4);
+      scroll-margin-top: var(--s-6);
+      transition:
+        border-color var(--dur) var(--ease),
+        box-shadow var(--dur) var(--ease),
+        transform var(--dur) var(--ease);
+    }
+    .gamecard:hover {
+      border-color: var(--rule-strong);
+      box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.35);
+      transform: translateY(-2px);
+    }
+    .gamecard__bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s-3);
+      margin-bottom: var(--s-3);
+    }
+    .gamecard__title {
+      font-family: var(--face-display);
+      font-size: var(--t-md);
+      font-weight: 600;
+      letter-spacing: var(--tr-snug);
+      margin: 0;
+    }
+    .gamecard__tag {
+      flex: none;
+      font-family: var(--face-mono);
+      font-size: var(--t-2xs);
+      text-transform: uppercase;
+      letter-spacing: var(--tr-wide);
+      color: var(--accent);
+      background: var(--accent-wash);
+      border-radius: 999px;
+      padding: 0.28em 0.7em;
+    }
+    .gamecard__stage {
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-3);
+      align-items: stretch;
+    }
+    .gamecard__placeholder {
+      color: var(--fg-faint);
+      font-size: var(--t-sm);
+      text-align: center;
+      padding: var(--s-6) 0;
+      margin: 0;
+    }
+    .gamecard__how {
+      margin: var(--s-3) 0 0;
+      font-size: var(--t-sm);
+      color: var(--fg-muted);
+      line-height: var(--lh-snug);
+    }
+    .gamecard__learn {
+      margin-top: var(--s-2);
+      font-size: var(--t-sm);
+    }
+    .gamecard__learn summary {
+      cursor: pointer;
+      color: var(--fg-faint);
+      font-family: var(--face-mono);
+      font-size: var(--t-2xs);
+      text-transform: uppercase;
+      letter-spacing: var(--tr-wide);
+    }
+    .gamecard__learn summary:hover {
+      color: var(--accent);
+    }
+    .gamecard__learn p {
+      margin: var(--s-2) 0 0;
+      color: var(--fg-muted);
+      line-height: var(--lh-body);
+    }
+
+    .arcade-foot {
+      margin-top: var(--s-9);
+      padding-top: var(--s-5);
+      border-top: var(--rule-w) solid var(--rule);
+      max-width: var(--measure);
+      color: var(--fg-muted);
+      font-size: var(--t-sm);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .gamecard {
+        transition: none;
+      }
+      .gamecard:hover {
+        transform: none;
+      }
+    }
+  </style>
+
+  <style is:global>
+    /* --- game internals (built by src/scripts/surprised.js) ---------------- *
+       Every selector is anchored under .surprised so nothing leaks onto the
+       rest of the site. The game code creates these nodes at runtime, so they
+       cannot be reached by Astro's scoped styles above. */
+
+    .surprised {
+      --g-cell: var(--bg-sunken);
+      --g-win: #15803d;
+    }
+    .surprised .g-btn {
+      font: inherit;
+      font-size: var(--t-sm);
+      cursor: pointer;
+      border: var(--rule-w) solid var(--rule-strong);
+      background: var(--bg);
+      color: var(--fg);
+      border-radius: 999px;
+      padding: 0.4em 0.9em;
+      line-height: 1;
+      transition:
+        background var(--dur-fast) var(--ease),
+        border-color var(--dur-fast) var(--ease),
+        color var(--dur-fast) var(--ease);
+    }
+    .surprised .g-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .surprised .g-btn.on {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .surprised .g-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s-2);
+      align-items: center;
+    }
+    .surprised .g-note {
+      margin: 0;
+      font-size: var(--t-sm);
+      color: var(--fg-muted);
+      line-height: var(--lh-snug);
+      min-height: 2.4em;
+    }
+    .surprised .g-note.win {
+      color: var(--g-win);
+      font-weight: 600;
+    }
+    .surprised .g-canvas {
+      position: relative;
+      width: 100%;
+      background: var(--bg-sunken);
+      border-radius: 12px;
+      overflow: hidden;
+      touch-action: none;
+    }
+    .surprised .g-canvas canvas {
+      display: block;
+    }
+
+    /* boards (lights out, fifteen, memory) */
+    .surprised .g-board {
+      display: grid;
+      grid-template-columns: repeat(var(--n), 1fr);
+      gap: 6px;
+    }
+    .surprised .g-lite {
+      aspect-ratio: 1;
+      border: none;
+      border-radius: 10px;
+      background: var(--bg-sunken);
+      box-shadow: inset 0 0 0 1px var(--rule);
+      cursor: pointer;
+      transition:
+        background var(--dur-fast) var(--ease),
+        box-shadow var(--dur-fast) var(--ease);
+    }
+    .surprised .g-lite.on {
+      background: radial-gradient(circle at 50% 35%, #ffe58a, #ffb020);
+      box-shadow:
+        inset 0 0 0 1px #f59e0b,
+        0 0 14px -2px #ffb020;
+    }
+    .surprised .g-tile {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--face-mono);
+      font-size: var(--t-lg);
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      background: var(--accent-wash);
+      color: var(--accent);
+      cursor: pointer;
+    }
+    .surprised .g-tile.home {
+      background: #dcfce7;
+      color: #15803d;
+    }
+    .surprised .g-tile.blank {
+      background: transparent;
+    }
+    .surprised .g-card {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--t-xl);
+      border: var(--rule-w) solid var(--rule);
+      border-radius: 10px;
+      background: var(--bg-sunken);
+      color: var(--fg-faint);
+      cursor: pointer;
+    }
+    .surprised .g-card.up {
+      background: var(--bg);
+      border-color: var(--accent);
+    }
+    .surprised .g-card.done {
+      background: #dcfce7;
+      border-color: #86efac;
+    }
+
+    /* hanoi */
+    .surprised .g-hanoi {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--s-3);
+      align-items: end;
+      min-height: 170px;
+    }
+    .surprised .g-peg {
+      position: relative;
+      display: flex;
+      flex-direction: column-reverse;
+      align-items: center;
+      gap: 4px;
+      min-height: 160px;
+      padding-bottom: 6px;
+      border: none;
+      background: none;
+      border-bottom: 4px solid var(--rule-strong);
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .surprised .g-peg.sel {
+      background: var(--accent-wash);
+      border-radius: 8px 8px 4px 4px;
+    }
+    .surprised .g-rod {
+      position: absolute;
+      bottom: 6px;
+      width: 4px;
+      height: 150px;
+      background: var(--rule-strong);
+      border-radius: 2px;
+      z-index: 0;
+    }
+    .surprised .g-disc {
+      position: relative;
+      z-index: 1;
+      height: 15px;
+      border-radius: 8px;
+      box-shadow: inset 0 -3px 6px -3px rgba(0, 0, 0, 0.4);
+    }
+
+    /* nim */
+    .surprised .g-nim {
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-3);
+    }
+    .surprised .g-nim-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .surprised .g-bead {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      box-shadow: inset 0 -4px 6px -3px rgba(0, 0, 0, 0.45);
+      transition: transform var(--dur-fast) var(--ease);
+    }
+    .surprised .g-bead:hover:not(:disabled) {
+      transform: scale(1.12);
+    }
+    .surprised .g-bead:disabled {
+      cursor: default;
+      opacity: 0.9;
+    }
+
+    /* mastermind */
+    .surprised .g-mm {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .surprised .g-mm-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .surprised .g-mm-row.active {
+      background: var(--accent-wash);
+      border-radius: 999px;
+      padding: 3px 6px;
+      margin: -3px -6px;
+    }
+    .surprised .g-mm-peg {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid var(--rule-strong);
+      background: var(--bg-sunken);
+      cursor: pointer;
+      padding: 0;
+    }
+    .surprised .g-mm-fb {
+      display: grid;
+      grid-template-columns: repeat(2, 8px);
+      gap: 3px;
+      margin-left: auto;
+    }
+    .surprised .g-key {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .surprised .g-key.black {
+      background: var(--fg);
+    }
+    .surprised .g-key.white {
+      background: none;
+      box-shadow: inset 0 0 0 1.5px var(--fg-faint);
+    }
+    .surprised .g-mm-pal,
+    .surprised .g-mm-secret {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .surprised .g-swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 2px solid rgba(0, 0, 0, 0.12);
+      cursor: pointer;
+      padding: 0;
+    }
+
+    /* logic gates */
+    .surprised .g-gate {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      gap: var(--s-3);
+      background: var(--bg-sunken);
+      border-radius: 12px;
+      padding: var(--s-4) var(--s-3);
+      min-height: 96px;
+    }
+    .surprised .g-gate-io {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .surprised .g-switch {
+      font-family: var(--face-mono);
+      font-size: var(--t-xs);
+      border: var(--rule-w) solid var(--rule-strong);
+      background: var(--bg);
+      color: var(--fg-muted);
+      border-radius: 8px;
+      padding: 0.3em 0.5em;
+      cursor: pointer;
+    }
+    .surprised .g-switch.on {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .surprised .g-gate-box {
+      font-family: var(--face-mono);
+      font-weight: 700;
+      font-size: var(--t-md);
+      border: 2px solid var(--fg);
+      border-radius: 10px;
+      padding: 0.5em 0.7em;
+      color: var(--fg);
+    }
+    .surprised .g-bulb {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--face-mono);
+      font-weight: 700;
+      background: var(--bg-sunken);
+      box-shadow: inset 0 0 0 2px var(--rule-strong);
+      color: var(--fg-faint);
+    }
+    .surprised .g-bulb.lit {
+      background: radial-gradient(circle at 50% 35%, #ffe58a, #ffb020);
+      box-shadow:
+        inset 0 0 0 2px #f59e0b,
+        0 0 18px -2px #ffb020;
+      color: #7a4a00;
+    }
+
+    /* sliders */
+    .surprised .g-slider {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: var(--s-3);
+      font-size: var(--t-sm);
+    }
+    .surprised .g-slider-label {
+      color: var(--fg-muted);
+    }
+    .surprised .g-slider-val {
+      color: var(--accent);
+      font-family: var(--face-mono);
+      min-width: 3ch;
+      text-align: right;
+    }
+    .surprised .g-range {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    /* sieve */
+    .surprised .g-sieve {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 3px;
+    }
+    .surprised .g-num {
+      aspect-ratio: 1;
+      font-family: var(--face-mono);
+      font-size: var(--t-2xs);
+      border: none;
+      border-radius: 5px;
+      background: var(--accent-wash);
+      color: var(--accent);
+      cursor: pointer;
+      padding: 0;
+    }
+    .surprised .g-num.out {
+      background: var(--bg-sunken);
+      color: var(--fg-faint);
+      text-decoration: line-through;
+    }
+
+    /* quiz layouts (times table, fractions, pattern, estimate, stroop) */
+    .surprised .g-quiz-q {
+      font-family: var(--face-mono);
+      font-size: var(--t-2xl);
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: 0.04em;
+      color: var(--fg-strong);
+    }
+    .surprised .g-quiz-opts {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--s-2);
+    }
+    .surprised .g-quiz-opt {
+      font-family: var(--face-mono);
+      font-size: var(--t-md);
+      padding: 0.6em;
+      border: var(--rule-w) solid var(--rule-strong);
+      border-radius: 10px;
+      background: var(--bg);
+      color: var(--fg);
+      cursor: pointer;
+      transition:
+        border-color var(--dur-fast) var(--ease),
+        background var(--dur-fast) var(--ease);
+    }
+    .surprised .g-quiz-opt:hover {
+      border-color: var(--accent);
+      background: var(--accent-wash);
+    }
+
+    /* simon */
+    .surprised .g-simon-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      max-width: 260px;
+      margin: 0 auto;
+    }
+    .surprised .g-simon {
+      aspect-ratio: 1;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      opacity: 0.55;
+      transition:
+        opacity 90ms var(--ease),
+        transform 90ms var(--ease);
+    }
+    .surprised .g-simon:hover {
+      opacity: 0.8;
+    }
+    .surprised .g-simon.flash {
+      opacity: 1;
+      transform: scale(0.96);
+      box-shadow: 0 0 22px -4px currentColor;
+    }
+
+    /* reaction */
+    .surprised .g-react {
+      width: 100%;
+      min-height: 150px;
+      border: none;
+      border-radius: 12px;
+      font-family: var(--face-mono);
+      font-size: var(--t-md);
+      font-weight: 600;
+      color: #fff;
+      cursor: pointer;
+    }
+    .surprised .g-react.idle,
+    .surprised .g-react.result {
+      background: #4b5563;
+    }
+    .surprised .g-react.wait {
+      background: #b91c1c;
+    }
+    .surprised .g-react.go {
+      background: #16a34a;
+    }
+    .surprised .g-react.early {
+      background: #b45309;
+    }
+
+    /* stroop */
+    .surprised .g-stroop-word {
+      font-family: var(--face-display);
+      font-weight: 800;
+      font-size: var(--t-3xl);
+      text-align: center;
+      letter-spacing: 0.03em;
+      min-height: 1.4em;
+    }
+
+    /* binary */
+    .surprised .g-binary {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 4px;
+    }
+    .surprised .g-bit-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+    .surprised .g-bit {
+      width: 100%;
+      aspect-ratio: 0.8;
+      border: none;
+      border-radius: 8px;
+      font-family: var(--face-mono);
+      font-weight: 700;
+      background: var(--bg-sunken);
+      color: var(--fg-faint);
+      cursor: pointer;
+      box-shadow: inset 0 0 0 1px var(--rule);
+    }
+    .surprised .g-bit.on {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: none;
+    }
+    .surprised .g-bit-place {
+      font-family: var(--face-mono);
+      font-size: 0.6rem;
+      color: var(--fg-faint);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .surprised {
+        --g-win: #4ade80;
+      }
+      .surprised .g-tile.home,
+      .surprised .g-card.done {
+        background: #14331f;
+        color: #4ade80;
+        border-color: #14331f;
+      }
+    }
+    :root[data-theme='dark'] .surprised {
+      --g-win: #4ade80;
+    }
+    :root[data-theme='dark'] .surprised .g-tile.home,
+    :root[data-theme='dark'] .surprised .g-card.done {
+      background: #14331f;
+      color: #4ade80;
+      border-color: #14331f;
+    }
+  </style>
+</Base>

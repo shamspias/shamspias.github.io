@@ -46,8 +46,8 @@ if (files.length === 0) {
  * The face under test is the one the diagrams are set in.
  *
  * Advance-width uniformity looked like the principled way to find it, but it is
- * not a test: Noto Naskh Arabic carries latin glyphs at a single advance too, so
- * it was picked up and then failed for lacking box-drawing characters it has no
+ * not a test: a text serif can carry latin glyphs at a single advance too, so it
+ * would be picked up and then fail for lacking box-drawing characters it has no
  * business carrying. The mono family is named in astro.config.mjs, so name it
  * here as well and assert it was found.
  */

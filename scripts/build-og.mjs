@@ -187,6 +187,11 @@ async function main() {
     title: 'Things I built, and what each one taught me.',
     foot: 'Go  ·  Python  ·  open source where it can be',
   });
+  cards.set('/surprised/', {
+    eyebrow: 'A surprise arcade',
+    title: 'Two dozen tiny games that each teach one idea.',
+    foot: 'Logic  ·  physics  ·  maths  ·  played in the browser',
+  });
 
   // A card per series, because those are real reading paths people share. The
   // 130 tag pages fall back to the /tags/ card: they are thin index hubs, and a

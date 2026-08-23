@@ -20,6 +20,7 @@ const strings = t(locale);
 const NAV = [
   { label: strings.writing, href: localise('/writing/', locale), translated: true },
   { label: strings.projects, href: '/projects/', translated: false },
+  { label: strings.surprised, href: '/surprised/', translated: false },
 ] as const;
 
 const here = delocalise(Astro.url.pathname).path;
@@ -97,11 +98,10 @@ const isCurrent = (href: string) => {
     color: var(--fg-faint);
   }
 
-  /* The role reads as a tracked latin label in English. In Bangla and Arabic
-     that treatment is wrong: neither script has a case to raise and both lose
-     legibility when letters are pushed apart. */
-  :global(html[lang='bn']) .wordmark__role,
-  :global(html[lang='ar']) .wordmark__role {
+  /* The role reads as a tracked latin label in English. In Bangla that
+     treatment is wrong: the script has no case to raise and loses legibility
+     when letters are pushed apart. */
+  :global(html[lang='bn']) .wordmark__role {
     font-family: var(--face-text);
     text-transform: none;
     letter-spacing: 0;

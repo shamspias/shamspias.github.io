@@ -39,6 +39,7 @@ export const GET: APIRoute = async () => {
     `- [Series](${SITE.url}/series/): ${series.length} multi-part runs, each in reading order.`,
     `- [Subjects](${SITE.url}/tags/): every subject, as an index.`,
     `- [Projects](${SITE.url}/projects/): what I have built, and what each one taught me.`,
+    `- [Surprised](${SITE.url}/surprised/): a small arcade of two dozen games that each teach one idea from logic, physics, or maths.`,
     `- [RSS](${SITE.url}/rss.xml): the feed.`,
     '',
     '## Series',

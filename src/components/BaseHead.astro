@@ -89,10 +89,9 @@ const alternateLinks =
       ]
     : [];
 
-// The two locales whose scripts the latin faces cannot set. Loaded only on the
-// pages written in them, so an English reader never pays for either.
+// The locale whose script the latin faces cannot set. Loaded only on the
+// pages written in it, so an English reader never pays for it.
 const needsBengali = locale === 'bn';
-const needsArabic = locale === 'ar';
 ---
 
 <meta charset="utf-8" />
@@ -163,7 +162,6 @@ const needsArabic = locale === 'ar';
 <Font cssVariable="--font-text" />
 <Font cssVariable="--font-mono" />
 {needsBengali && <Font cssVariable="--font-bengali" />}
-{needsArabic && <Font cssVariable="--font-arabic" />}
 
 {math && <link rel="stylesheet" href="/katex/katex.min.css" />}
 
@@ -181,10 +179,10 @@ const needsArabic = locale === 'ar';
 {/* The language rule.
     English is the default for everyone, everywhere. The site does not guess a
     language from location or from the browser: a first-time visitor gets English
-    whatever their time zone, and Bangla or Arabic are reached only by choosing
-    them. Once chosen, the choice is remembered and honoured on later visits.
-    Two ways to choose: click the switcher (which stores it), or open a `/bn` or
-    `/ar` link directly, which counts as choosing and is remembered too. `?lang=`
+    whatever their time zone, and Bangla is reached only by choosing it. Once
+    chosen, the choice is remembered and honoured on later visits. Two ways to
+    choose: click the switcher (which stores it), or open a `/bn` link directly,
+    which counts as choosing and is remembered too. `?lang=`
     overrides and is remembered. A language a page does not have is never
     navigated to. */}
 <script

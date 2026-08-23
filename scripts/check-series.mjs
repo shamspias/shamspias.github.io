@@ -82,7 +82,7 @@ for (const [series, perLang] of orders) {
 for (const file of files) {
   const raw = readFileSync(file, 'utf8');
   const lang = raw.match(/^lang: (\w+)$/m)?.[1] ?? 'en';
-  for (const m of raw.matchAll(/\[part (\d+)\]\((\/(?:bn|ar)\/)?(\/?posts\/[^)]+?\/)\)/g)) {
+  for (const m of raw.matchAll(/\[part (\d+)\]\((\/bn\/)?(\/?posts\/[^)]+?\/)\)/g)) {
     const claimed = Number(m[1]);
     // Reassemble the permalink the link points at, dropping any locale prefix.
     const permalink = m[3].startsWith('/') ? m[3] : '/' + m[3];

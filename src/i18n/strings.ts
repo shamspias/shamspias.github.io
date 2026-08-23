@@ -2,10 +2,8 @@
  * Every word of interface text, in the three languages.
  *
  * Counted phrases are functions rather than templates with a number spliced in.
- * English needs two forms, Bangla needs one, and Arabic needs five: singular,
- * dual, a form for three to ten, another for eleven and up, and a form for
- * zero. Writing `${n} posts` and translating the word would produce Arabic that
- * is wrong four times out of five, so the plural rule is part of the string.
+ * English needs two forms and Bangla needs one, so the plural rule is part of
+ * the string rather than something spliced in after translation.
  */
 import { LOCALE_META, type Locale } from './config';
 
@@ -15,9 +13,6 @@ export const num = (locale: Locale, n: number): string =>
     numberingSystem: LOCALE_META[locale].numerals,
   }).format(n);
 
-/** Arabic plural category for a count, which decides the shape of the noun. */
-const arabicForm = (n: number): 'zero' | 'one' | 'two' | 'few' | 'many' | 'other' =>
-  new Intl.PluralRules('ar').select(n) as never;
 
 type Strings = {
   /* chrome */
@@ -31,7 +26,7 @@ type Strings = {
   themeDark: string;
   role: string;
   home: string;
-  /** The comma between a role and its organisation. Arabic has its own. */
+  /** The comma between a role and its organisation. */
   comma: string;
   /** Shown where a language's index has nothing in it yet. */
   emptyIndex: string;
@@ -43,6 +38,7 @@ type Strings = {
   projects: string;
   series: string;
   subjects: string;
+  surprised: string;
   cv: string;
 
   /* footer */
@@ -126,6 +122,7 @@ const en: Strings = {
   projects: 'Projects',
   series: 'Series',
   subjects: 'Subjects',
+  surprised: 'Surprised',
   cv: 'Curriculum Vitae',
 
   elsewhere: 'Elsewhere',
@@ -208,6 +205,7 @@ const bn: Strings = {
   projects: 'প্রকল্প',
   series: 'সিরিজ',
   subjects: 'বিষয়',
+  surprised: 'চমক',
   cv: 'জীবনবৃত্তান্ত',
 
   elsewhere: 'অন্য জায়গায়',
@@ -269,147 +267,6 @@ const bn: Strings = {
   notFoundBack: 'লেখার তালিকায় যান',
 };
 
-const ar: Strings = {
-  skipToContent: 'تجاوَز إلى المحتوى',
-  primaryNav: 'الرئيسية',
-  language: 'اللغة',
-  languageOf: 'اختر اللغة',
-  theme: 'المظهر',
-  themeSystem: 'مظهر النظام',
-  themeLight: 'المظهر الفاتح',
-  themeDark: 'المظهر الداكن',
-  role: 'مهندس برمجيات أول',
-  home: 'الرئيسية',
-  comma: '، ',
-  emptyIndex: 'لا يوجد شيء بهذه اللغة بعد.',
-  siteDescription:
-    'شمس الدين أحمد، مهندس برمجيات أول في دكا: طبقة التحكّم بالوكلاء، وبنية تشغيل النماذج ' +
-    'اللغوية، وتعلّم الآلة لعلم الأحياء. مقالات مطوّلة في المجالات الثلاثة.',
 
-  writing: 'المقالات',
-  projects: 'المشاريع',
-  series: 'السلاسل',
-  subjects: 'الموضوعات',
-  cv: 'السيرة الذاتية',
-
-  elsewhere: 'مواقع أخرى',
-  read: 'للقراءة',
-  thisSite: 'عن الموقع',
-  allWriting: 'كل المقالات',
-  bySubject: 'حسب الموضوع',
-  colophon:
-    'مكتوب ومبني يدويًا. ملفات ثابتة، بلا تتبّع، بلا كوكيز، ولا شيء يحتاج إلى موافقتك.',
-  legal: (year, name) => `© ${year} ${name}`,
-
-  nPosts: (n) => {
-    const d = num('ar', n);
-    switch (arabicForm(n)) {
-      case 'one':
-        return 'مقال واحد';
-      case 'two':
-        return 'مقالان';
-      case 'few':
-        return `${d} مقالات`;
-      default:
-        return `${d} مقالًا`;
-    }
-  },
-  nSeries: (n) => {
-    const d = num('ar', n);
-    switch (arabicForm(n)) {
-      case 'one':
-        return 'سلسلة واحدة';
-      case 'two':
-        return 'سلسلتان';
-      case 'few':
-        return `${d} سلاسل`;
-      default:
-        return `${d} سلسلة`;
-    }
-  },
-  nYears: (n) => {
-    const d = num('ar', n);
-    switch (arabicForm(n)) {
-      case 'one':
-        return 'سنة واحدة';
-      case 'two':
-        return 'سنتان';
-      case 'few':
-        return `${d} سنوات`;
-      default:
-        return `${d} سنة`;
-    }
-  },
-  nParts: (n) => {
-    const d = num('ar', n);
-    switch (arabicForm(n)) {
-      case 'one':
-        return 'جزء واحد';
-      case 'two':
-        return 'جزءان';
-      case 'few':
-        return `${d} أجزاء`;
-      default:
-        return `${d} جزءًا`;
-    }
-  },
-  nMinutes: (n) => `${num('ar', n)} دقيقة قراءة`,
-
-  writingLede:
-    'أكتب لأفهم، لا لأبدو ذكيًا. كل ما هنا يشرح فكرة صعبة بالطريقة التي كنت أتمنى أن يشرحها لي أحد: بالتشبيهات، وبكود يمكن تشغيله، وبأرقام صادقة.',
-  writingDesc:
-    'مقالات مطوّلة عن طبقة التحكّم بالوكلاء، وبنية تشغيل النماذج اللغوية، وتعلّم الآلة لعلم ' +
-    'الأحياء، والرؤية الحاسوبية، والأساسيات تحتها جميعًا.',
-  browseAria: 'التصفّح حسب السلسلة والموضوع',
-  allSubjectsArrow: 'كل الموضوعات',
-
-  seriesLede:
-    'بعض الأفكار لا تتّسع لمقال واحد. هذه هي السلاسل: كل جزء قائم بذاته، وقراءتها بالترتيب أنفع.',
-  seriesInOrder: 'مكتوبة لتُقرأ بالترتيب، وقادرة على الوقوف بمفردها.',
-  allSeries: 'كل السلاسل',
-  partsInOrder: (n) => {
-    const d = num('ar', n);
-    switch (arabicForm(n)) {
-      case 'one':
-        return 'جزء واحد، بترتيب القراءة';
-      case 'two':
-        return 'جزءان، بترتيب القراءة';
-      case 'few':
-        return `${d} أجزاء، بترتيب القراءة`;
-      default:
-        return `${d} جزءًا، بترتيب القراءة`;
-    }
-  },
-
-  subjectsLede:
-    'كل موضوع كُتب عنه هنا. كلما كبر العدد، طال الوقت الذي دُرت فيه حول الموضوع.',
-  subject: 'موضوع',
-  tagDesc: (tag, count, sample) =>
-    `${ar.nPosts(count)} عن ${tag} بقلم شمس الدين أحمد` +
-    (sample ? `، منها ${sample}.` : '.') +
-    ' أمثلة عملية، ونتائج مقيسة، والكود الذي وراءها.',
-
-  aboutThisPost: 'عن هذا المقال',
-  published: 'تاريخ النشر',
-  length: 'المدة',
-  filedUnder: 'مُصنَّف تحت',
-  contents: 'المحتويات',
-  otherPosts: 'مقالات أخرى',
-  previous: 'السابق',
-  next: 'التالي',
-  seriesStrip: (name) => `سلسلة ${name}`,
-  partOf: (name) => `جزء من سلسلة ${name}`,
-
-  notTranslated: 'هذا المقال لم يُترجم بعد.',
-  readInEnglish: 'اقرأه بالإنجليزية',
-  availableIn: 'متوفر أيضًا بـ',
-
-  notFoundLabel: 'خطأ ٤٠٤',
-  notFoundTitle: 'هذه الصفحة غير موجودة.',
-  notFoundLede:
-    'العنوان خاطئ، أو أن شيئًا ما انتقل ولم أترك عنوانًا جديدًا. كل ما نُشر هنا لا يزال على بعد رابط واحد.',
-  notFoundBack: 'إلى فهرس المقالات',
-};
-
-export const STRINGS: Record<Locale, Strings> = { en, bn, ar };
+export const STRINGS: Record<Locale, Strings> = { en, bn };
 export type { Strings };

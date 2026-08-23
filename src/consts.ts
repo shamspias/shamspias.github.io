@@ -15,7 +15,7 @@ export const SITE = {
 
 /**
  * The nav is built in the header, per language, from the translated labels in
- * src/i18n. It is two links: Writing and Projects.
+ * src/i18n. It is three links: Writing, Projects, and Surprised (the games page).
  *
  * The CV is deliberately absent from it. It stays reachable at /cv/ for anyone
  * given the link, but it is not advertised in the nav, the footer, the sitemap
