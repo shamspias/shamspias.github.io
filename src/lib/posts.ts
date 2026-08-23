@@ -93,7 +93,27 @@ export function groupBySeries(posts: Post[]): { name: string; posts: Post[] }[] 
   return names.map((name) => ({ name, posts: seriesOf(posts, name) }));
 }
 
-export const slugifyTag = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+/**
+ * A tag or series name as a URL segment.
+ *
+ * Tags are keys, not display text: they are written in English in every
+ * language's frontmatter and translated for display through src/i18n/tags. That
+ * keeps one subject page per subject per language, correctly cross-linked, and
+ * it keeps the slugs ASCII.
+ *
+ * A name that slugifies to nothing would collide with the index route and fail
+ * deep inside the build with "Missing parameter", so it is caught here.
+ */
+export function slugifyTag(t: string): string {
+  const slug = t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  if (!slug) {
+    throw new Error(
+      `tag or series name has no ASCII characters to slugify: "${t}". ` +
+        'Tags are English keys; translate the label in src/i18n/tags.ts instead.',
+    );
+  }
+  return slug;
+}
 
 /** Every tag with its post count, most used first then alphabetical. */
 export function tagCounts(posts: Post[]): { tag: string; slug: string; count: number }[] {

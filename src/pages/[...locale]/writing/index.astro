@@ -5,6 +5,7 @@ import PostEntry from '../../../components/PostEntry.astro';
 import { allPosts, byYear, groupBySeries, plainTitle, slugifyTag, tagCounts, urlOf } from '../../../lib/posts';
 import { ID, abs, breadcrumb, graph, itemList, person, website } from '../../../lib/seo';
 import { localePaths, localise, t, yearIn, type Locale } from '../../../i18n';
+import { tagLabel } from '../../../i18n/tags';
 
 export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
 
@@ -102,7 +103,7 @@ const schema = graph(
               tags.map((tag) => (
                 <li>
                   <a href={localise(`/tags/${tag.slug}/`, locale)}>
-                    {tag.tag}
+                    {tagLabel(tag.tag, locale)}
                     <span class="rail__n tnum">{tag.count}</span>
                   </a>
                 </li>

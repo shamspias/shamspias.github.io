@@ -12,7 +12,10 @@ import { globSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 const DIR = 'src/content/blog';
-const files = globSync(`${DIR}/*.md`).sort();
+// Translations live in a folder named after their language, so the glob has to
+// recurse. Every check below that depends on the language reads it from the
+// frontmatter rather than from the path.
+const files = globSync(`${DIR}/**/*.md`).sort();
 
 const EMOJI = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{1F1E6}-\u{1F1FF}]/u;
 const DIAGRAM_MAX = 74;
@@ -21,14 +24,30 @@ const DIAGRAM_MAX = 74;
 // shorter form, so it warns rather than fails.
 const CODE_MAX = 110;
 
-// Every canonical URL on the site, so cross-links can be checked.
-const permalinks = new Set(
-  files.map((f) => {
-    const m = readFileSync(f, 'utf8').match(/^permalink: "(.+)"$/m);
-    return m ? m[1] : null;
-  }).filter(Boolean),
-);
-const OTHER_PAGES = new Set(['/', '/writing/', '/projects/', '/series/', '/tags/', '/cv/', '/rss.xml']);
+// Every canonical URL on the site, so cross-links can be checked. A post that
+// exists in Bangla is reachable at /bn + its permalink, so the prefixed forms
+// count as real addresses too.
+const LOCALES = ['bn', 'ar'];
+const permalinks = new Set();
+for (const f of files) {
+  const raw = readFileSync(f, 'utf8');
+  const link = raw.match(/^permalink: "(.+)"$/m)?.[1];
+  if (!link) continue;
+  const lang = raw.match(/^lang: (\w+)$/m)?.[1] ?? 'en';
+  permalinks.add(lang === 'en' ? link : `/${lang}${link}`);
+}
+const OTHER_PAGES = new Set([
+  '/', '/writing/', '/projects/', '/series/', '/tags/', '/cv/', '/rss.xml', '/llms.txt',
+  ...LOCALES.flatMap((l) => [`/${l}/`, `/${l}/writing/`, `/${l}/series/`, `/${l}/tags/`]),
+]);
+
+// The closing section, per language. Every post ends with one, and the heading
+// is in the language the post is written in.
+const CLOSING = {
+  en: /^#{2,3} .*short version/im,
+  bn: /^#{2,3} .*(সংক্ষেপে|সারসংক্ষেপ)/im,
+  ar: /^#{2,3} .*(باختصار|الخلاصة)/im,
+};
 
 let problems = 0;
 let warnings = 0;
@@ -97,8 +116,8 @@ for (const file of files) {
   // 5. internal links resolve
   for (const [, href] of body.matchAll(/\]\((\/[^)\s]*)\)/g)) {
     const clean = href.split('#')[0];
-    if (!permalinks.has(clean) && !OTHER_PAGES.has(clean) && !clean.startsWith('/figures/') &&
-        !clean.startsWith('/tags/') && !clean.startsWith('/series/')) {
+    const sectionish = /^\/(bn\/|ar\/)?(tags|series|figures)\//.test(clean);
+    if (!permalinks.has(clean) && !OTHER_PAGES.has(clean) && !sectionish) {
       report(file, 'dead link', href);
     }
   }
@@ -117,8 +136,11 @@ for (const file of files) {
     }
   }
 
-  // 7. closing section
-  if (!/^#{2,3} .*short version/im.test(body)) report(file, 'structure', 'no "The short version" section');
+  // 7. closing section, in the post's own language
+  const lang = fm.match(/^lang: (\w+)$/m)?.[1] ?? 'en';
+  const closing = CLOSING[lang];
+  if (!closing) report(file, 'frontmatter', `unknown lang: ${lang}`);
+  else if (!closing.test(body)) report(file, 'structure', 'no closing summary section');
 
   // 8. a lead paragraph in italics
   const firstPara = body.trim().split('\n\n')[0].trim();

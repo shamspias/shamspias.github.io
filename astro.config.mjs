@@ -56,18 +56,40 @@ const NEWEST = [...POST_DATES.values()].sort().pop();
  */
 const THIN_TAGS = (() => {
   const dir = 'src/content/blog';
-  const counts = new Map();
-  for (const file of readdirSync(dir)) {
-    if (!file.endsWith('.md')) continue;
-    const fm = readFileSync(path.join(dir, file), 'utf8').match(/^---\n([\s\S]*?)\n---/)?.[1] ?? '';
-    const block = fm.match(/^tags:\n((?: {2}- .*\n?)+)/m)?.[1] ?? '';
-    for (const line of block.trim().split('\n').filter(Boolean)) {
-      const tag = line.replace(/^\s*-\s*/, '').replace(/^"|"$/g, '');
-      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+  // Counted per language, and recursively: a translation lives in a folder
+  // named after its language, and a subject page exists once per language, so
+  // "holds a single post" has to be asked once per language too.
+  const counts = new Map();                  // lang -> tag -> count
+  const walk = (d) => {
+    for (const entry of readdirSync(d, { withFileTypes: true })) {
+      const full = path.join(d, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (!entry.name.endsWith('.md')) continue;
+      const fm = readFileSync(full, 'utf8').match(/^---\n([\s\S]*?)\n---/)?.[1] ?? '';
+      const lang = fm.match(/^lang: (\w+)$/m)?.[1] ?? 'en';
+      const block = fm.match(/^tags:\n((?: {2}- .*\n?)+)/m)?.[1] ?? '';
+      if (!counts.has(lang)) counts.set(lang, new Map());
+      const per = counts.get(lang);
+      for (const line of block.trim().split('\n').filter(Boolean)) {
+        const tag = line.replace(/^\s*-\s*/, '').replace(/^"|"$/g, '');
+        per.set(tag, (per.get(tag) ?? 0) + 1);
+      }
+    }
+  };
+  walk(dir);
+
+  const slug = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const thin = new Set();
+  for (const [lang, per] of counts) {
+    const prefix = lang === 'en' ? '' : `/${lang}`;
+    for (const [tag, n] of per) {
+      if (n < 2) thin.add(`${prefix}/tags/${slug(tag)}/`);
     }
   }
-  const slug = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-  return new Set([...counts].filter(([, n]) => n < 2).map(([t]) => `/tags/${slug(t)}/`));
+  return thin;
 })();
 
 export default defineConfig({

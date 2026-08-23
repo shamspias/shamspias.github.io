@@ -60,6 +60,8 @@ const PAGES = [
   '/ar/writing/',
   '/ar/series/',
   '/ar/tags/',
+  '/bn/posts/2016/02/counting-the-steps/',
+  '/ar/posts/2016/02/counting-the-steps/',
 ];
 
 /** Runs in the page. Reports overflow and the elements responsible. */

@@ -4,6 +4,7 @@ import Base from '../../../layouts/Base.astro';
 import { allPosts, tagCounts } from '../../../lib/posts';
 import { collectionPage } from '../../../lib/seo';
 import { localePaths, localise, num, t, type Locale } from '../../../i18n';
+import { tagLabel } from '../../../i18n/tags';
 
 export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
 
@@ -25,7 +26,7 @@ const tagsSchema = collectionPage({
     { name: strings.subjects, url },
   ],
   items: tags.map((row) => ({
-    name: `${row.tag} (${row.count})`,
+    name: `${tagLabel(row.tag, locale)} (${row.count})`,
     url: localise(`/tags/${row.slug}/`, locale),
   })),
   about: tags.slice(0, 30).map((row) => row.tag),
@@ -53,7 +54,7 @@ const tagsSchema = collectionPage({
         tags.map((row) => (
           <li class="tag">
             <a class="tag__link" href={localise(`/tags/${row.slug}/`, locale)}>
-              <span class="tag__name">{row.tag}</span>
+              <span class="tag__name">{tagLabel(row.tag, locale)}</span>
               <span
                 class="tag__bar"
                 aria-hidden="true"

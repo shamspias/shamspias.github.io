@@ -5,6 +5,7 @@ import PostEntry from '../../../components/PostEntry.astro';
 import { allPosts, plainTitle, slugifyTag, tagCounts, urlOf } from '../../../lib/posts';
 import { clamp, collectionPage } from '../../../lib/seo';
 import { LOCALES, localeParam, localise, t, type Locale } from '../../../i18n';
+import { tagLabel } from '../../../i18n/tags';
 
 // One page per subject per language, built from that language's posts only.
 export const getStaticPaths = (async () => {
@@ -48,6 +49,7 @@ const { locale, tag, posts, available } = Astro.props as {
   posts: Awaited<ReturnType<typeof allPosts>>;
 };
 const strings = t(locale);
+const label = tagLabel(tag, locale);
 
 const url = localise(`/tags/${slugifyTag(tag)}/`, locale);
 
@@ -64,7 +66,7 @@ const sample = posts
   .slice(0, 3)
   .map((p) => plainTitle(p.data.title).replace(/[.:].*$/, '').trim())
   .join('; ');
-const description = clamp(strings.tagDesc(tag, posts.length, sample));
+const description = clamp(strings.tagDesc(label, posts.length, sample));
 
 // The neighbouring subjects, which is how a thin index page earns its keep: it
 // tells a crawler what else this one sits beside.
@@ -74,23 +76,23 @@ const neighbours = [
 
 const schema = collectionPage({
   url,
-  name: `${tag} · ${strings.writing} · Shamsuddin Ahmed`,
+  name: `${label} · ${strings.writing} · Shamsuddin Ahmed`,
   description,
   locale,
   trail: [
     { name: strings.home, url: localise('/', locale) },
     { name: strings.subjects, url: localise('/tags/', locale) },
-    { name: tag, url },
+    { name: label, url },
   ],
   items: posts.map((p) => ({ name: plainTitle(p.data.title), url: urlOf(p) })),
-  about: [tag, ...neighbours],
+  about: [label, ...neighbours.map((n) => tagLabel(n, locale))],
 });
 ---
 
 <Base
-  title={tag}
+  title={label}
   description={description}
-  keywords={[tag, ...neighbours]}
+  keywords={[label, tag, ...neighbours]}
   schema={schema}
   noindex={thin}
   locale={locale}
@@ -101,7 +103,7 @@ const schema = collectionPage({
       <p class="label">
         {strings.subject} &nbsp;·&nbsp; {strings.nPosts(posts.length)}
       </p>
-      <h1 class="display page__title">{tag}</h1>
+      <h1 class="display page__title">{label}</h1>
     </header>
 
     <div class="list">
