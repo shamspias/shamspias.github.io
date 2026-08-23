@@ -7,6 +7,8 @@ import rehypeKatex from 'rehype-katex';
 
 import {
   rehypeDemoteHeadings,
+  rehypeFigures,
+  rehypeFocusableScrollers,
   rehypeHeadingAnchors,
   rehypeScrollableTables,
 } from './src/plugins/rehype-prose.mjs';
@@ -88,6 +90,8 @@ export default defineConfig({
         ],
         rehypeHeadingAnchors,
         rehypeScrollableTables,
+        rehypeFigures,
+        rehypeFocusableScrollers,
       ],
     }),
     syntaxHighlight: { type: 'shiki' },

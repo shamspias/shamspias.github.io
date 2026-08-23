@@ -256,30 +256,30 @@ const THREADS = [
     order: -1;
   }
 
-  /* The subject is cut out of its background, so there is no frame and no
-     edge: he stands on the paper itself, the way a plate sits in a monograph.
-     A hairline baseline under the figure is the only thing holding him down. */
-  .hero__portrait {
-    border-bottom: var(--rule-w) solid var(--rule-strong);
-  }
-
+  /* A cut-out betrays itself at the bottom, where the crop slices straight
+     through the jacket and the figure sits on the page like a sticker. The fix
+     is not a better matte: it is to stop the image ending. The mask dissolves
+     the lower third into the paper, so the figure emerges from the page instead
+     of being pasted onto it, and the eye never finds an edge to disbelieve.
+     The sides and shoulders stay crisp, because those edges are real. */
   .hero__portrait :global(img) {
     width: 100%;
-    filter: saturate(0.94) contrast(1.02);
-    mix-blend-mode: multiply;
+    filter: saturate(0.82) contrast(1.04);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 72%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 72%, transparent 100%);
   }
 
-  /* multiply would eat the figure against a dark ground, so the dark theme
-     leaves the alpha to do the work on its own. */
+  /* On the dark ground the figure needs lifting off a near-black page. A flat
+     brightness() would do it, but it also lifts the matte's semi-transparent
+     edge pixels and draws a faint rectangle around the whole plate, so the
+     lift is done with contrast and a small gamma instead. */
   :global(:root[data-theme='dark']) .hero__portrait :global(img) {
-    mix-blend-mode: normal;
-    filter: saturate(0.9) contrast(1.04) brightness(1.06);
+    filter: saturate(0.8) contrast(1.06);
   }
 
   @media (prefers-color-scheme: dark) {
     :global(:root:not([data-theme='light'])) .hero__portrait :global(img) {
-      mix-blend-mode: normal;
-      filter: saturate(0.9) contrast(1.04) brightness(1.06);
+      filter: saturate(0.8) contrast(1.06);
     }
   }
 

@@ -7,7 +7,7 @@ export const GET: APIRoute = async (context) => {
   const posts = await allPosts();
 
   return rss({
-    title: `${SITE.name} — Writing`,
+    title: `${SITE.name} · Writing`,
     description: SITE.description,
     site: context.site ?? SITE.url,
     trailingSlash: true,

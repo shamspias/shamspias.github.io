@@ -1,6 +1,6 @@
 ---
-title: "The Slowest Kid Problem: How a Super Captain Solves MoE's Biggest Headache 🏃‍♂️💨"
-description: "The straggler problem in mixture-of-experts inference, and a predictive prefetch scheme that hides it."
+title: "The Slowest Kid Problem: How a Super Captain Solves MoE's Biggest Headache"
+description: "Why a mixture-of-experts layer runs at the speed of its busiest expert, how to measure it, and when predictive prefetching actually helps."
 date: 2025-07-18
 permalink: "/posts/2025/07/slowest-kid-moe-straggler/"
 tags:
@@ -16,720 +16,379 @@ seriesOrder: 2
 math: true
 ---
 
-*"Ever been in a group project where everyone's done except that ONE person? That's exactly the straggler problem in AI—and I've got an amazing solution with a super-smart class captain who can predict the future!"*
+*Part 2 of the mixture-of-experts series.
+[Part 1](/posts/2025/02/moe-explained-simply/) explained why only a thin slice of a big model
+ever runs. This is the bill that sparsity quietly hands you: a layer finishes at the speed of
+whichever expert got the most work, and I spent a year fixing the wrong half of that sentence.*
 
 ---
 
-## 1. The Group Project From Hell 😫
+## 1. The group project, and why Farhan was actually slow
 
-Remember this scenario from school?
+The school version. Four of you split a project. Rimi finishes her part in five minutes, Hasan
+in seven, Hamim in eight, and Farhan takes forty-five. Nobody can submit until Farhan is done,
+so the group's time is forty-five minutes and three people sat around for most of it.
 
-- Rimi finishes her part in 5 minutes ✅
-- Hasan's done in 7 minutes ✅  
-- Hamim takes 8 minutes ✅
-- But Farhan... Farhan takes 45 MINUTES 🐌
+That is the straggler problem, and mixture-of-experts (MoE) inference has it badly. An MoE layer
+is one layer of a network split into many parallel copies of the same small network, called
+experts, with a tiny classifier called a router in front choosing which two of them each token
+goes to. That is how a model can hold hundreds of billions of parameters and still cost only a
+few billion per token: nearly all of it sits idle on any given word.
 
-**Everyone has to wait for Farhan!** The whole group can't submit until he's done. That's the straggler problem!
+When I first wrote this post I explained the stall with fast experts and slow experts: a quick
+maths expert, a sluggish history expert. That was wrong, and getting the cause wrong sends you
+to the wrong fix.
 
-```python
-def the_straggler_nightmare():
-    """The painful reality of waiting"""
-    
-    expert_times = {
-        "Math Expert": 5,      # Done super fast! 
-        "Science Expert": 7,   # Pretty quick
-        "Art Expert": 6,       # Also fast
-        "History Expert": 42   # OH NO! 🐌
-    }
-    
-    # Everyone waits for the slowest
-    total_time = max(expert_times.values())
-    print(f"⏰ Total time: {total_time} seconds")
-    print(f"😴 Wasted time: {total_time * 4 - sum(expert_times.values())} expert-seconds")
+Inside one MoE layer, every expert is the *same* stack of matrices with the same shapes. Hand
+each of them one token and they all finish at the same instant. There is no slow expert.
 
-the_straggler_nightmare()
+Farhan is not slow. Farhan was handed eight of the ten questions.
+
+The router decides which expert sees which token, and routers are not fair. Some experts attract
+far more tokens than others, and the layer cannot finish until the busiest one is done. Here is
+one layer of a Mixtral-shaped model: 4096 tokens across 8 experts, two experts per token, which
+is what "top-2" means. The numbers below are illustrative, but the *shape* is what you will see,
+and section 3 gives you the code to print your own.
+
+```
+   layer 17, 4096 tokens, top-2 of 8, ideal load = 1024 tokens/expert
+
+   E0  ████████░░░░░░░░░░░░░░░░░░░░░░░░   612
+   E1  ███████████████░░░░░░░░░░░░░░░░░  1180
+   E2  ██████████░░░░░░░░░░░░░░░░░░░░░░   790
+   E3  ████████████░░░░░░░░░░░░░░░░░░░░   933
+   E4  ████████████████████████████████  2465  <- everyone waits here
+   E5  ███████░░░░░░░░░░░░░░░░░░░░░░░░░   548
+   E6  ██████████████░░░░░░░░░░░░░░░░░░  1074
+   E7  ████████░░░░░░░░░░░░░░░░░░░░░░░░   590
+
+   the layer's step time is set by E4: 2465 / 1024 = 2.4x the ideal
 ```
 
-Output:
-```
-⏰ Total time: 42 seconds
-😴 Wasted time: 108 expert-seconds
-```
+Written down, with $T$ tokens, $E$ experts and top-$k$ routing:
 
-**That's like 3 experts sitting around doing NOTHING!**
+$$
+\bar{n} = \frac{kT}{E}, \qquad \text{imbalance} = \frac{\max_e n_e}{\bar{n}}
+$$
+
+The whole game is pushing that ratio towards 1. Note what it does *not* depend on: how fast any
+individual expert is. You cannot fix a 2.4x imbalance by buying a faster GPU, because the faster
+GPU speeds up the idle experts too.
 
 ---
 
-## 2. Enter Captain Bilal: The Mind-Reading Class Rep! 🦸‍♂️
+## 2. Two stragglers wearing the same costume
 
-What if we had a super-smart class captain who could:
-1. **Predict** which student will be needed next 🔮
-2. **Wake them up** before their turn comes ⏰
-3. **Keep track** of who's busy and who's free 📊
+This is the distinction the original version of this post missed entirely, and it is the one
+that decides which technique you should reach for. "My MoE stalls" has two completely different
+causes.
 
-That's EXACTLY what our solution does!
-
-```python
-class CaptainBilal:
-    """The mind-reading class representative!"""
-    
-    def __init__(self):
-        self.name = "Captain Bilal"
-        self.superpower = "I can predict who's needed next!"
-        self.expert_status = {}
-        
-    def demonstrate_power(self):
-        print(f"🦸‍♂️ {self.name}: '{self.superpower}'")
-        print("\n🎯 My three magic abilities:")
-        print("1. 🔮 See the future (predict next expert)")
-        print("2. ⏰ Wake experts early (prepare in advance)")
-        print("3. 📊 Track everyone (know who's busy)")
-
-captain = CaptainBilal()
-captain.demonstrate_power()
 ```
+   a token arrives at an MoE layer
+        │
+        ├── experts are all in GPU memory, sharded across GPUs
+        │      │
+        │      └── the slowest GPU sets the step time
+        │            cause: uneven token counts per expert
+        │            fix:   balance routing, replicate hot experts
+        │            you are limited by: an all-to-all barrier
+        │
+        └── experts live in CPU RAM or on NVMe, paged in on demand
+               │
+               └── the PCIe transfer sets the step time
+                     cause: a cache miss on the expert you chose
+                     fix:   predict early, prefetch, cache
+                     you are limited by: about 25 GB/s of bus
+```
+
+The top branch is what a serving cluster hits. Experts are spread over many GPUs, each GPU runs
+the experts it owns, and then an all-to-all collective brings every token's result home. That
+collective is a barrier, so every GPU waits for the one that drew the most tokens.
+
+The bottom branch is what your workstation hits. The model does not fit in VRAM, so experts sit
+in host memory and get copied in when the router picks them. Now the enemy is not imbalance, it
+is latency, and the numbers are brutal.
+
+Take a Mixtral 8x7B expert: hidden size 4096, intermediate 14336, three matrices for the SwiGLU
+feed-forward. That is $3 \times 4096 \times 14336 \approx 176$M parameters, or 352 MB at
+bfloat16.
+
+- Copying it over PCIe 4.0 x16, which delivers roughly 25 GB/s in practice: about **14 ms**.
+- Reading it from HBM on an A100, at roughly 2 TB/s: about **0.17 ms**.
+
+The bus costs about eighty times what the GPU's own memory does, and at batch size one that read
+is essentially the entire cost of running the expert. With 32 layers picking 2 experts each, a
+fully cold token needs 64 loads, 22.5 GB of traffic, close to a second per token. That is the
+whole problem in one number.
 
 ---
 
-## 3. The Magic Trick: Predicting the Future! 🔮
+## 3. Measure the one you actually have
 
-Here's Captain Bilal's SECRET: **Questions in each layer are similar to the next layer!**
-
-```python
-def similarity_magic():
-    """Why prediction works - layers are similar!"""
-    
-    print("🔍 Captain Bilal's Discovery:\n")
-    
-    # Layer similarities (from real research!)
-    layer_similarities = {
-        "Layer 1 → Layer 2": 0.92,
-        "Layer 2 → Layer 3": 0.89,
-        "Layer 3 → Layer 4": 0.87,
-        "Layer 4 → Layer 5": 0.91
-    }
-    
-    print("📊 How similar are consecutive layers?")
-    for connection, similarity in layer_similarities.items():
-        bar = "█" * int(similarity * 20)
-        print(f"{connection}: [{bar:20}] {similarity:.0%}")
-    
-    print("\n💡 This means:")
-    print("If Layer 1 needs Math Expert...")
-    print("Layer 2 will PROBABLY need Math Expert too!")
-    print("Captain can prepare Math Expert early! 🎉")
-
-similarity_magic()
-```
-
----
-
-## 4. Captain Bilal's Three-Step Strategy 🎯
-
-### Step 1: The Early Bird System 🐦
+Before optimising anything, print your router's load. Hugging Face Transformers exposes the raw
+gate outputs on the MoE architectures that implement `output_router_logits`, Mixtral among them.
 
 ```python
-class EarlyBirdStrategy:
-    """Wake up experts BEFORE they're needed!"""
-    
-    def __init__(self):
-        self.expert_states = {
-            "Math Expert": "sleeping",
-            "Science Expert": "sleeping",
-            "Art Expert": "sleeping",
-            "History Expert": "sleeping"
-        }
-    
-    def traditional_way(self, question):
-        """The OLD slow way"""
-        print("😴 OLD WAY:")
-        print(f"1. Question arrives: '{question}'")
-        print("2. Oh no! Need Math Expert!")
-        print("3. Wake up Math Expert... (5 seconds)")
-        print("4. Math Expert thinks... (10 seconds)")
-        print("5. Answer ready!")
-        print("⏱️ Total: 15 seconds\n")
-        
-    def captain_way(self, question):
-        """Captain Bilal's SMART way"""
-        print("🦸‍♂️ CAPTAIN'S WAY:")
-        print("1. Captain predicts: 'Math Expert needed soon!'")
-        print("2. Wake up Math Expert early (while others work)")
-        print(f"3. Question arrives: '{question}'")
-        print("4. Math Expert is READY! Start immediately!")
-        print("5. Answer ready!")
-        print("⏱️ Total: 10 seconds (33% faster!)")
-        
-    def visualize_difference(self):
-        """Show the time difference"""
-        print("\n📊 Time Comparison:")
-        print("\nOld way:    [😴😴😴😴😴|🤔🤔🤔🤔🤔🤔🤔🤔🤔🤔]")
-        print("             ↑ Waking up  ↑ Thinking")
-        print("\nCaptain's:  [🤔🤔🤔🤔🤔🤔🤔🤔🤔🤔]")
-        print("             ↑ Already awake, straight to work!")
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
-early_bird = EarlyBirdStrategy()
-early_bird.traditional_way("What's 2+2?")
-early_bird.captain_way("What's 2+2?")
-early_bird.visualize_difference()
-```
-
-### Step 2: Smart Load Tracking 📊
-
-```python
-class LoadTracker:
-    """Captain tracks who's busy and who's free!"""
-    
-    def __init__(self):
-        self.expert_loads = {
-            "Math Expert": 0,
-            "Science Expert": 0,
-            "Art Expert": 0,
-            "History Expert": 0
-        }
-        self.capacity = 3  # Each expert can handle 3 questions max
-        
-    def assign_question(self, question, preferred_expert):
-        """Smart assignment by Captain"""
-        print(f"\n📋 New question: '{question}'")
-        print(f"🎯 Best expert: {preferred_expert}")
-        
-        # Check if preferred expert is overloaded
-        if self.expert_loads[preferred_expert] >= self.capacity:
-            print(f"🚨 {preferred_expert} is FULL!")
-            
-            # Find backup expert
-            backup = self.find_backup()
-            print(f"🔄 Captain redirects to {backup}!")
-            self.expert_loads[backup] += 1
-        else:
-            print(f"✅ {preferred_expert} can take it!")
-            self.expert_loads[preferred_expert] += 1
-        
-        self.show_current_loads()
-    
-    def find_backup(self):
-        """Find the least busy expert"""
-        return min(self.expert_loads, key=self.expert_loads.get)
-    
-    def show_current_loads(self):
-        """Visualize expert workloads"""
-        print("\n📊 Current Expert Loads:")
-        for expert, load in self.expert_loads.items():
-            bar = "█" * load + "░" * (self.capacity - load)
-            status = "FULL! 🔴" if load >= self.capacity else "Available 🟢"
-            print(f"{expert:15} [{bar}] {load}/{self.capacity} - {status}")
-
-# Demo the load tracker
-tracker = LoadTracker()
-questions = [
-    ("Solve equation", "Math Expert"),
-    ("Calculate area", "Math Expert"),
-    ("Find derivative", "Math Expert"),
-    ("More math!", "Math Expert"),  # This will overflow!
-]
-
-for q, expert in questions:
-    tracker.assign_question(q, expert)
-```
-
-### Step 3: The Prediction Algorithm 🧠
-
-```python
-class PredictionSystem:
-    """How Captain Bilal predicts the future!"""
-    
-    def __init__(self):
-        self.past_patterns = []
-        self.prediction_accuracy = 0.85  # 85% accurate!
-        
-    def explain_prediction(self):
-        """How does prediction work?"""
-        print("🧠 Captain Bilal's Prediction Method:\n")
-        
-        # Show pattern learning
-        patterns = [
-            ("Layer 1 used Math", "Layer 2 likely needs Math", 0.92),
-            ("Layer 3 used Science", "Layer 4 likely needs Science", 0.88),
-            ("Layer 5 used Art", "Layer 6 likely needs Art", 0.85)
-        ]
-        
-        for past, future, prob in patterns:
-            print(f"📊 Pattern: If {past}")
-            print(f"   → Then {future} ({prob:.0%} chance)")
-            print()
-        
-    def predict_next_expert(self, current_layer_experts):
-        """Predict which experts are needed next"""
-        print(f"🔮 Current layer using: {current_layer_experts}")
-        
-        # Simple prediction based on similarity
-        predictions = {}
-        for expert in current_layer_experts:
-            predictions[expert] = 0.85  # High probability
-        
-        # Add some variety
-        all_experts = ["Math", "Science", "Art", "History"]
-        for expert in all_experts:
-            if expert not in predictions:
-                predictions[expert] = 0.15  # Low probability
-        
-        print("\n📈 Predictions for next layer:")
-        for expert, prob in sorted(predictions.items(), key=lambda x: x[1], reverse=True):
-            bar = "█" * int(prob * 10)
-            print(f"{expert:10} [{bar:10}] {prob:.0%}")
-        
-        return predictions
-
-predictor = PredictionSystem()
-predictor.explain_prediction()
-print("\n" + "="*50 + "\n")
-predictor.predict_next_expert(["Math", "Science"])
-```
-
----
-
-## 5. The Complete Captain System in Action! 🎬
-
-Let's see Captain Bilal handle a real scenario:
-
-```python
-class CompleteCaptainSystem:
-    """The full straggler-solving system!"""
-    
-    def __init__(self):
-        self.name = "Captain Bilal's Smart System"
-        self.experts = {
-            "Math": {"status": "sleeping", "load": 0, "speed": 5},
-            "Science": {"status": "sleeping", "load": 0, "speed": 7},
-            "Art": {"status": "sleeping", "load": 0, "speed": 6},
-            "History": {"status": "sleeping", "load": 0, "speed": 15}
-        }
-        self.time_saved = 0
-        
-    def process_questions(self, questions):
-        """Process a batch of questions smartly"""
-        print("🎭 CAPTAIN BILAL IN ACTION!\n")
-        
-        for i, (question, expert_type) in enumerate(questions):
-            print(f"📝 Question {i+1}: '{question}'")
-            
-            # Step 1: Predict next question's expert
-            if i < len(questions) - 1:
-                next_expert = questions[i+1][1]
-                self.wake_expert_early(next_expert)
-            
-            # Step 2: Process current question
-            self.process_with_expert(question, expert_type)
-            
-            print("-" * 50)
-    
-    def wake_expert_early(self, expert_type):
-        """Wake up expert before they're needed"""
-        if self.experts[expert_type]["status"] == "sleeping":
-            print(f"   🔮 Captain predicts {expert_type} needed next!")
-            print(f"   ⏰ Waking up {expert_type} Expert early...")
-            self.experts[expert_type]["status"] = "ready"
-            self.time_saved += 3  # Save 3 seconds per early wake!
-    
-    def process_with_expert(self, question, expert_type):
-        """Process question with expert"""
-        expert = self.experts[expert_type]
-        
-        if expert["status"] == "ready":
-            print(f"   ⚡ {expert_type} Expert is READY! (saved 3 seconds)")
-            time_taken = expert["speed"]
-        else:
-            print(f"   😴 Waking {expert_type} Expert... (+3 seconds)")
-            time_taken = expert["speed"] + 3
-        
-        print(f"   ⏱️ Processing time: {time_taken} seconds")
-        expert["status"] = "sleeping"  # Reset for demo
-        
-    def show_results(self):
-        """Show how much time we saved"""
-        print(f"\n🎉 RESULTS:")
-        print(f"⏱️ Total time saved: {self.time_saved} seconds")
-        print(f"🚀 That's {self.time_saved/3:.0f} experts prepared in advance!")
-
-# Run the complete system!
-captain_system = CompleteCaptainSystem()
-
-test_questions = [
-    ("Solve x + 5 = 10", "Math"),
-    ("What's photosynthesis?", "Science"),
-    ("Calculate area of circle", "Math"),
-    ("Draw a sunset", "Art"),
-    ("When was WW2?", "History")
-]
-
-captain_system.process_questions(test_questions)
-captain_system.show_results()
-```
-
----
-
-## 6. Advanced Captain Techniques 🚀
-
-### Technique 1: Sensitivity Detection 🎯
-
-Captain Bilal learned that some layers are MORE IMPORTANT than others!
-
-```python
-def sensitivity_detection():
-    """Some layers matter more than others!"""
-    
-    print("🔬 Captain Bilal's Sensitivity Discovery:\n")
-    
-    layers = [
-        ("Layer 1-5", "CRITICAL", "🔴", "Always use 2 experts"),
-        ("Layer 6-10", "IMPORTANT", "🟡", "Usually use 2 experts"),
-        ("Layer 11-15", "MODERATE", "🟢", "Often 1 expert is enough"),
-        ("Layer 16-20", "RELAXED", "⚪", "Usually 1 expert is fine")
-    ]
-    
-    for layer_range, importance, emoji, strategy in layers:
-        print(f"{emoji} {layer_range}: {importance}")
-        print(f"   Strategy: {strategy}")
-        print()
-    
-    print("💡 Why does this matter?")
-    print("• Early layers shape the entire answer")
-    print("• Later layers do fine-tuning")
-    print("• Captain can save resources on later layers!")
-
-sensitivity_detection()
-```
-
-### Technique 2: Capacity Limits 📏
-
-Captain sets smart limits to prevent overload:
-
-```python
-class CapacityManager:
-    """Smart capacity limits prevent stragglers!"""
-    
-    def __init__(self):
-        self.capacity_factor = 1.5  # Allow 50% more than average
-        
-    def calculate_smart_capacity(self, total_questions, num_experts):
-        """Calculate the perfect capacity limit"""
-        
-        print("📐 Captain's Capacity Calculation:\n")
-        
-        # Basic math
-        average_load = total_questions / num_experts
-        smart_capacity = int(average_load * self.capacity_factor)
-        
-        print(f"📊 Total questions: {total_questions}")
-        print(f"👥 Number of experts: {num_experts}")
-        print(f"📈 Average load: {average_load:.1f} questions/expert")
-        print(f"🎯 Smart capacity: {smart_capacity} questions/expert")
-        
-        print(f"\n💡 Result:")
-        print(f"• No expert gets more than {smart_capacity} questions")
-        print(f"• Prevents extreme overload")
-        print(f"• Max wait time: {smart_capacity} (not {total_questions}!)")
-        
-        # Show the improvement
-        worst_case_wait = total_questions
-        smart_wait = smart_capacity
-        improvement = worst_case_wait / smart_wait
-        
-        print(f"\n🚀 Speed improvement: {improvement:.1f}x faster!")
-
-capacity_mgr = CapacityManager()
-capacity_mgr.calculate_smart_capacity(100, 8)
-```
-
-### Technique 3: Token Importance Scoring 🌟
-
-Not all questions are equally important!
-
-```python
-def importance_scoring():
-    """Some questions matter more than others"""
-    
-    questions = [
-        ("What's 2+2?", 0.3, "Low"),
-        ("Solve complex equation", 0.8, "High"),
-        ("Hello there", 0.1, "Very Low"),
-        ("Explain quantum physics", 0.95, "Critical"),
-        ("Count to 10", 0.2, "Low")
-    ]
-    
-    print("🌟 Question Importance Levels:\n")
-    
-    for question, score, level in questions:
-        stars = "⭐" * int(score * 5)
-        print(f"{question:25} {stars:5} ({level})")
-    
-    print("\n📋 Captain's Rules:")
-    print("• Critical questions (>0.8) → ALWAYS get processed")
-    print("• High importance (0.5-0.8) → Usually get processed")
-    print("• Low importance (<0.5) → Can be dropped if needed")
-
-importance_scoring()
-```
-
----
-
-## 7. Comparing Solutions: Which is Best? 🏆
-
-```python
-def solution_comparison():
-    """Compare different captain strategies"""
-    
-    strategies = {
-        "No Captain (Original)": {
-            "speedup": 1.0,
-            "accuracy": 100.0,
-            "complexity": "None",
-            "problem": "Massive stragglers!"
-        },
-        "Simple Prediction": {
-            "speedup": 1.3,
-            "accuracy": 99.8,
-            "complexity": "Low",
-            "problem": "Basic prediction only"
-        },
-        "Smart Captain (AdapMoE)": {
-            "speedup": 1.35,
-            "accuracy": 99.5,
-            "complexity": "Medium",
-            "problem": "Slightly complex"
-        },
-        "Capacity Captain": {
-            "speedup": 1.85,
-            "accuracy": 99.1,
-            "complexity": "Low",
-            "problem": "Drops some questions"
-        },
-        "Ultimate Captain": {
-            "speedup": 2.0,
-            "accuracy": 99.7,
-            "complexity": "High",
-            "problem": "Complex to implement"
-        }
-    }
-    
-    print("🏆 Strategy Comparison:\n")
-    
-    for strategy, stats in strategies.items():
-        print(f"{'='*50}")
-        print(f"📋 {strategy}")
-        print(f"{'='*50}")
-        
-        # Speedup visualization
-        speed_bar = "█" * int(stats["speedup"] * 10)
-        print(f"🚀 Speedup:    [{speed_bar:20}] {stats['speedup']}x")
-        
-        # Accuracy visualization
-        acc_bar = "█" * int(stats["accuracy"] / 5)
-        print(f"🎯 Accuracy:   [{acc_bar:20}] {stats['accuracy']}%")
-        
-        print(f"🧩 Complexity: {stats['complexity']}")
-        print(f"⚠️ Drawback:   {stats['problem']}\n")
-
-solution_comparison()
-```
-
----
-
-## 8. Real-World Examples 🌍
-
-```python
-def real_world_impact():
-    """Where is Captain Bilal's strategy used?"""
-    
-    print("🌍 Real-World Applications:\n")
-    
-    applications = [
-        {
-            "name": "Mixtral-8x7B",
-            "company": "Mistral AI",
-            "experts": 8,
-            "active": 2,
-            "speedup": "1.87x with capacity limits"
-        },
-        {
-            "name": "DeepSeek-V3",
-            "company": "DeepSeek",
-            "experts": 256,
-            "active": 8,
-            "speedup": "Duplicates popular experts"
-        },
-        {
-            "name": "GPT-4 (rumored)",
-            "company": "OpenAI",
-            "experts": "Unknown",
-            "active": "Unknown",
-            "speedup": "Likely uses prediction"
-        }
-    ]
-    
-    for app in applications:
-        print(f"🤖 {app['name']} by {app['company']}")
-        print(f"   Experts: {app['experts']}, Active: {app['active']}")
-        print(f"   Strategy: {app['speedup']}\n")
-    
-    print("💰 Business Impact:")
-    print("• 50% reduction in GPU costs")
-    print("• 2x faster response times")
-    print("• Handles 3x more users")
-
-real_world_impact()
-```
-
----
-
-## 9. Build Your Own Captain! 🛠️
-
-```python
-class YourCaptain:
-    """Create your own straggler-solving captain!"""
-    
-    def __init__(self, name):
-        self.name = name
-        self.strategies = []
-        
-    def add_strategy(self, strategy_name, description):
-        """Add a new strategy to your captain"""
-        self.strategies.append((strategy_name, description))
-        print(f"✅ Added strategy: {strategy_name}")
-        
-    def solve_stragglers(self):
-        """Your captain in action!"""
-        print(f"\n🦸 Captain {self.name} activates!\n")
-        
-        for i, (strategy, desc) in enumerate(self.strategies, 1):
-            print(f"Step {i}: {strategy}")
-            print(f"   → {desc}")
-            print()
-
-# Example: Create your own captain!
-my_captain = YourCaptain("Sara")
-my_captain.add_strategy(
-    "Friend Groups", 
-    "Group similar questions together"
-)
-my_captain.add_strategy(
-    "Buddy System",
-    "Pair fast experts with slow ones"
-)
-my_captain.add_strategy(
-    "Time Boxing",
-    "Set maximum time for each expert"
+name = "mistralai/Mixtral-8x7B-Instruct-v0.1"
+tok = AutoTokenizer.from_pretrained(name)
+model = AutoModelForCausalLM.from_pretrained(
+    name, dtype=torch.bfloat16, device_map="auto"
 )
 
-my_captain.solve_stragglers()
+prompts = [...]   # a few hundred prompts from real traffic, not toy sentences
+batch = tok(prompts, return_tensors="pt", padding=True).to(model.device)
+out = model(**batch, output_router_logits=True)
 
-print("🎯 Your turn! Ideas to try:")
-print("• Captain who learns from mistakes")
-print("• Captain who can clone busy experts")
-print("• Captain who trades questions between experts")
-print("• Captain who gives coffee to slow experts! ☕")
+# One tensor per MoE layer, shape (batch * seq_len, num_experts).
+for layer, logits in enumerate(out.router_logits):
+    keep = batch["attention_mask"].flatten().bool()   # padding routes too; drop it
+    top = logits[keep].topk(2, dim=-1).indices
+    counts = torch.bincount(top.flatten(), minlength=logits.shape[-1])
+    ratio = counts.max().item() / counts.float().mean().item()
+    print(f"layer {layer:2d}  imbalance {ratio:.2f}  {counts.tolist()}")
 ```
+
+Two notes that cost me an afternoon each. Padding tokens get routed like any other token and
+will skew your counts, hence the mask. And `dtype=` is the current argument: `torch_dtype=` was
+deprecated in Transformers 4.54 and still appears in most blog posts, including the first draft
+of this one.
+
+Run that over a few hundred real prompts and you get the number that matters. Imbalance near 1.2
+means routing is not your problem, so go and look at your attention kernels instead. Imbalance
+above 2 means half your accelerator is idle and the rest of this post is for you.
 
 ---
 
-## 10. The Simple Math Behind It All 🧮
+## 4. Balancing the barrier straggler
 
-Let's understand the key concepts with simple math:
+If your experts are all resident and the barrier is the problem, prediction does nothing for
+you. Every expert is already loaded. The only lever is *who does how much work*.
 
-### Why Prediction Works
-```python
-def prediction_math():
-    """The math behind prediction"""
-    
-    print("📐 Prediction Success Formula:\n")
-    
-    similarity = 0.85  # 85% similar between layers
-    prediction_accuracy = similarity
-    time_to_wake = 3  # seconds
-    processing_time = 10  # seconds
-    
-    time_saved = prediction_accuracy * time_to_wake
-    
-    print(f"Layer similarity: {similarity:.0%}")
-    print(f"Wake-up time: {time_to_wake}s")
-    print(f"Processing time: {processing_time}s")
-    print(f"\nTime saved per prediction: {time_saved:.1f}s")
-    print(f"Percentage improvement: {time_saved/(time_to_wake + processing_time)*100:.0f}%")
+**Replicate the hot experts.** If E4 draws 2.4x its share, give E4 two copies on two different
+GPUs and split its tokens between them. This is the idea behind DeepSeek's
+[EPLB](https://github.com/deepseek-ai/EPLB), an expert-parallel load balancer they open-sourced
+in early 2025 alongside [DeepEP](https://github.com/deepseek-ai/DeepEP), their all-to-all
+kernels. It computes a placement of experts (including redundant copies of popular ones) onto
+GPUs so the per-GPU load is roughly even, and it recomputes that placement as traffic changes.
+vLLM and SGLang both ship expert-parallel serving with balancing along these lines. The cost is
+memory: every replica is a full copy of the expert's weights.
 
-prediction_math()
-```
+**Keep a shared expert always on.** DeepSeek-V3 routes top-8 of 256 experts and additionally
+runs one shared expert on every single token. That shared expert absorbs the generic work that
+would otherwise make every router fight over the same few specialists, which flattens the load
+curve. It costs a slice of compute on every token, unconditionally.
 
-### Why Capacity Limits Work
-```python
-def capacity_math():
-    """The math behind capacity limits"""
-    
-    print("📊 Capacity Limit Impact:\n")
-    
-    total_questions = 100
-    num_experts = 8
-    worst_case = total_questions  # All go to one expert
-    
-    capacity_factor = 1.5
-    avg_load = total_questions / num_experts
-    capacity_limit = avg_load * capacity_factor
-    
-    speedup = worst_case / capacity_limit
-    
-    print(f"Without limits: Wait for {worst_case} questions 😱")
-    print(f"With limits: Wait for {capacity_limit:.0f} questions 😊")
-    print(f"\nSpeedup: {speedup:.1f}x faster!")
-    print(f"Questions dropped: ~{(1 - 1/capacity_factor)*10:.0f}%")
-
-capacity_math()
-```
+**Do not drop tokens at inference.** The old fix was a capacity factor: cap each expert at, say,
+1.5x its average load and discard the overflow. That is a *training-time* technique, from the
+GShard and Switch Transformer era, where dropping a few tokens per batch is an acceptable
+regulariser. At inference the token you drop belongs to a user's sentence. The modern default is
+dropless routing with grouped matrix multiplications, as in
+[MegaBlocks](https://github.com/databricks/megablocks), which handles ragged expert loads
+without padding or discarding anything. My original version of this post cheerfully recommended
+capacity dropping and quoted a speedup for it. Please ignore that version.
 
 ---
 
-## Summary: Captain Bilal Saves the Day! 🎉
+## 5. Captain Bilal: predicting the offload straggler away
 
-Remember:
-- **Problem**: Slowest expert makes everyone wait (straggler effect)
-- **Solution**: Smart captain who predicts and prepares
-- **Result**: 2x faster with 99%+ accuracy!
+Now the bottom branch, where the expert is on the wrong side of a PCIe cable.
 
-Captain Bilal's three superpowers:
-1. 🔮 **Predicts** which expert is needed next
-2. ⏰ **Prepares** experts before their turn
-3. 📊 **Manages** load to prevent overload
+The analogy still works here, and it is the good half of the original post. Imagine Bilal, the
+class captain, who watches the lesson, works out which student will be called on next, and
+quietly wakes them up while the current student is still talking. When their name is called they
+are already standing. The waking happened during time that was going to be spent anyway.
 
-**The secret**: Layers are similar, so prediction works great!
+That is prefetching, and it works only if you can predict. The reason you can is the residual
+stream. In a transformer, each block *adds* to a running vector rather than replacing it (see
+[the attention post](/posts/2022/06/transformers-attention-made-simple/) for the mechanics). The
+hidden state entering layer $L+1$ is the hidden state leaving layer $L$ plus a comparatively
+small update. Routers are simple linear maps on that vector, so two consecutive routers, looking
+at two nearly identical vectors, tend to reach for the same experts.
 
----
-
-## Your Homework Challenge! 📚
+So you can run layer $L+1$'s gate early, on layer $L$'s output, before layer $L+1$'s attention
+has even run. This is the pre-gating trick.
 
 ```python
-def homework_challenge():
-    """Can you solve these?"""
-    
-    print("🏆 CHALLENGES:\n")
-    
-    challenges = [
-        ("Easy", "Make Captain remember past predictions"),
-        ("Medium", "Add 'expert teams' that work together"),
-        ("Hard", "Create adaptive capacity that changes over time"),
-        ("Expert", "Implement Captain who handles emergencies")
-    ]
-    
-    for level, challenge in challenges:
-        print(f"{level:8} → {challenge}")
-    
-    print("\n💡 Starter code:")
-    print("class MyCaptain:")
-    print("    def __init__(self):")
-    print("        # Your code here!")
-    print("        pass")
+@torch.no_grad()
+def predict_next_experts(hidden, next_layer, k=2):
+    """Guess layer L+1's experts from the residual stream as it stands after L.
 
-homework_challenge()
+    Attention at L+1 has not run yet, so this is the router's true input minus
+    one attention update. That update is small relative to the residual, which
+    is exactly why the guess is usually right.
+    """
+    x = next_layer.post_attention_layernorm(hidden)
+    logits = next_layer.block_sparse_moe.gate(x)
+    return logits.topk(k, dim=-1).indices
 ```
+
+Measure your own hit rate by comparing that against the real router's choice per layer. Do not
+trust a number from a blog post, mine included: it depends on the checkpoint, the depth (early
+layers predict worse), and how many experts you have to choose between.
+
+Then overlap the copy with compute on a second CUDA stream.
+
+```python
+import torch
+from collections import OrderedDict
+
+copy_stream = torch.cuda.Stream()
+
+
+class ExpertCache:
+    """Experts live pinned in host RAM; the hot ones are mirrored on the GPU."""
+
+    def __init__(self, host_experts, capacity):
+        self.host = host_experts   # {(layer, expert): pinned CPU tensor}
+        self.gpu = OrderedDict()   # LRU, at most `capacity` entries
+        self.events = {}           # in-flight copies, keyed the same way
+        self.capacity = capacity
+
+    def _evict_lru(self):
+        for key in list(self.gpu):
+            if key not in self.events:   # a copy in flight still owns its buffer
+                del self.gpu[key]
+                return
+        raise RuntimeError("every entry is in flight; raise capacity")
+
+    def prefetch(self, key):
+        if key in self.gpu:
+            return                 # resident, or already in flight
+        while len(self.gpu) >= self.capacity:
+            self._evict_lru()
+        with torch.cuda.stream(copy_stream):
+            buf = self.host[key].to("cuda", non_blocking=True)
+        event = torch.cuda.Event()
+        event.record(copy_stream)
+        self.gpu[key], self.events[key] = buf, event
+
+    def get(self, key):
+        if key not in self.gpu:
+            self.prefetch(key)     # miss: we pay the full transfer right now
+        self.gpu.move_to_end(key)  # an LRU that never records use is just FIFO
+        event = self.events.pop(key, None)
+        if event is not None:
+            torch.cuda.current_stream().wait_event(event)
+        buf = self.gpu[key]
+        buf.record_stream(torch.cuda.current_stream())  # keep the alloc alive
+        return buf
+```
+
+Pinned host memory is not optional. Without it `non_blocking=True` silently becomes blocking,
+because the driver has to stage through a pinned bounce buffer anyway, and your careful overlap
+evaporates. The `record_stream` call is the other easy mistake: the caching allocator has no
+idea the tensor is being used on a different stream and will happily recycle it under you.
+
+What you buy, in a picture:
+
+```
+   on demand, one token, expert not cached
+
+   compute  │ attn ├── stall 14 ms ──┤ ffn │ attn ├── stall 14 ms ──┤
+   PCIe     │      ├── load expert ──┤     │      ├── load expert ──┤
+
+   pre-gated and prefetched, prediction correct
+
+   compute  │ attn │ ffn │ attn │ ffn │ attn │ ffn │
+   PCIe     ├─ load L+1 ─┼─ load L+2 ─┼─ load L+3 ─┤
+```
+
+And written down, the expected stall per expert with hit rate $h$, expert size $S$ and bus
+bandwidth $B$:
+
+$$
+\mathbb{E}[t_{\text{stall}}] = (1 - h) \cdot \frac{S}{B}
+$$
+
+Three knobs, and all three are worth pulling. Raise $h$ with better prediction and a bigger
+cache. Cut $S$ with 4-bit expert quantisation, which turns that 352 MB expert into 88 MB and the
+14 ms into about 3.5 ms. Raise $B$ by moving experts off NVMe and into host RAM if you have it.
 
 ---
 
-*Remember: Every slow expert can be made faster with a smart captain! Now go build your own captain and make AI zoom! 🚀*
+## 6. Where prefetching stops working
+
+The failure mode nobody mentions: **prefetching is a batch-size-1 technique.**
+
+With one token per layer you touch 2 experts of 8, so caching the right 3 or 4 wins most of the
+time. With 64 tokens in a batch, the union of experts those tokens want is, with near certainty,
+*all eight*. There is nothing left to predict and nothing left to cache. Every offloading trick
+in this post is for local single-stream inference, and every one of them quietly stops paying as
+soon as you serve real concurrent traffic. That is the point where you stop offloading and start
+sharding, which puts you back on the top branch of the diagram in section 2.
+
+The other costs, honestly:
+
+| Technique | Fixes which straggler | What it costs |
+|---|---|---|
+| Load-balancing loss in training | barrier | training-time only, no help post-hoc |
+| Expert replication, EPLB style | barrier | a full weight copy per replica, plus rebalancing |
+| Shared always-on expert | both | compute on every token, unconditionally |
+| Capacity factor with token dropping | barrier | drops a user's tokens, so no |
+| Pre-gating and prefetch | offload | wrong guesses burn scarce bus bandwidth |
+| LRU expert cache | offload | GPU memory, and it dies at large batch |
+| 4-bit expert quantisation | offload | some quality, for 4x less traffic |
+
+A wrong prediction is not free. You spent 14 ms of bus time loading an expert nobody wanted, and
+you evicted something to make room for it. There is a break-even hit rate below which
+aggressive prefetching is worse than keeping a plain LRU cache and predicting nothing. Where it
+sits depends on your cache size, your bus and your model, so measure it. I am not going to hand
+you a digit I have not earned.
+
+---
+
+## 7. What changed since 2025
+
+I wrote the first version of this post with Mixtral in my head: 8 experts, top-2, one obvious
+straggler. The models that matter now are far sparser, and that changes the arithmetic in a way
+that is not obvious.
+
+DeepSeek-V3 uses 256 routed experts per layer with top-8 routing, hidden size 7168 and an expert
+intermediate size of 2048. So one expert is $3 \times 7168 \times 2048 \approx 44$M parameters,
+88 MB at bfloat16, and 256 of those across 58 MoE layers is where the headline 671B comes from.
+
+Now compare cold traffic per layer:
+
+```
+   Mixtral 8x7B     top-2 of   8    2 x 352 MB  =  704 MB per layer
+   DeepSeek-V3      top-8 of 256    8 x  88 MB  =  704 MB per layer
+```
+
+Identical. Sparser models did not reduce the bytes you have to move on a cold pass. What they
+changed is everything around it: your cache now has 256 slots to guess between instead of 8, so
+hit rates fall; the prediction problem is picking 8 of 256 rather than 2 of 8; and the imbalance
+tail is longer, because with 256 experts there is always some expert having a very good day.
+
+Two smaller corrections to the old version. It quoted a "GPT-4 is rumoured to be MoE" line,
+which was gossip then and is pointless now, because there are open MoE checkpoints on disk you
+can measure directly. And it quoted a table of speedups and accuracies for various strategies
+which I had made up to illustrate a point. Nothing in this rewrite is a benchmark I did not run;
+where I do not have a number, I have told you how to get yours.
+
+---
+
+## 8. The short version
+
+- Experts in an MoE layer are all the same size and all the same speed. The straggler is caused
+  by uneven token counts, not by a slow expert.
+- Measure $\max_e n_e / \bar{n}$ from the router logits before optimising anything. Under 1.2,
+  look elsewhere; over 2, keep reading.
+- There are two stragglers: an all-to-all barrier when experts are sharded, and a PCIe transfer
+  when experts are offloaded. They need opposite fixes.
+- For the barrier: balance the routing and replicate hot experts, EPLB style. Do not drop tokens
+  at inference; dropless grouped GEMMs exist.
+- For the transfer: the residual stream changes slowly, so layer $L+1$'s router can be run early
+  on layer $L$'s output and the expert fetched on a side stream while attention runs.
+- Prefetching is a batch-size-1 technique. At batch 64 you touch every expert anyway, so
+  there is nothing left to predict.
+- A wrong prefetch costs a full transfer plus an eviction, so there is a break-even hit rate
+  below which a plain LRU cache beats a clever predictor. Measure yours.
+- Cheapest real win on a workstation, before any of this: quantise the experts to 4 bits and cut
+  the traffic fourfold.
+
+*That closes the mixture-of-experts series.
+[Part 1](/posts/2025/02/moe-explained-simply/) covers routing, gating and sparsity from scratch
+if you want the foundations under all of this.*

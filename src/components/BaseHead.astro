@@ -16,7 +16,7 @@ interface Props {
 const { title, description, article, math = false, noindex = false } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site ?? SITE.url).href;
-const fullTitle = title === SITE.name ? `${SITE.name} — ${SITE.role}` : `${title} · ${SITE.name}`;
+const fullTitle = title === SITE.name ? `${SITE.name} · ${SITE.role}` : `${title} · ${SITE.name}`;
 const ogImage = new URL('/og.png', Astro.site ?? SITE.url).href;
 ---
 
@@ -29,8 +29,8 @@ const ogImage = new URL('/og.png', Astro.site ?? SITE.url).href;
 {noindex && <meta name="robots" content="noindex, follow" />}
 
 <meta name="author" content={SITE.name} />
-<meta name="theme-color" content="#faf7f0" media="(prefers-color-scheme: light)" />
-<meta name="theme-color" content="#15130f" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#121214" media="(prefers-color-scheme: dark)" />
 
 <meta property="og:type" content={article ? 'article' : 'website'} />
 <meta property="og:site_name" content={SITE.name} />
@@ -51,7 +51,7 @@ const ogImage = new URL('/og.png', Astro.site ?? SITE.url).href;
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <link rel="manifest" href="/manifest.webmanifest" />
-<link rel="alternate" type="application/rss+xml" title={`${SITE.name} — Writing`} href="/rss.xml" />
+<link rel="alternate" type="application/rss+xml" title={`${SITE.name} · Writing`} href="/rss.xml" />
 
 {/* No `preload`: it is per-family, so it would preload every weight and style
     of a family at once. Astro emits a metric-matched fallback for each face, so

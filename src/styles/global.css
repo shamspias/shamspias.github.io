@@ -3,7 +3,7 @@
 
    Ink, paper, one red.
 
-   A letterpress technical monograph printed in two inks on warm paper. There is
+   A letterpress technical monograph printed in two inks on paper. There is
    no sans-serif anywhere: Literata sets every word, and the whole UI register
    arrives as tracked uppercase mono, which is the single decision that stops
    this reading as software. One vermilion, spent sparingly, is the only colour
@@ -59,20 +59,24 @@ textarea {
 :root {
   color-scheme: light;
 
-  /* Uncoated paper stock, warm enough to read as a page rather than a screen. */
-  --bg: #faf7f0;
-  --bg-sunken: #f2eee3;
-  --bg-code: #f5f1e6;
-  --bg-mark: #f6e6b8;
+  /* Off-white, not pure white. Pure #fff against dark text is the classic cause
+     of digital eye strain on long reads, and every current accessibility and
+     design-system guide says the same thing: step it down a couple of points.
+     #fafafa is the value those guides converge on. It reads as clean white with
+     no cast, which is what a neutral ground needs when the accent is a red. */
+  --bg: #fafafa;
+  --bg-sunken: #f4f4f5;
+  --bg-code: #f5f5f4;
+  --bg-mark: #fdf0c2;
 
-  /* Ink. Brown-black, the colour of letterpress on rag paper, never pure black. */
-  --fg: #1c1815;
-  --fg-strong: #0f0d0b;
-  --fg-muted: #56504a;
-  --fg-faint: #6a635b;
+  /* Ink, not black, for the same reason in the other direction. */
+  --fg: #1a1a1c;
+  --fg-strong: #0b0b0d;
+  --fg-muted: #52525b;
+  --fg-faint: #67676f;
 
-  --rule: #e3dccc;
-  --rule-strong: #c9bfa8;
+  --rule: #e4e4e7;
+  --rule-strong: #c7c7cd;
 
   /* The one red. Links, the current nav rule, section numerals, series counters,
      and nothing else. If it starts appearing anywhere a reader cannot click or
@@ -81,7 +85,7 @@ textarea {
   --accent-hover: #7d1c07;
   --accent-wash: #f6e7e1;
 
-  --selection: #f2e2c9;
+  --selection: #f6ddd6;
 
   /* --- tokens: type ------------------------------------------------------ */
 
@@ -145,49 +149,49 @@ textarea {
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  /* The same page after dark: ink and paper trade places, the warmth stays. */
-  --bg: #15130f;
-  --bg-sunken: #1d1a15;
-  --bg-code: #1e1b15;
-  --bg-mark: #453a1c;
+  /* The same page after dark: ink and paper trade places. Never pure black. */
+  --bg: #121214;
+  --bg-sunken: #19191c;
+  --bg-code: #1a1a1d;
+  --bg-mark: #3f3617;
 
-  --fg: #e9e3d7;
-  --fg-strong: #f7f3ea;
-  --fg-muted: #a69d8f;
-  --fg-faint: #8d8477;
+  --fg: #e8e8ea;
+  --fg-strong: #f8f8fa;
+  --fg-muted: #a1a1ab;
+  --fg-faint: #86868f;
 
-  --rule: #2b2620;
-  --rule-strong: #3d372d;
+  --rule: #26262a;
+  --rule-strong: #3a3a41;
 
   --accent: #f0705a;
   --accent-hover: #f79781;
   --accent-wash: #2c1c17;
 
-  --selection: #3a2a20;
+  --selection: #33231e;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
 
-    --bg: #15130f;
-    --bg-sunken: #1d1a15;
-    --bg-code: #1e1b15;
-    --bg-mark: #453a1c;
+    --bg: #121214;
+    --bg-sunken: #19191c;
+    --bg-code: #1a1a1d;
+    --bg-mark: #3f3617;
 
-    --fg: #e9e3d7;
-    --fg-strong: #f7f3ea;
-    --fg-muted: #a69d8f;
-    --fg-faint: #8d8477;
+    --fg: #e8e8ea;
+    --fg-strong: #f8f8fa;
+    --fg-muted: #a1a1ab;
+    --fg-faint: #86868f;
 
-    --rule: #2b2620;
-    --rule-strong: #3d372d;
+    --rule: #26262a;
+    --rule-strong: #3a3a41;
 
     --accent: #f0705a;
     --accent-hover: #f79781;
     --accent-wash: #2c1c17;
 
-    --selection: #3a2a20;
+    --selection: #33231e;
   }
 }
 
@@ -705,6 +709,46 @@ time,
 .prose td:last-child,
 .prose th:last-child {
   padding-right: 0;
+}
+
+/* --- prose: plates ------------------------------------------------------- */
+
+/* A figure sits on the paper like a plate in a monograph: no frame, no shadow,
+   a hairline under it, and a mono caption. SVG figures are authored in the
+   site's own two inks and pick up the theme through currentColor. */
+.prose .plate {
+  margin-block: var(--s-7);
+}
+
+.prose .plate img,
+.prose .plate svg {
+  width: 100%;
+  height: auto;
+  color: var(--fg);
+}
+
+.prose .plate figcaption {
+  margin-top: var(--s-3);
+  padding-top: var(--s-2);
+  border-top: var(--rule-w) solid var(--rule);
+  font-family: var(--face-mono);
+  font-size: var(--t-2xs);
+  letter-spacing: var(--tr-wide);
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  text-wrap: pretty;
+}
+
+/* An SVG authored for paper needs its ink inverted on the dark ground. The
+   figures use currentColor for strokes, so only a flat white plate needs it. */
+:root[data-theme='dark'] .prose .plate img[src$='.svg'] {
+  filter: invert(0.92) hue-rotate(180deg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .prose .plate img[src$='.svg'] {
+    filter: invert(0.92) hue-rotate(180deg);
+  }
 }
 
 /* --- prose: maths -------------------------------------------------------- */

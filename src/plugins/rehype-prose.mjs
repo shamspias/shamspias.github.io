@@ -60,9 +60,7 @@ export function rehypeScrollableTables() {
       parent.children[idx] = {
         type: 'element',
         tagName: 'div',
-        // No tabindex here: a runtime pass adds one only when the box really
-        // overflows, so a table that fits does not become a tab stop.
-        properties: { className: ['table-scroll'] },
+        properties: { className: ['table-scroll'], tabindex: '0', role: 'region', 'aria-label': 'Table' },
         children: [node],
       };
     });
@@ -87,6 +85,80 @@ export function rehypeDemoteHeadings() {
       if (node.type !== 'element' || !HEADINGS.has(node.tagName)) return;
       const level = Number(node.tagName[1]);
       node.tagName = `h${Math.min(level + 1, 6)}`;
+    });
+  };
+}
+
+/**
+ * Turns a standalone image into a plate: a <figure> with a mono caption taken
+ * from the markdown title attribute.
+ *
+ *     ![alt text](/figures/thing.svg "The caption, set in mono under the plate")
+ *
+ * Only images that are the sole child of a paragraph are lifted, so an inline
+ * badge inside a sentence is left where it is.
+ */
+export function rehypeFigures() {
+  return (tree) => {
+    walk(tree, null, (node, parent) => {
+      if (node.type !== 'element' || node.tagName !== 'p' || !parent) return;
+      const kids = node.children.filter(
+        (c) => !(c.type === 'text' && c.value.trim() === ''),
+      );
+      if (kids.length !== 1) return;
+      const img = kids[0];
+      if (img.type !== 'element' || img.tagName !== 'img') return;
+
+      const caption = img.properties?.title;
+      delete img.properties.title;
+
+      const children = [img];
+      if (caption) {
+        children.push({
+          type: 'element',
+          tagName: 'figcaption',
+          properties: {},
+          children: [{ type: 'text', value: String(caption) }],
+        });
+      }
+
+      const idx = parent.children.indexOf(node);
+      if (idx === -1) return;
+      parent.children[idx] = {
+        type: 'element',
+        tagName: 'figure',
+        properties: { className: ['plate'] },
+        children,
+      };
+    });
+  };
+}
+
+
+/**
+ * Anything that scrolls has to be reachable by keyboard (WCAG 2.1.1). Whether a
+ * given block actually overflows depends on the viewport, so this cannot be
+ * decided correctly at build time, and deciding it at runtime turned out to be
+ * a race: a ResizeObserver does not fire when the webfont swap changes how much
+ * the content inside a box overflows without changing the box.
+ *
+ * So every scroll container is marked focusable, always. The cost is a few
+ * extra tab stops in a code-heavy post. The alternative is a keyboard user
+ * meeting a code block they cannot scroll, which is worse and, being a race,
+ * would only happen to some of them.
+ */
+export function rehypeFocusableScrollers() {
+  return (tree) => {
+    walk(tree, null, (node) => {
+      if (node.type !== 'element') return;
+      const isPre = node.tagName === 'pre';
+      const isMath =
+        node.tagName === 'span' && node.properties?.className?.includes?.('katex-display');
+      if (!isPre && !isMath) return;
+      node.properties = node.properties ?? {};
+      node.properties.tabindex = '0';
+      node.properties.role = 'region';
+      node.properties['aria-label'] = isMath ? 'Equation' : 'Code block';
     });
   };
 }

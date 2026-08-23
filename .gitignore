@@ -13,6 +13,7 @@ public/icon-192.png
 public/icon-512.png
 public/og.png
 public/manifest.webmanifest
+public/figures/
 
 # environment
 .env

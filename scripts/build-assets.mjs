@@ -13,8 +13,8 @@ import sharp from 'sharp';
 const ROOT = path.resolve(import.meta.dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
 
-const INK = '#1c1815';
-const PAPER = '#faf7f0';
+const INK = '#1a1a1c';
+const PAPER = '#fafafa';
 const ACCENT = '#a8290f';
 
 /* --- the mark -------------------------------------------------------------
@@ -41,16 +41,16 @@ const ogSvg = `
   <rect x="0" y="0" width="1200" height="6" fill="${ACCENT}"/>
   <g transform="translate(96 150)">
     <text x="0" y="0" font-family="ui-monospace, 'DejaVu Sans Mono', monospace" font-size="20"
-          letter-spacing="6" fill="#6a635b">SENIOR SOFTWARE ENGINEER</text>
+          letter-spacing="6" fill="#67676f">SENIOR SOFTWARE ENGINEER</text>
     <text x="0" y="112" font-family="Georgia, 'DejaVu Serif', serif" font-size="96"
           font-weight="500" fill="${INK}">Shamsuddin Ahmed</text>
-    <line x1="0" y1="176" x2="1008" y2="176" stroke="#c9bfa8" stroke-width="2"/>
+    <line x1="0" y1="176" x2="1008" y2="176" stroke="#c7c7cd" stroke-width="2"/>
     <text x="0" y="236" font-family="Georgia, 'DejaVu Serif', serif" font-size="38"
-          font-style="italic" fill="#56504a">Agent harnesses, LLM infrastructure,</text>
+          font-style="italic" fill="#52525b">Agent harnesses, LLM infrastructure,</text>
     <text x="0" y="290" font-family="Georgia, 'DejaVu Serif', serif" font-size="38"
-          font-style="italic" fill="#56504a">and machine learning for biology.</text>
+          font-style="italic" fill="#52525b">and machine learning for biology.</text>
     <text x="0" y="384" font-family="ui-monospace, 'DejaVu Sans Mono', monospace" font-size="20"
-          letter-spacing="4" fill="#6a635b">SHAMSPIAS.COM</text>
+          letter-spacing="4" fill="#67676f">SHAMSPIAS.COM</text>
   </g>
 </svg>`;
 
