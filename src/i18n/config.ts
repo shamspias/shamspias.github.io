@@ -39,57 +39,14 @@ export const LOCALE_META: Record<
   ar: { tag: 'ar', dir: 'rtl', endonym: 'العربية', short: 'ع', og: 'ar_AR', numerals: 'arab' },
 };
 
-/**
- * Which language a visitor is offered before they have chosen one.
- *
- * The site is a folder of static files, so there is no server to read a
- * country from a request. The best signal a browser will give is its IANA time
- * zone, which is a real place rather than a preference, and that is what the
- * rule below is written against: Bangladesh gets Bangla, the Arabic-speaking
- * countries get Arabic, everywhere else gets English.
- *
- * Time zones are listed rather than derived because there is no mapping from
- * zone to language anywhere in the platform, and because the list is short
- * enough to read. `Asia/Riyadh` covers most of the Gulf by aliasing, but the
- * aliases are spelled out so a browser that reports the specific zone is not
- * missed.
+/*
+ * There is deliberately no location or browser-language detection here. English
+ * is the default for every first-time visitor, and Bangla or Arabic are reached
+ * only by an explicit choice (the switcher, a `/bn` or `/ar` link, or `?lang=`),
+ * which is then remembered. An earlier version auto-switched on the browser's
+ * time zone; that was removed because a default should be a decision the reader
+ * makes, not one the site guesses from where they happen to be.
  */
-export const ZONE_TO_LOCALE: Record<string, Locale> = {
-  'Asia/Dhaka': 'bn',
-
-  'Africa/Cairo': 'ar',
-  'Africa/Algiers': 'ar',
-  'Africa/Tripoli': 'ar',
-  'Africa/Tunis': 'ar',
-  'Africa/Casablanca': 'ar',
-  'Africa/El_Aaiun': 'ar',
-  'Africa/Khartoum': 'ar',
-  'Africa/Juba': 'ar',
-  'Africa/Nouakchott': 'ar',
-  'Africa/Djibouti': 'ar',
-  'Africa/Mogadishu': 'ar',
-  'Asia/Riyadh': 'ar',
-  'Asia/Aden': 'ar',
-  'Asia/Kuwait': 'ar',
-  'Asia/Bahrain': 'ar',
-  'Asia/Qatar': 'ar',
-  'Asia/Dubai': 'ar',
-  'Asia/Muscat': 'ar',
-  'Asia/Baghdad': 'ar',
-  'Asia/Damascus': 'ar',
-  'Asia/Beirut': 'ar',
-  'Asia/Amman': 'ar',
-  'Asia/Jerusalem': 'ar',
-  'Asia/Hebron': 'ar',
-  'Asia/Gaza': 'ar',
-};
-
-/** The language codes that map to a locale when only `navigator.language` is known. */
-export const LANGUAGE_TO_LOCALE: Record<string, Locale> = {
-  bn: 'bn',
-  ar: 'ar',
-  en: 'en',
-};
 
 /** Where the reader's explicit choice is remembered. */
 export const LOCALE_STORAGE_KEY = 'lang';

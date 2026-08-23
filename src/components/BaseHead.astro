@@ -3,7 +3,7 @@ import { Font } from 'astro:assets';
 import { SITE } from '../consts';
 import { ogCard } from '../lib/seo';
 import { DEFAULT_LOCALE, LOCALES, LOCALE_META, t, type Locale } from '../i18n';
-import { LANGUAGE_TO_LOCALE, LOCALE_STORAGE_KEY, ZONE_TO_LOCALE } from '../i18n/config';
+import { LOCALE_STORAGE_KEY } from '../i18n/config';
 import '../styles/global.css';
 
 interface Props {
@@ -179,19 +179,19 @@ const needsArabic = locale === 'ar';
 </script>
 
 {/* The language rule.
-    A folder of static files has no server, so there is nothing to read a
-    country off a request. The best signal a browser gives is its time zone,
-    which is a place rather than a preference, and that is what this uses:
-    Bangladesh gets Bangla, the Arabic-speaking countries get Arabic, everyone
-    else gets English. A stored choice always wins, `?lang=` always wins over
-    that, and a language this page does not exist in is never navigated to. */}
+    English is the default for everyone, everywhere. The site does not guess a
+    language from location or from the browser: a first-time visitor gets English
+    whatever their time zone, and Bangla or Arabic are reached only by choosing
+    them. Once chosen, the choice is remembered and honoured on later visits.
+    Two ways to choose: click the switcher (which stores it), or open a `/bn` or
+    `/ar` link directly, which counts as choosing and is remembered too. `?lang=`
+    overrides and is remembered. A language a page does not have is never
+    navigated to. */}
 <script
   is:inline
   define:vars={{
     here: locale,
     hrefs,
-    zones: ZONE_TO_LOCALE,
-    languages: LANGUAGE_TO_LOCALE,
     key: LOCALE_STORAGE_KEY,
     fallback: DEFAULT_LOCALE,
   }}
@@ -210,9 +210,7 @@ const needsArabic = locale === 'ar';
       }
     })();
 
-    // An explicit ?lang= is a decision, it is remembered, and it ends the
-    // matter: falling through to the rules below would let a previously stored
-    // choice overrule the one just made in the address bar.
+    // An explicit ?lang= is a decision, it is remembered, and it ends the matter.
     const forced = new URLSearchParams(location.search).get('lang');
     if (forced && hrefs[forced]) {
       store(forced);
@@ -220,30 +218,18 @@ const needsArabic = locale === 'ar';
       return;
     }
 
-    // Landing on a prefixed page is itself a decision: somebody followed a link
-    // to `/ar/...` or typed it. Remember it and stay put. Without this, a deep
-    // link to the Arabic site would be unusable from Bangladesh, because the
-    // rule below would send every visitor straight back to Bangla.
+    // Landing on a prefixed page is itself a choice: somebody followed a `/bn`
+    // or `/ar` link or typed it. Remember it and stay.
     if (here !== fallback) {
       if (!stored) store(here);
       return;
     }
 
-    let want = stored && hrefs[stored] ? stored : null;
-
-    if (!want) {
-      // Where the reader is, then what they read, then English.
-      let zone = '';
-      try {
-        zone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-      } catch {}
-      const byZone = zones[zone];
-      const byLanguage = (navigator.languages || [navigator.language || ''])
-        .map((tag) => languages[String(tag).slice(0, 2).toLowerCase()])
-        .find(Boolean);
-      want = byZone || byLanguage || fallback;
+    // On an English page with no query override: honour a stored choice, and
+    // otherwise stay in English. There is deliberately no detection here, so
+    // location and browser language never move a first-time visitor.
+    if (stored && stored !== fallback && hrefs[stored]) {
+      location.replace(hrefs[stored] + location.hash);
     }
-
-    if (want !== here && hrefs[want]) location.replace(hrefs[want] + location.hash);
   })();
 </script>
