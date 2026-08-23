@@ -21,10 +21,14 @@ math: true
 
 Find every position where `pattern` occurs in `text`.
 
-```python
-def naive(text, pattern):
-    n, m = len(text), len(pattern)
-    return [i for i in range(n - m + 1) if text[i:i + m] == pattern]
+```cpp
+vector<int> naive(const string& text, const string& pattern) {
+    int n = text.size(), m = pattern.size();
+    vector<int> out;
+    for (int i = 0; i + m <= n; i++)                    // i runs from 0 to n - m
+        if (text.compare(i, m, pattern) == 0) out.push_back(i);
+    return out;
+}
 ```
 
 $\mathcal{O}(nm)$, and the worst case is real rather than theoretical: `text = "aaaa...a"` and `pattern = "aaa...ab"` compares almost the whole pattern at every position before failing on the last character. With both at $10^5$ that is $10^{10}$ steps.
@@ -41,32 +45,49 @@ $$
 
 Slide the window right by one and the update is: drop the leading term, multiply by `B`, add the new character.
 
-```python
-MOD = (1 << 61) - 1                     # a large prime
-BASE = 131
+```cpp
+const long long MOD = (1LL << 61) - 1;              // a large prime
+const long long BASE = 131;
 
-def hash_string(s):
-    h = 0
-    for ch in s:
-        h = (h * BASE + ord(ch)) % MOD
-    return h
+long long mul(long long a, long long b) {           // 128-bit product, no overflow
+    return (long long)((__int128)a * b % MOD);
+}
 
-def find_hashed(text, pattern):
-    n, m = len(text), len(pattern)
-    if m > n:
-        return []
-    target = hash_string(pattern)
-    top = pow(BASE, m, MOD)             # B^m, for removing the leading char
+long long hash_string(const string& s) {
+    long long h = 0;
+    for (unsigned char ch : s)                      // unsigned so the value is never negative
+        h = (mul(h, BASE) + ch) % MOD;
+    return h;
+}
 
-    h = hash_string(text[:m])
-    out = []
-    for i in range(n - m + 1):
-        if h == target and text[i:i + m] == pattern:   # verify
-            out.append(i)
-        if i + m < n:
-            h = (h * BASE + ord(text[i + m])) % MOD
-            h = (h - ord(text[i]) * top) % MOD
-    return out
+long long power(long long b, long long e) {         // b^e mod MOD
+    long long r = 1;
+    while (e) {
+        if (e & 1) r = mul(r, b);
+        b = mul(b, b);
+        e >>= 1;
+    }
+    return r;
+}
+
+vector<int> find_hashed(const string& text, const string& pattern) {
+    int n = text.size(), m = pattern.size();
+    if (m > n) return {};
+    long long target = hash_string(pattern);
+    long long top = power(BASE, m);                 // B^m, for removing the leading char
+
+    long long h = hash_string(text.substr(0, m));
+    vector<int> out;
+    for (int i = 0; i + m <= n; i++) {
+        if (h == target && text.compare(i, m, pattern) == 0)   // verify
+            out.push_back(i);
+        if (i + m < n) {
+            h = (mul(h, BASE) + (unsigned char)text[i + m]) % MOD;
+            h = (h - mul((unsigned char)text[i], top) + MOD) % MOD;
+        }
+    }
+    return out;
+}
 ```
 
 $\mathcal{O}(n + m)$ expected. Four things about this code.
@@ -79,28 +100,46 @@ $\mathcal{O}(n + m)$ expected. Four things about this code.
 
 **Anti-hash tests exist.** On Codeforces, problem setters deliberately include inputs that collide against common fixed bases. Randomise the base at runtime if the problem is adversarial.
 
-```python
-import random
-BASE = random.randint(256, MOD - 256)   # chosen at run time
+```cpp
+#include <random>
+
+const long long MOD = (1LL << 61) - 1;
+
+long long random_base() {                               // chosen at run time
+    static mt19937_64 rng(random_device{}());
+    return 256 + (long long)(rng() % (unsigned long long)(MOD - 511));   // in [256, MOD - 256]
+}
 ```
 
 ### Why hashing is the one to learn first
 
 Because prefix hashes let you compare **any two substrings in constant time**, which solves a whole class of problems that KMP does not touch.
 
-```python
-class Hashed:
-    def __init__(self, s):
-        n = len(s)
-        self.h = [0] * (n + 1)
-        self.p = [1] * (n + 1)
-        for i, ch in enumerate(s):
-            self.h[i + 1] = (self.h[i] * BASE + ord(ch)) % MOD
-            self.p[i + 1] = self.p[i] * BASE % MOD
+```cpp
+const long long MOD = (1LL << 61) - 1;
+const long long BASE = 131;
 
-    def get(self, l, r):
-        """Hash of s[l:r]."""
-        return (self.h[r] - self.h[l] * self.p[r - l]) % MOD
+long long mul(long long a, long long b) {           // 128-bit product, no overflow
+    return (long long)((__int128)a * b % MOD);
+}
+
+struct Hashed {
+    vector<long long> h, p;
+
+    Hashed(const string& s) {
+        int n = s.size();
+        h.assign(n + 1, 0);
+        p.assign(n + 1, 1);
+        for (int i = 0; i < n; i++) {
+            h[i + 1] = (mul(h[i], BASE) + (unsigned char)s[i]) % MOD;
+            p[i + 1] = mul(p[i], BASE);
+        }
+    }
+
+    long long get(int l, int r) const {             // hash of s[l, r)
+        return (h[r] - mul(h[l], p[r - l]) + MOD) % MOD;
+    }
+};
 ```
 
 That is [prefix sums from part 3](/posts/2016/07/prefix-sums-and-two-pointers/) with multiplication instead of addition, and the same subtraction trick. With it:
@@ -118,18 +157,19 @@ The exact method. The insight: when a mismatch happens after matching `k` charac
 
 The right amount comes from the **prefix function** $\pi$: for each position `i`, the length of the longest proper prefix of the pattern that is also a suffix of `pattern[0..i]`.
 
-```python
-def prefix_function(s):
-    n = len(s)
-    pi = [0] * n
-    for i in range(1, n):
-        k = pi[i - 1]
-        while k and s[i] != s[k]:
-            k = pi[k - 1]                 # fall back to a shorter border
-        if s[i] == s[k]:
-            k += 1
-        pi[i] = k
-    return pi
+```cpp
+vector<int> prefix_function(const string& s) {
+    int n = s.size();
+    vector<int> pi(n, 0);
+    for (int i = 1; i < n; i++) {
+        int k = pi[i - 1];
+        while (k && s[i] != s[k])
+            k = pi[k - 1];                // fall back to a shorter border
+        if (s[i] == s[k]) k++;
+        pi[i] = k;
+    }
+    return pi;
+}
 ```
 
 ```
@@ -144,14 +184,29 @@ $\mathcal{O}(n)$, and the reason is [the amortised argument from part 2](/posts/
 
 Then searching is the same loop over the concatenation:
 
-```python
-def kmp_search(text, pattern):
-    if not pattern:
-        return []
-    joined = pattern + '\x00' + text      # a separator not in either
-    pi = prefix_function(joined)
-    m = len(pattern)
-    return [i - 2 * m for i, v in enumerate(pi) if v == m]
+```cpp
+vector<int> prefix_function(const string& s) {
+    int n = s.size();
+    vector<int> pi(n, 0);
+    for (int i = 1; i < n; i++) {
+        int k = pi[i - 1];
+        while (k && s[i] != s[k]) k = pi[k - 1];
+        if (s[i] == s[k]) k++;
+        pi[i] = k;
+    }
+    return pi;
+}
+
+vector<int> kmp_search(const string& text, const string& pattern) {
+    if (pattern.empty()) return {};
+    string joined = pattern + '\0' + text;    // a separator not in either
+    vector<int> pi = prefix_function(joined);
+    int m = pattern.size();
+    vector<int> out;
+    for (int i = 0; i < (int)pi.size(); i++)
+        if (pi[i] == m) out.push_back(i - 2 * m);
+    return out;
+}
 ```
 
 The separator matters: without it a match could straddle the boundary and report a position that does not exist. Use a character that cannot appear in the input.
@@ -168,19 +223,23 @@ The separator matters: without it a match could straddle the boundary and report
 
 Same power, different shape, and I find it easier to reason about. `z[i]` is the length of the longest common prefix of the string and its suffix starting at `i`.
 
-```python
-def z_function(s):
-    n = len(s)
-    z = [0] * n
-    l = r = 0                             # the rightmost window we know about
-    for i in range(1, n):
-        if i < r:
-            z[i] = min(r - i, z[i - l])   # reuse what we already computed
-        while i + z[i] < n and s[z[i]] == s[i + z[i]]:
-            z[i] += 1                     # extend by brute force
-        if i + z[i] > r:
-            l, r = i, i + z[i]            # a new rightmost window
-    return z
+```cpp
+vector<int> z_function(const string& s) {
+    int n = s.size();
+    vector<int> z(n, 0);
+    int l = 0, r = 0;                         // the rightmost window we know about
+    for (int i = 1; i < n; i++) {
+        if (i < r)
+            z[i] = min(r - i, z[i - l]);      // reuse what we already computed
+        while (i + z[i] < n && s[z[i]] == s[i + z[i]])
+            z[i]++;                           // extend by brute force
+        if (i + z[i] > r) {
+            l = i;
+            r = i + z[i];                     // a new rightmost window
+        }
+    }
+    return z;
+}
 ```
 
 ```
@@ -194,12 +253,28 @@ $\mathcal{O}(n)$. The `[l, r)` window is the trick: it remembers the match that 
 
 Searching with it: same concatenation trick.
 
-```python
-def z_search(text, pattern):
-    joined = pattern + '\x00' + text
-    z = z_function(joined)
-    m = len(pattern)
-    return [i - m - 1 for i, v in enumerate(z) if v == m]
+```cpp
+vector<int> z_function(const string& s) {
+    int n = s.size();
+    vector<int> z(n, 0);
+    int l = 0, r = 0;
+    for (int i = 1; i < n; i++) {
+        if (i < r) z[i] = min(r - i, z[i - l]);
+        while (i + z[i] < n && s[z[i]] == s[i + z[i]]) z[i]++;
+        if (i + z[i] > r) { l = i; r = i + z[i]; }
+    }
+    return z;
+}
+
+vector<int> z_search(const string& text, const string& pattern) {
+    string joined = pattern + '\0' + text;
+    vector<int> z = z_function(joined);
+    int m = pattern.size();
+    vector<int> out;
+    for (int i = 0; i < (int)z.size(); i++)
+        if (z[i] == m) out.push_back(i - m - 1);
+    return out;
+}
 ```
 
 ## 5. Choosing between them
@@ -226,45 +301,62 @@ And for many patterns at once, neither: that is Aho-Corasick, which is KMP gener
 
 **Manacher's algorithm** finds all palindromic substrings in $\mathcal{O}(n)$. The same window trick as the Z-function, applied to palindromes. Without it, the standard approach is "expand around each of the `2n-1` centres", which is $\mathcal{O}(n^2)$ and usually fine.
 
-```python
-def longest_palindrome(s):
-    """O(n^2) expand-around-centre. Fine to about n = 5000."""
-    best = ''
-    for centre in range(len(s)):
-        for l, r in ((centre, centre), (centre, centre + 1)):
-            while l >= 0 and r < len(s) and s[l] == s[r]:
-                l, r = l - 1, r + 1
-            if r - l - 1 > len(best):
-                best = s[l + 1:r]
-    return best
+```cpp
+// O(n^2) expand-around-centre. Fine to about n = 5000.
+string longest_palindrome(const string& s) {
+    int n = s.size();
+    string best;
+    for (int centre = 0; centre < n; centre++) {
+        for (int even = 0; even < 2; even++) {          // odd centre, then even
+            int l = centre, r = centre + even;
+            while (l >= 0 && r < n && s[l] == s[r]) { l--; r++; }
+            if (r - l - 1 > (int)best.size())
+                best = s.substr(l + 1, r - l - 1);
+        }
+    }
+    return best;
+}
 ```
 
 **Tries** for prefix questions. A tree where each edge is a character, so all strings sharing a prefix share a path. The right structure for autocomplete, for "how many stored words start with this", and for the maximum-xor-pair problem where the trie holds binary representations.
 
-```python
-class Trie:
-    def __init__(self):
-        self.children = {}
-        self.count = 0                    # words passing through this node
+```cpp
+struct Trie {
+    struct Node {
+        map<char, int> children;
+        int count = 0;                        // words passing through this node
+    };
+    vector<Node> nodes;
 
-    def insert(self, word):
-        node = self
-        for ch in word:
-            node = node.children.setdefault(ch, Trie())
-            node.count += 1
+    Trie() : nodes(1) {}                      // node 0 is the root
 
-    def starting_with(self, prefix):
-        node = self
-        for ch in prefix:
-            if ch not in node.children:
-                return 0
-            node = node.children[ch]
-        return node.count
+    void insert(const string& word) {
+        int node = 0;
+        for (char ch : word) {
+            if (!nodes[node].children.count(ch)) {
+                nodes.push_back(Node());                        // a fresh child
+                nodes[node].children[ch] = (int)nodes.size() - 1;
+            }
+            node = nodes[node].children[ch];
+            nodes[node].count++;
+        }
+    }
+
+    int starting_with(const string& prefix) const {
+        int node = 0;
+        for (char ch : prefix) {
+            auto it = nodes[node].children.find(ch);
+            if (it == nodes[node].children.end()) return 0;
+            node = it->second;
+        }
+        return nodes[node].count;
+    }
+};
 ```
 
 ## 7. The mistakes
 
-**A 32-bit hash modulus.** Collides in practice on $10^5$ comparisons. Use $2^{61}-1$.
+**A 32-bit hash modulus.** Collides in practice on $10^5$ comparisons. Use $2^{61}-1$, and do the multiplications in `__int128`, because a product of two values near $2^{61}$ silently overflows a 64-bit `long long`.
 
 **A base at or below the alphabet size.** Makes distinct strings hash identically. Also map characters from 1, not 0, so leading characters are not invisible.
 
@@ -272,9 +364,9 @@ class Trie:
 
 **No separator in the concatenation trick.** Reports matches that straddle the join.
 
-**Slicing in a loop.** `text[i:i+m] == pattern` inside the main loop, unconditionally, puts the $\mathcal{O}(nm)$ straight back. Only verify when the hashes match.
+**Comparing substrings in a loop.** `text.compare(i, m, pattern) == 0` inside the main loop, unconditionally, puts the $\mathcal{O}(nm)$ straight back. Only verify when the hashes match, and prefer `compare` over `text.substr(i, m) == pattern`, which allocates a fresh string every time.
 
-**Forgetting that Python strings are immutable.** Building a string with `s += c` in a loop is $\mathcal{O}(n^2)$, from [part 1](/posts/2016/02/counting-the-steps/). Collect into a list and `join`.
+**Building a string with `s = s + c`.** That allocates and copies a whole new string every iteration, which is $\mathcal{O}(n^2)$, from [part 1](/posts/2016/02/counting-the-steps/). Use `s += c`, which is amortised $\mathcal{O}(1)$ because `std::string` grows geometrically, and `reserve` the length up front when you know it.
 
 ## The short version
 

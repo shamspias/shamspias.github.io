@@ -22,26 +22,31 @@ Merge sort, because its cost is easy to see and it is the honest example of divi
 
 Split the array in half, sort each half, then merge the two sorted halves.
 
-```python
-def merge_sort(a):
-    if len(a) <= 1:
-        return a
-    mid = len(a) // 2
-    left = merge_sort(a[:mid])
-    right = merge_sort(a[mid:])
-    return merge(left, right)
+```cpp
+vector<int> merge(const vector<int>& x, const vector<int>& y);   // defined below
 
-def merge(x, y):
-    out = []
-    i = j = 0
-    while i < len(x) and j < len(y):
-        if x[i] <= y[j]:            # <= keeps equal items in order
-            out.append(x[i]); i += 1
-        else:
-            out.append(y[j]); j += 1
-    out.extend(x[i:])
-    out.extend(y[j:])
-    return out
+vector<int> merge_sort(const vector<int>& a) {
+    if (a.size() <= 1)
+        return a;
+    size_t mid = a.size() / 2;
+    vector<int> left  = merge_sort(vector<int>(a.begin(), a.begin() + mid));
+    vector<int> right = merge_sort(vector<int>(a.begin() + mid, a.end()));
+    return merge(left, right);
+}
+
+vector<int> merge(const vector<int>& x, const vector<int>& y) {
+    vector<int> out;
+    size_t i = 0, j = 0;
+    while (i < x.size() && j < y.size()) {
+        if (x[i] <= y[j])                   // <= keeps equal items in order
+            out.push_back(x[i++]);
+        else
+            out.push_back(y[j++]);
+    }
+    while (i < x.size()) out.push_back(x[i++]);
+    while (j < y.size()) out.push_back(y[j++]);
+    return out;
+}
 ```
 
 The cost, drawn rather than derived:
@@ -84,16 +89,17 @@ Three notes that matter in practice.
 
 **Counting sort beats $n \log n$, legitimately.** The $\Omega(n \log n)$ lower bound applies to sorting by *comparison*. Counting sort never compares two elements: it counts how many of each value there are and then writes them out in order. If your values are integers in a small range, this is the answer.
 
-```python
-def counting_sort(a, k):
-    """Sort values in 0..k-1. O(n + k), and stable as written."""
-    count = [0] * k
-    for x in a:
-        count[x] += 1
-    out = []
-    for v in range(k):
-        out.extend([v] * count[v])
-    return out
+```cpp
+// Sort values in 0..k-1. O(n + k), and stable as written.
+vector<int> counting_sort(const vector<int>& a, int k) {
+    vector<int> count(k, 0);
+    for (int x : a)
+        count[x] += 1;
+    vector<int> out;
+    for (int v = 0; v < k; v++)
+        out.insert(out.end(), count[v], v);   // write v out count[v] times
+    return out;
+}
 ```
 
 At `n = 10^6` values in the range 0 to 1000, this is several times faster than any comparison sort, and it is four lines.
@@ -102,15 +108,29 @@ At `n = 10^6` values in the range 0 to 1000, this is several times faster than a
 
 This:
 
-```python
-a.sort()                                # in place
-b = sorted(a)                           # a new list
-a.sort(key=lambda p: p.score)           # by a field
-a.sort(key=lambda p: -p.score)          # descending, numerically
-a.sort(reverse=True)                    # descending, generally
+```cpp
+struct Person {
+    int score;
+    string name;
+    bool operator<(const Person& o) const { return score < o.score; }
+};
+
+void sorting_idioms(vector<Person>& a) {
+    sort(a.begin(), a.end());                                   // in place
+    vector<Person> b = a;                                       // a new vector
+    sort(b.begin(), b.end());                                   //   sorted on its own
+    sort(a.begin(), a.end(), [](const Person& p, const Person& q) {
+        return p.score < q.score;                               // by a field
+    });
+    sort(a.begin(), a.end(), [](const Person& p, const Person& q) {
+        return p.score > q.score;                               // descending, numerically
+    });
+    sort(a.rbegin(), a.rend());                                 // descending, generally
+    stable_sort(a.begin(), a.end());                            // the same, but stable
+}
 ```
 
-Python's `sort` is Timsort: merge sort with runs of already-sorted data detected and exploited, plus insertion sort for small chunks. It is stable and it is $\mathcal{O}(n \log n)$ worst case. C++'s `std::sort` is introsort, which is quicksort that switches to heapsort when the recursion gets too deep, so it keeps quicksort's constant and avoids its worst case. It is *not* stable; `std::stable_sort` is.
+C++'s `std::sort` is introsort: quicksort that switches to heapsort when the recursion gets too deep, plus insertion sort for small chunks. That is how it keeps quicksort's constant while ruling out its $\mathcal{O}(n^2)$ worst case, and the standard guarantees $\mathcal{O}(n \log n)$. It is *not* stable. `std::stable_sort` is the stable one: a merge sort that borrows a temporary buffer, $\mathcal{O}(n \log n)$ when it gets the memory and $\mathcal{O}(n \log^2 n)$ when it does not.
 
 That is the whole implementation story. Now the part that matters.
 
@@ -124,33 +144,68 @@ Classic problem: you have `n` meetings with start and end times, and one room. W
 
 Sort by **end** time and take greedily. Sort by start time and you get the wrong answer. The reason is the whole of [part 7 on greedy algorithms](/posts/2017/04/greedy-when-it-works/), but the point here is that both are one-line sorts and only one is correct.
 
-```python
-meetings.sort(key=lambda m: m.end)
+```cpp
+struct Meeting {
+    int start, end;
+};
+
+void sort_by_end(vector<Meeting>& meetings) {
+    sort(meetings.begin(), meetings.end(),
+         [](const Meeting& a, const Meeting& b) { return a.end < b.end; });
+}
 ```
 
 ### Sort by a ratio
 
 You have items with a weight and a value, and a knapsack that can carry any fraction of an item. Sort by value per unit weight, descending, and fill.
 
-```python
-items.sort(key=lambda it: it.value / it.weight, reverse=True)
+```cpp
+struct Item {
+    double value, weight;
+};
+
+void sort_by_ratio(vector<Item>& items) {
+    sort(items.begin(), items.end(), [](const Item& a, const Item& b) {
+        return a.value / a.weight > b.value / b.weight;   // value per unit weight, descending
+    });
+}
 ```
 
-Careful with the division: if weights can be zero it breaks, and in a language with integer division it silently truncates. In a contest, compare `a.value * b.weight` against `b.value * a.weight` instead. Same ordering, no division, no floating point.
+Careful with the division: if weights can be zero it breaks, and if `value` and `weight` are integer types, C++ integer division silently truncates the ratio, so `3/2` and `1/1` both compare as `1`. In a contest, compare `a.value * b.weight` against `b.value * a.weight` instead. Same ordering, no division, no floating point.
 
 ### Sort by two keys, one ascending and one descending
 
 Very common: rank by score descending, and break ties by name ascending.
 
-```python
-people.sort(key=lambda p: (-p.score, p.name))
+```cpp
+struct Person {
+    int score;
+    string name;
+};
+
+void rank_people(vector<Person>& people) {
+    sort(people.begin(), people.end(), [](const Person& a, const Person& b) {
+        return make_pair(-a.score, a.name) < make_pair(-b.score, b.name);
+    });
+}
 ```
 
-The tuple compares element by element, and the minus sign flips the first one. If the field is not numeric you cannot negate it, and then stability is the tool: sort by the *last* key first, then by the more important key. Because the sort is stable, the earlier ordering survives inside the ties.
+`std::pair` compares element by element, and the minus sign flips the first one; `std::tuple` works the same way for three or more keys. If the field is not numeric you cannot negate it, and then stability is the tool: sort by the *last* key first, then by the more important key. Because `std::stable_sort` is stable, the earlier ordering survives inside the ties. This trick needs `std::stable_sort` specifically: `std::sort` is not stable and is free to scramble the weaker key.
 
-```python
-people.sort(key=lambda p: p.name)          # weaker key first
-people.sort(key=lambda p: p.score, reverse=True)   # stronger key last
+```cpp
+struct Person {
+    int score;
+    string name;
+};
+
+void rank_people(vector<Person>& people) {
+    stable_sort(people.begin(), people.end(), [](const Person& a, const Person& b) {
+        return a.name < b.name;                    // weaker key first
+    });
+    stable_sort(people.begin(), people.end(), [](const Person& a, const Person& b) {
+        return a.score > b.score;                  // stronger key last
+    });
+}
 ```
 
 That is what stability is *for*, and it is the answer to "how do I sort by three keys with mixed directions".
@@ -167,18 +222,21 @@ From a contest. You are given `n` intervals `[l, r]`. Merge all the overlapping 
 
 The insight is entirely in the ordering. Sort by left endpoint. Then walk the list keeping one open interval: each new interval either overlaps the open one, in which case extend it, or it does not, in which case the open one is finished.
 
-```python
-def merge_intervals(intervals):
-    if not intervals:
-        return []
-    intervals = sorted(intervals)              # by l, then r
-    out = [list(intervals[0])]
-    for l, r in intervals[1:]:
-        if l <= out[-1][1]:                    # overlaps the open interval
-            out[-1][1] = max(out[-1][1], r)    # extend it
-        else:
-            out.append([l, r])                 # start a new one
-    return out
+```cpp
+vector<pair<int, int>> merge_intervals(vector<pair<int, int>> intervals) {
+    if (intervals.empty())
+        return {};
+    sort(intervals.begin(), intervals.end());              // by l, then r
+    vector<pair<int, int>> out{intervals[0]};
+    for (size_t i = 1; i < intervals.size(); i++) {
+        int l = intervals[i].first, r = intervals[i].second;
+        if (l <= out.back().second)                        // overlaps the open interval
+            out.back().second = max(out.back().second, r); // extend it
+        else
+            out.push_back({l, r});                         // start a new one
+    }
+    return out;
+}
 ```
 
 ```
@@ -203,7 +261,7 @@ Why does sorting by `l` make the walk correct? Because after sorting, everything
 
 Sorting is cheap, not free. Three cases where it is the wrong reflex.
 
-**You only need the smallest `k`.** Sorting is $n \log n$; a heap of size `k` is $n \log k$, and for `k = 10` out of a million that is a real difference. `heapq.nsmallest` in Python, a priority queue in C++.
+**You only need the smallest `k`.** Sorting is $n \log n$; a heap of size `k` is $n \log k$, and for `k = 10` out of a million that is a real difference. `std::priority_queue` is the heap, and `std::partial_sort` will put the smallest `k` in order at the front of a range for you.
 
 **You only need the median, or the `k`-th smallest.** Quickselect does that in $\mathcal{O}(n)$ average, without sorting.
 
@@ -214,7 +272,7 @@ Sorting is cheap, not free. Three cases where it is the wrong reflex.
 - Be able to write merge sort once: split, sort halves, merge. $\log n$ levels, $n$ work per level, so $\mathcal{O}(n \log n)$, and the `<=` in the merge is what makes it stable.
 - Know the others by their properties, not their code. Insertion sort for tiny or nearly-sorted input, quicksort for its constant, heapsort for a guarantee with no extra memory, counting or radix sort when the values are small integers.
 - Counting sort beats $n \log n$ honestly, because the lower bound applies only to sorting by comparison and counting sort never compares.
-- In practice you call the library sort and spend your thinking on the key. Sort by end time for interval scheduling, by ratio for fractional knapsack, by a tuple for multiple keys.
+- In practice you call `std::sort` and spend your thinking on the comparator. Sort by end time for interval scheduling, by ratio for fractional knapsack, by a `std::pair` or `std::tuple` for multiple keys.
 - For mixed ascending and descending keys that cannot be negated, sort by the weakest key first and the strongest last, and let stability preserve the rest. That is what stability is for.
 - Ask "is there an order in which this problem becomes obvious?" That question, not the sorting algorithm, is where the solution usually is.
 - Do not sort when you only need the top `k`, only need the median, or the data is a stream.

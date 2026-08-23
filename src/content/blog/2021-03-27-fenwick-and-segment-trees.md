@@ -1,7 +1,7 @@
 ---
 title: "Fenwick Trees and Segment Trees: When Updates and Queries Interleave"
 seoTitle: "Fenwick Trees and Segment Trees"
-description: "Prefix sums break the moment an element changes. Two structures answer range questions and point updates in logarithmic time, and one of them is nine lines."
+description: "Prefix sums break the moment an element changes. Two structures answer range questions and point updates in logarithmic time, and one of them is twenty lines."
 date: 2021-03-27
 permalink: "/posts/2021/03/fenwick-and-segment-trees/"
 lang: en
@@ -16,7 +16,7 @@ seriesOrder: 19
 math: true
 ---
 
-*A prefix-sum array answers range queries in constant time and falls apart the instant an element changes: every prefix behind it is now wrong. Two structures fix that. The Fenwick tree is nine lines and does sums. The segment tree is thirty and does anything associative. Learn the first for speed of writing and the second for range of use.*
+*A prefix-sum array answers range queries in constant time and falls apart the instant an element changes: every prefix behind it is now wrong. Two structures fix that. The Fenwick tree is twenty lines and does sums. The segment tree is thirty-five and does anything associative. Learn the first for speed of writing and the second for range of use.*
 
 ## 1. The gap
 
@@ -31,30 +31,35 @@ With $10^5$ of each operation, the two extremes are both $10^{10}$ steps and the
 
 ## 2. The Fenwick tree
 
-Also called a binary indexed tree. Nine lines, and it is the structure I write most often.
+Also called a binary indexed tree. Twenty lines, and it is the structure I write most often.
 
-```python
-class Fenwick:
-    def __init__(self, n):
-        self.n = n
-        self.t = [0] * (n + 1)                # 1-indexed
+```cpp
+struct Fenwick {
+    int n;
+    vector<long long> t;
 
-    def add(self, i, v):
-        """Add v at position i (1-indexed)."""
-        while i <= self.n:
-            self.t[i] += v
-            i += i & -i                       # next index that covers i
+    explicit Fenwick(int n) : n(n), t(n + 1, 0) {}     // 1-indexed
 
-    def prefix(self, i):
-        """Sum of positions 1..i."""
-        s = 0
-        while i > 0:
-            s += self.t[i]
-            i -= i & -i                       # strip the lowest set bit
-        return s
+    void add(int i, long long v) {                     // add v at position i (1-indexed)
+        while (i <= n) {
+            t[i] += v;
+            i += i & -i;                               // next index that covers i
+        }
+    }
 
-    def range_sum(self, l, r):
-        return self.prefix(r) - self.prefix(l - 1)
+    long long prefix(int i) const {                    // sum of positions 1..i
+        long long s = 0;
+        while (i > 0) {
+            s += t[i];
+            i -= i & -i;                               // strip the lowest set bit
+        }
+        return s;
+    }
+
+    long long range_sum(int l, int r) const {
+        return prefix(r) - prefix(l - 1);
+    }
+};
 ```
 
 Both loops are $\mathcal{O}(\log n)$ because each step removes or adds one bit.
@@ -89,14 +94,17 @@ A prefix query for 7 adds `t[7]` (position 7), then `t[6]` (5 to 6), then `t[4]`
 
 Two practical notes. **It is one-indexed**, and fighting that produces off-by-one bugs; keep the internal indexing at 1 and convert at the boundary. And it can be built in $\mathcal{O}(n)$ rather than by `n` calls to `add`:
 
-```python
-def build(self, values):
-    """values is 1-indexed with a dummy at 0. O(n)."""
-    self.t = values[:]
-    for i in range(1, self.n + 1):
-        j = i + (i & -i)
-        if j <= self.n:
-            self.t[j] += self.t[i]
+```cpp
+// values is 1-indexed with a dummy at 0. O(n).
+vector<long long> fenwick_build(const vector<long long>& values) {
+    int n = (int)values.size() - 1;                    // values[0] is the dummy
+    vector<long long> t = values;
+    for (int i = 1; i <= n; i++) {
+        int j = i + (i & -i);
+        if (j <= n) t[j] += t[i];
+    }
+    return t;
+}
 ```
 
 ### What it can and cannot do
@@ -107,17 +115,29 @@ It needs an operation with an **inverse**, because `range_sum` is a subtraction 
 
 The same structure, used differently. Keep a difference array in the Fenwick tree, exactly as in [part 3](/posts/2016/07/prefix-sums-and-two-pointers/), and the roles invert.
 
-```python
-class RangeAddPointQuery:
-    def __init__(self, n):
-        self.f = Fenwick(n)
+```cpp
+struct Fenwick {                                       // from section 2, condensed
+    int n;
+    vector<long long> t;
+    explicit Fenwick(int n) : n(n), t(n + 1, 0) {}
+    void add(int i, long long v) { for (; i <= n; i += i & -i) t[i] += v; }
+    long long prefix(int i) const { long long s = 0; for (; i > 0; i -= i & -i) s += t[i]; return s; }
+};
 
-    def add_range(self, l, r, v):
-        self.f.add(l, v)
-        self.f.add(r + 1, -v)                 # if r+1 <= n
+struct RangeAddPointQuery {
+    Fenwick f;
 
-    def get(self, i):
-        return self.f.prefix(i)               # accumulated changes up to i
+    explicit RangeAddPointQuery(int n) : f(n) {}
+
+    void add_range(int l, int r, long long v) {
+        f.add(l, v);
+        f.add(r + 1, -v);                              // a no-op when r+1 > n
+    }
+
+    long long get(int i) const {
+        return f.prefix(i);                            // accumulated changes up to i
+    }
+};
 ```
 
 For both range update and range query, use two Fenwick trees, or a segment tree with lazy propagation.
@@ -126,38 +146,47 @@ For both range update and range query, use two Fenwick trees, or a segment tree 
 
 More code, and it handles any **associative** operation: sum, minimum, maximum, greatest common divisor, matrix product. No inverse required.
 
-```python
-class SegTree:
-    def __init__(self, values, identity=0, combine=lambda a, b: a + b):
-        self.n = len(values)
-        self.identity = identity
-        self.combine = combine
-        self.t = [identity] * (2 * self.n)
-        self.t[self.n:] = values                          # leaves
-        for i in range(self.n - 1, 0, -1):                # internal nodes
-            self.t[i] = combine(self.t[2 * i], self.t[2 * i + 1])
+```cpp
+long long add_ll(long long a, long long b) { return a + b; }   // the default combine
 
-    def update(self, i, v):
-        i += self.n
-        self.t[i] = v
-        i //= 2
-        while i:
-            self.t[i] = self.combine(self.t[2 * i], self.t[2 * i + 1])
-            i //= 2
+struct SegTree {
+    int n;
+    long long identity;
+    long long (*combine)(long long, long long);
+    vector<long long> t;
 
-    def query(self, l, r):
-        """Combine over [l, r), half-open."""
-        res_l = res_r = self.identity
-        l += self.n
-        r += self.n
-        while l < r:
-            if l & 1:
-                res_l = self.combine(res_l, self.t[l]); l += 1
-            if r & 1:
-                r -= 1; res_r = self.combine(self.t[r], res_r)
-            l //= 2
-            r //= 2
-        return self.combine(res_l, res_r)
+    SegTree(const vector<long long>& values,
+            long long id = 0,
+            long long (*op)(long long, long long) = add_ll)
+        : n((int)values.size()), identity(id), combine(op), t(2 * values.size(), id) {
+        for (int i = 0; i < n; i++) t[n + i] = values[i];         // leaves
+        for (int i = n - 1; i > 0; i--)                           // internal nodes
+            t[i] = combine(t[2 * i], t[2 * i + 1]);
+    }
+
+    void update(int i, long long v) {
+        i += n;
+        t[i] = v;
+        i /= 2;
+        while (i) {
+            t[i] = combine(t[2 * i], t[2 * i + 1]);
+            i /= 2;
+        }
+    }
+
+    long long query(int l, int r) const {              // combine over [l, r), half-open
+        long long res_l = identity, res_r = identity;
+        l += n;
+        r += n;
+        while (l < r) {
+            if (l & 1) { res_l = combine(res_l, t[l]); l += 1; }
+            if (r & 1) { r -= 1; res_r = combine(t[r], res_r); }
+            l /= 2;
+            r /= 2;
+        }
+        return combine(res_l, res_r);
+    }
+};
 ```
 
 This is the iterative, bottom-up form. It is shorter than the recursive one, has no stack depth to worry about, and is faster. Three things to note.
@@ -170,13 +199,47 @@ This is the iterative, bottom-up form. It is shorter than the recursive one, has
 
 Using it:
 
-```python
-sums = SegTree([1, 2, 3, 4, 5])
-minima = SegTree([1, 2, 3, 4, 5], identity=float('inf'), combine=min)
-gcds = SegTree([12, 18, 24], identity=0, combine=gcd)
+```cpp
+long long add_ll(long long a, long long b) { return a + b; }
+long long min_ll(long long a, long long b) { return min(a, b); }
+long long gcd_ll(long long a, long long b) { return gcd(a, b); }
+
+struct SegTree {                                       // from section 4, condensed
+    int n;
+    long long identity;
+    long long (*combine)(long long, long long);
+    vector<long long> t;
+
+    SegTree(const vector<long long>& values, long long id = 0,
+            long long (*op)(long long, long long) = add_ll)
+        : n((int)values.size()), identity(id), combine(op), t(2 * values.size(), id) {
+        for (int i = 0; i < n; i++) t[n + i] = values[i];
+        for (int i = n - 1; i > 0; i--) t[i] = combine(t[2 * i], t[2 * i + 1]);
+    }
+
+    long long query(int l, int r) const {
+        long long res_l = identity, res_r = identity;
+        for (l += n, r += n; l < r; l /= 2, r /= 2) {
+            if (l & 1) { res_l = combine(res_l, t[l]); l += 1; }
+            if (r & 1) { r -= 1; res_r = combine(t[r], res_r); }
+        }
+        return combine(res_l, res_r);
+    }
+};
+
+int main() {
+    SegTree sums({1, 2, 3, 4, 5});                             // identity 0, plus
+    SegTree minima({1, 2, 3, 4, 5}, LLONG_MAX, min_ll);        // identity "infinity"
+    SegTree gcds({12, 18, 24}, 0, gcd_ll);                     // gcd(0, x) = x
+
+    cout << sums.query(1, 4) << "\n";                          // 2 + 3 + 4 = 9
+    cout << minima.query(1, 4) << "\n";                        // 2
+    cout << gcds.query(0, 3) << "\n";                          // 6
+    return 0;
+}
 ```
 
-The identity has to be the neutral element of the operation: 0 for sums, infinity for minima, 0 for gcd (since `gcd(0, x) = x`), 1 for products. Get it wrong and empty ranges poison the answer.
+The identity has to be the neutral element of the operation: 0 for sums, `LLONG_MAX` for minima (C++ has no integer infinity, so pick a sentinel larger than any value and never add to it, or it overflows), 0 for gcd (since `std::gcd(0, x) = x`), 1 for products. Get it wrong and empty ranges poison the answer.
 
 ```
   values          1   2   3   4   5   0   0   0
@@ -198,47 +261,51 @@ The identity has to be the neutral element of the operation: 0 for sums, infinit
 
 For range updates *and* range queries, a segment tree needs to defer work. Store a pending operation at each node and push it down only when you need to look inside.
 
-```python
-class LazySum:
-    """Range add, range sum. Recursive, for clarity."""
-    def __init__(self, n):
-        self.n = n
-        self.t = [0] * (4 * n)
-        self.lazy = [0] * (4 * n)
+```cpp
+// Range add, range sum. Recursive, for clarity.
+struct LazySum {
+    int n;
+    vector<long long> t, lazy;
 
-    def _push(self, node, l, r):
-        if self.lazy[node]:
-            self.t[node] += self.lazy[node] * (r - l + 1)
-            if l != r:
-                self.lazy[2 * node] += self.lazy[node]
-                self.lazy[2 * node + 1] += self.lazy[node]
-            self.lazy[node] = 0
+    explicit LazySum(int n) : n(n), t(4 * n, 0), lazy(4 * n, 0) {}
 
-    def add(self, node, l, r, ql, qr, v):
-        self._push(node, l, r)
-        if qr < l or r < ql:
-            return
-        if ql <= l and r <= qr:
-            self.lazy[node] += v
-            self._push(node, l, r)
-            return
-        mid = (l + r) // 2
-        self.add(2 * node, l, mid, ql, qr, v)
-        self.add(2 * node + 1, mid + 1, r, ql, qr, v)
-        self.t[node] = self.t[2 * node] + self.t[2 * node + 1]
+    void push(int node, int l, int r) {
+        if (lazy[node] != 0) {
+            t[node] += lazy[node] * (r - l + 1);
+            if (l != r) {
+                lazy[2 * node] += lazy[node];
+                lazy[2 * node + 1] += lazy[node];
+            }
+            lazy[node] = 0;
+        }
+    }
 
-    def query(self, node, l, r, ql, qr):
-        self._push(node, l, r)
-        if qr < l or r < ql:
-            return 0
-        if ql <= l and r <= qr:
-            return self.t[node]
-        mid = (l + r) // 2
-        return (self.query(2 * node, l, mid, ql, qr)
-                + self.query(2 * node + 1, mid + 1, r, ql, qr))
+    void add(int node, int l, int r, int ql, int qr, long long v) {
+        push(node, l, r);
+        if (qr < l || r < ql) return;
+        if (ql <= l && r <= qr) {
+            lazy[node] += v;
+            push(node, l, r);
+            return;
+        }
+        int mid = (l + r) / 2;
+        add(2 * node, l, mid, ql, qr, v);
+        add(2 * node + 1, mid + 1, r, ql, qr, v);
+        t[node] = t[2 * node] + t[2 * node + 1];
+    }
+
+    long long query(int node, int l, int r, int ql, int qr) {
+        push(node, l, r);
+        if (qr < l || r < ql) return 0;
+        if (ql <= l && r <= qr) return t[node];
+        int mid = (l + r) / 2;
+        return query(2 * node, l, mid, ql, qr)
+             + query(2 * node + 1, mid + 1, r, ql, qr);
+    }
+};
 ```
 
-$\mathcal{O}(\log n)$ per operation. The array is `4n` rather than `2n` because the recursive layout is not perfectly packed. `_push` at the top of both operations is the rule: **never read a node before pushing its pending work down.**
+$\mathcal{O}(\log n)$ per operation. The array is `4n` rather than `2n` because the recursive layout is not perfectly packed. `push` at the top of both operations is the rule: **never read a node before pushing its pending work down.**
 
 Lazy propagation is where segment trees get genuinely fiddly. My advice: write it once, keep it in a file, and adapt it rather than rewriting from memory under time pressure.
 
@@ -246,7 +313,7 @@ Lazy propagation is where segment trees get genuinely fiddly. My advice: write i
 
 | Need | Use |
 |---|---|
-| Point update, prefix or range sum | Fenwick, nine lines |
+| Point update, prefix or range sum | Fenwick, twenty lines |
 | Range update, point query | Fenwick on a difference array |
 | Range update, range sum | two Fenwicks, or a lazy segment tree |
 | Point update, range minimum or maximum | segment tree |
@@ -257,24 +324,28 @@ Lazy propagation is where segment trees get genuinely fiddly. My advice: write i
 
 **Sparse table** is worth knowing for the static case: precompute the answer for every power-of-two length, then any range is covered by two overlapping blocks. $\mathcal{O}(n \log n)$ to build, $\mathcal{O}(1)$ per query, no updates allowed.
 
-```python
-def build_sparse(a):
-    n = len(a)
-    k = n.bit_length()
-    table = [a[:]]
-    j = 1
-    while (1 << j) <= n:
-        prev = table[-1]
-        row = [min(prev[i], prev[i + (1 << (j - 1))])
-               for i in range(n - (1 << j) + 1)]
-        table.append(row)
-        j += 1
-    return table
+```cpp
+vector<vector<long long>> build_sparse(const vector<long long>& a) {
+    int n = (int)a.size();
+    vector<vector<long long>> table;
+    table.push_back(a);                                // row 0: blocks of length 1
+    int j = 1;
+    while ((1 << j) <= n) {
+        const vector<long long>& prev = table[j - 1];
+        vector<long long> row;
+        for (int i = 0; i + (1 << j) <= n; i++)        // blocks of length 2^j
+            row.push_back(min(prev[i], prev[i + (1 << (j - 1))]));
+        table.push_back(row);
+        j += 1;
+    }
+    return table;
+}
 
-def query_sparse(table, l, r):
-    """min over [l, r], inclusive."""
-    j = (r - l + 1).bit_length() - 1
-    return min(table[j][l], table[j][r - (1 << j) + 1])
+// min over [l, r], inclusive.
+long long query_sparse(const vector<vector<long long>>& table, int l, int r) {
+    int j = 31 - __builtin_clz(r - l + 1);             // floor of log2 of the length
+    return min(table[j][l], table[j][r - (1 << j) + 1]);
+}
 ```
 
 That works for minimum and maximum because overlapping blocks are harmless. It does **not** work for sums, where the overlap would be counted twice.
@@ -283,18 +354,32 @@ That works for minimum and maximum because overlapping blocks are harmless. It d
 
 **Counting inversions.** How many pairs are out of order? Walk left to right, and for each element ask how many already-seen elements are larger. A Fenwick tree over values answers that in $\mathcal{O}(\log n)$ each, so $\mathcal{O}(n \log n)$ overall.
 
-```python
-def inversions(a):
-    order = {v: i + 1 for i, v in enumerate(sorted(set(a)))}   # compress
-    f = Fenwick(len(order))
-    total = 0
-    for x in reversed(a):
-        total += f.prefix(order[x] - 1)      # already seen and smaller
-        f.add(order[x], 1)
-    return total
+```cpp
+struct Fenwick {                                       // from section 2, condensed
+    int n;
+    vector<long long> t;
+    explicit Fenwick(int n) : n(n), t(n + 1, 0) {}
+    void add(int i, long long v) { for (; i <= n; i += i & -i) t[i] += v; }
+    long long prefix(int i) const { long long s = 0; for (; i > 0; i -= i & -i) s += t[i]; return s; }
+};
+
+long long inversions(const vector<int>& a) {
+    vector<int> order = a;                             // compress
+    sort(order.begin(), order.end());
+    order.erase(unique(order.begin(), order.end()), order.end());
+
+    Fenwick f((int)order.size());
+    long long total = 0;
+    for (auto it = a.rbegin(); it != a.rend(); ++it) {
+        int r = (int)(lower_bound(order.begin(), order.end(), *it) - order.begin()) + 1;
+        total += f.prefix(r - 1);                      // already seen and smaller
+        f.add(r, 1);
+    }
+    return total;
+}
 ```
 
-The **coordinate compression** in the first line is a technique in its own right: values up to $10^9$ become indices up to `n`, so the tree is `n` wide instead of $10^9$.
+The **coordinate compression** at the top of the function is a technique in its own right: `std::sort`, then `std::unique` and `erase` to drop duplicates, then `std::lower_bound` to turn a value into its rank. Values up to $10^9$ become indices up to `n`, so the tree is `n` wide instead of $10^9$.
 
 **The `k`-th smallest, with insertions and deletions.** Keep counts in a Fenwick tree over compressed values, then descend it to find the position where the running total reaches `k`. $\mathcal{O}(\log n)$.
 
@@ -306,7 +391,7 @@ The **coordinate compression** in the first line is a technique in its own right
 
 **The wrong identity in a segment tree.** 0 for a minimum tree makes every query return 0.
 
-**Mixing inclusive and half-open ranges.** Pick one and write it in the docstring.
+**Mixing inclusive and half-open ranges.** Pick one and write it in a comment above the function.
 
 **Reading a lazy node without pushing.** Stale values, and they surface only on the second overlapping update.
 
@@ -317,11 +402,11 @@ The **coordinate compression** in the first line is a technique in its own right
 ## The short version
 
 - Prefix sums die when an element changes. These structures make both update and query $\mathcal{O}(\log n)$, which turns $10^{10}$ into a couple of million.
-- The Fenwick tree is nine lines. `t[i]` covers the `i & -i` elements ending at `i`, so every prefix is a sum of one block per set bit.
+- The Fenwick tree is twenty lines. `t[i]` covers the `i & -i` elements ending at `i`, so every prefix is a sum of one block per set bit.
 - It needs an operation with an inverse, because a range is the difference of two prefixes. Sums and exclusive or yes, minimum no.
 - Put a difference array in a Fenwick tree and it does range update with point query instead.
 - The segment tree handles any associative operation, no inverse needed. Store it in a `2n` array, iterate bottom-up, and keep the left and right accumulators separate so non-commutative operations work.
-- The identity must be the neutral element: 0 for sums, infinity for minima, 1 for products, 0 for gcd.
+- The identity must be the neutral element: 0 for sums, `LLONG_MAX` for minima, 1 for products, 0 for gcd.
 - Lazy propagation is the fiddly part. Push before you read, and keep a known-good copy rather than rewriting it under time pressure.
 - Compress coordinates when values are large and few. A tree over $10^9$ values will not allocate; a tree over `n` distinct ones will.
 - For a static array with many range-minimum queries, a sparse table gives constant-time answers. Not for sums: the overlap double-counts.

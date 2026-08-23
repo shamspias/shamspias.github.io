@@ -51,17 +51,21 @@ The rules translate directly into a table, and I am writing it out the long way
 on purpose: the compact one-liner version needs a double negative, and a double
 negative in a win-loss condition is where bugs live.
 
-```python
-def losing(n):
-    dp = [False] * (n + 1)
-    dp[0] = True                              # no moves: the mover loses
-    for i in range(1, n + 1):
-        dp[i] = True                          # assume a loss
-        for k in (1, 2, 3):
-            if k <= i and dp[i - k]:          # a move to a losing position
-                dp[i] = False                 # so this is a win
-                break
-    return dp[n]
+```cpp
+bool losing(int n) {
+    vector<bool> dp(n + 1, false);
+    dp[0] = true;                             // no moves: the mover loses
+    for (int i = 1; i <= n; i++) {
+        dp[i] = true;                         // assume a loss
+        for (int k : {1, 2, 3}) {
+            if (k <= i && dp[i - k]) {        // a move to a losing position
+                dp[i] = false;                // so this is a win
+                break;
+            }
+        }
+    }
+    return dp[n];
+}
 ```
 
 Run it and the pattern is immediate:
@@ -87,12 +91,12 @@ The answer is startling in its simplicity.
 
 That exclusive or, `a₁ ^ a₂ ^ ... ^ aₙ`, is called the **Nim-sum**.
 
-```python
-from functools import reduce
-from operator import xor
-
-def nim_loses(piles):
-    return reduce(xor, piles, 0) == 0
+```cpp
+bool nim_loses(const vector<int>& piles) {
+    int s = 0;
+    for (int a : piles) s ^= a;               // the Nim-sum
+    return s == 0;
+}
 ```
 
 ```
@@ -120,16 +124,23 @@ The proof is two halves, and both are short enough to be worth seeing.
 
 Together: zero positions can only move to nonzero ones, and nonzero positions can always move to zero. Since the final position, all piles empty, has Nim-sum zero and is a loss, zero is a loss and nonzero is a win.
 
-```python
-def winning_move(piles):
-    s = reduce(xor, piles, 0)
-    if s == 0:
-        return None                           # lost, no good move
-    for i, a in enumerate(piles):
-        target = a ^ s
-        if target < a:
-            return (i, a - target)            # take this many from pile i
-    return None
+```cpp
+// returns (pile index, stones to take), or (-1, -1) when there is no winning move
+pair<int, int> winning_move(const vector<int>& piles) {
+    int s = 0;
+    for (int a : piles) s ^= a;
+    if (s == 0) {
+        return {-1, -1};                      // lost, no good move
+    }
+    for (int i = 0; i < (int)piles.size(); i++) {
+        int a = piles[i];
+        int target = a ^ s;
+        if (target < a) {
+            return {i, a - target};           // take this many from pile i
+        }
+    }
+    return {-1, -1};
+}
 ```
 
 ## 4. Grundy numbers, and the theorem
@@ -144,13 +155,15 @@ $$
 
 where **mex** is the *minimum excludant*: the smallest non-negative integer not in the set.
 
-```python
-def mex(values):
-    s = set(values)
-    i = 0
-    while i in s:
-        i += 1
-    return i
+```cpp
+int mex(const vector<int>& values) {
+    unordered_set<int> s(values.begin(), values.end());
+    int i = 0;
+    while (s.count(i)) {                      // walk up until a gap appears
+        i++;
+    }
+    return i;
+}
 ```
 
 Two facts, and the second is the theorem.
@@ -171,12 +184,25 @@ For a single Nim pile of `n`, the moves lead to `0, 1, ..., n-1`, whose mex is `
 
 Same one pile, but a move takes 1, 3 or 4 stones. What now? Compute Grundy values.
 
-```python
-def grundy_subtraction(n, moves=(1, 3, 4)):
-    g = [0] * (n + 1)
-    for i in range(1, n + 1):
-        g[i] = mex(g[i - m] for m in moves if m <= i)
-    return g
+```cpp
+int mex(const vector<int>& values) {                    // smallest non-negative integer missing
+    unordered_set<int> s(values.begin(), values.end());
+    int i = 0;
+    while (s.count(i)) i++;
+    return i;
+}
+
+vector<int> grundy_subtraction(int n, const vector<int>& moves = {1, 3, 4}) {
+    vector<int> g(n + 1, 0);
+    for (int i = 1; i <= n; i++) {
+        vector<int> reachable;
+        for (int m : moves) {
+            if (m <= i) reachable.push_back(g[i - m]);   // values one move away
+        }
+        g[i] = mex(reachable);
+    }
+    return g;
+}
 ```
 
 ```
@@ -214,17 +240,36 @@ The procedure I follow, in order:
 3. **If the game splits into independent parts, compute Grundy values and exclusive-or them.** Independence is the condition: the parts must not interact at all.
 4. **Guess the pattern, then verify it against the brute force** for `n` up to a few thousand. This is the same brute-force-comparison habit from [part 7](/posts/2017/04/greedy-when-it-works/), and it is how you get certainty without a proof.
 
-```python
-from functools import lru_cache
+```cpp
+// memoised win-loss search; moves_from(s) returns the positions one move away
+template <class State, class MovesFrom>
+struct GameSolver {
+    MovesFrom moves_from;
+    map<State, bool> memo;                    // the cache
 
-def wins(state, moves_from):
-    @lru_cache(maxsize=None)
-    def go(s):
-        return any(not go(t) for t in moves_from(s))
-    return go(state)
+    bool go(const State& s) {
+        auto it = memo.find(s);
+        if (it != memo.end()) return it->second;
+        bool result = false;
+        for (const State& t : moves_from(s)) {
+            if (!go(t)) {                     // some move leads to a loss
+                result = true;
+                break;
+            }
+        }
+        memo[s] = result;
+        return result;
+    }
+};
+
+template <class State, class MovesFrom>
+bool wins(const State& state, MovesFrom moves_from) {
+    GameSolver<State, MovesFrom> solver{moves_from, {}};
+    return solver.go(state);
+}
 ```
 
-That five-line function solves an enormous number of game problems directly, and when it is too slow it still generates the table you need to find the pattern.
+That small function, with a `std::map` doing the memoisation, solves an enormous number of game problems directly, and when it is too slow it still generates the table you need to find the pattern.
 
 ## 8. Where it stops working
 

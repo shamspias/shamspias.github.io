@@ -39,7 +39,7 @@ Big-O throws away the `400`, throws away the `20n`, throws away the `3`, and cal
 
 At `n = 5` the constant `400` dominates and the $n^2$ term is noise. By `n = 500` the $n^2$ term is everything and the others have vanished into rounding. Since the whole point of the exercise is *what happens when the input gets big*, keeping the terms that vanish would be keeping the noise and dropping the signal.
 
-The `3` goes for a different reason. It is not a property of the algorithm; it is a property of the language, the compiler, the processor, and how you happened to write the loop. Move the same algorithm from Python to C and every constant changes while the shape does not. Big-O keeps the part that survives the move.
+The `3` goes for a different reason. It is not a property of the algorithm; it is a property of the language, the compiler, the processor, and how you happened to write the loop. Move the same algorithm from C++ to Python, or just change the compiler and its optimisation flags, and every constant changes while the shape does not. Big-O keeps the part that survives the move.
 
 So the rules are:
 
@@ -101,38 +101,57 @@ The column that surprises people is $2^n$: it goes from instant to impossible be
 
 **One loop, one pass.**
 
-```python
-for x in a:          # n times
-    total += x       # O(1) each
+```cpp
+long long sum(const vector<int>& a) {
+    long long total = 0;
+    for (int x : a)      // n times
+        total += x;      // O(1) each
+    return total;
+}
 ```
 $\mathcal{O}(n)$.
 
 **Two loops in sequence, not nested.**
 
-```python
-for x in a:          # n
-    ...
-for y in a:          # n
-    ...
+```cpp
+void two_passes(const vector<int>& a) {
+    for (int x : a) {    // n
+        (void)x;         // ... some O(1) work
+    }
+    for (int y : a) {    // n
+        (void)y;         // ... some O(1) work
+    }
+}
 ```
 $n + n = 2n$, and constants go, so $\mathcal{O}(n)$. Sequential work adds; two linear passes are still linear. This is worth internalising because it stops you contorting code to avoid a second pass that costs nothing.
 
 **Two loops nested over different things.**
 
-```python
-for x in a:          # n
-    for y in b:      # m
-        ...
+```cpp
+void nested_pairs(const vector<int>& a, const vector<int>& b) {
+    for (int x : a) {        // n
+        for (int y : b) {    // m
+            (void)x;         // ... some O(1) work
+            (void)y;
+        }
+    }
+}
 ```
 $\mathcal{O}(nm)$. Not $\mathcal{O}(n^2)$. If `a` has a million elements and `b` has three, this is linear in `a`. Naming the sizes separately is not pedantry; it is the difference between "too slow" and "fine".
 
 **A loop that halves.**
 
-```python
-lo, hi = 0, n - 1
-while lo <= hi:            # log n times
-    mid = (lo + hi) // 2
-    ...
+```cpp
+int find_index(const vector<int>& a, int target) {
+    int lo = 0, hi = (int)a.size() - 1;
+    while (lo <= hi) {                       // log n times
+        int mid = lo + (hi - lo) / 2;        // integer division, and no overflow
+        if (a[mid] == target) return mid;
+        if (a[mid] < target) lo = mid + 1;   // drop the left half
+        else hi = mid - 1;                   // drop the right half
+    }
+    return -1;
+}
 ```
 $\mathcal{O}(\log n)$, because the range `hi - lo` halves every pass and can only halve about $\log_2 n$ times before it is empty.
 
@@ -140,10 +159,16 @@ $\mathcal{O}(\log n)$, because the range `hi - lo` halves every pass and can onl
 
 This is the one thing in this post I would most like you to remember, because it comes up constantly and the wrong answer is very believable.
 
-```python
-for i in range(n):
-    for j in range(i):
-        ...
+```cpp
+long long count_pairs(int n) {
+    long long total = 0;
+    for (int i = 0; i < n; i++) {        // n
+        for (int j = 0; j < i; j++) {    // i, not n
+            total++;                     // ... some O(1) work
+        }
+    }
+    return total;                        // n(n-1)/2 in all
+}
 ```
 
 The inner loop runs 0 times, then 1, then 2, up to $n-1$. So the total is
@@ -156,17 +181,28 @@ which is $\mathcal{O}(n^2)$. Multiplying gave the right answer here, roughly, of
 
 Now this one:
 
-```python
-i = 0
-for j in range(n):
-    while i < n and cheap(i):
-        i += 1
-    ...
+```cpp
+bool cheap(int x) {          // any O(1) test
+    return x % 3 != 2;
+}
+
+long long amortised(int n) {
+    int i = 0;
+    long long moves = 0;
+    for (int j = 0; j < n; j++) {        // n
+        while (i < n && cheap(i)) {      // n times in total, not n per j
+            i++;                         // i only goes up, and never resets
+            moves++;
+        }
+        (void)j;                         // ... some O(1) work
+    }
+    return moves;                        // at most n, so the whole thing is O(n)
+}
 ```
 
 Two nested loops. Multiplying says $\mathcal{O}(n^2)$. But look at `i`: it never resets. Across the *entire* run of the outer loop, the inner `while` can execute at most `n` times in total, because `i` only ever goes up and stops at `n`. So the whole thing is $\mathcal{O}(n)$.
 
-That reasoning has a name, **amortised analysis**, and the useful version of it is a question: *is there a counter that only moves one way?* If yes, bound the total number of moves instead of multiplying the loops. The two-pointer technique in part 3, and the reason a dynamic array's `append` is $\mathcal{O}(1)$ rather than $\mathcal{O}(n)$, are both this.
+That reasoning has a name, **amortised analysis**, and the useful version of it is a question: *is there a counter that only moves one way?* If yes, bound the total number of moves instead of multiplying the loops. The two-pointer technique in part 3, and the reason `std::vector::push_back` is amortised $\mathcal{O}(1)$ rather than $\mathcal{O}(n)$, are both this.
 
 ```
   multiply the loops        follow the counter

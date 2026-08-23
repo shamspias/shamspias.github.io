@@ -22,18 +22,21 @@ A greedy algorithm builds an answer one piece at a time, and at each step it tak
 
 The coin problem is the standard first example. Make 63 pence from coins of 50, 20, 10, 5, 2 and 1.
 
-```python
-def change(amount, coins):
-    coins = sorted(coins, reverse=True)
-    used = []
-    for c in coins:
-        while amount >= c:
-            used.append(c)
-            amount -= c
-    return used
+```cpp
+vector<int> change(int amount, vector<int> coins) {
+    sort(coins.rbegin(), coins.rend());          // largest coin first
+    vector<int> used;
+    for (int c : coins) {
+        while (amount >= c) {
+            used.push_back(c);
+            amount -= c;
+        }
+    }
+    return used;
+}
 ```
 
-`change(63, [50,20,10,5,2,1])` gives `[50, 10, 2, 1]`: four coins, and that is optimal.
+`change(63, {50,20,10,5,2,1})` gives a vector of `{50, 10, 2, 1}`: four coins, and that is optimal.
 
 Now change the coin set to 1, 3 and 4, and ask for 6. Greedy takes 4, then 1, then 1: three coins. The optimal answer is 3 and 3: two coins. Same code, same rule, wrong answer.
 
@@ -63,15 +66,22 @@ One room, `n` meetings each with a start and end. Hold as many as possible.
 
 The rule: **sort by end time, take any meeting that starts after the last one you took ends.**
 
-```python
-def max_meetings(meetings):
-    meetings = sorted(meetings, key=lambda m: m[1])   # by end time
-    count, last_end = 0, float('-inf')
-    for start, end in meetings:
-        if start >= last_end:
-            count += 1
-            last_end = end
-    return count
+```cpp
+int max_meetings(vector<pair<int, int>> meetings) {
+    sort(meetings.begin(), meetings.end(),
+         [](const pair<int, int>& a, const pair<int, int>& b) {
+             return a.second < b.second;                  // by end time
+         });
+    int count = 0;
+    long long last_end = LLONG_MIN;                       // minus infinity
+    for (auto [start, end] : meetings) {
+        if (start >= last_end) {
+            count += 1;
+            last_end = end;
+        }
+    }
+    return count;
+}
 ```
 
 ```
@@ -147,19 +157,24 @@ First instinct: sort by deadline and take greedily. That is close but incomplete
 
 The correct rule adds one move. Go through tasks in deadline order and take each one. If the running total exceeds the current deadline, **remove the longest task taken so far**. A max-heap of the taken durations makes that one operation.
 
-```python
-import heapq
-
-def max_tasks(tasks):
-    tasks.sort(key=lambda x: x[1])       # by deadline
-    heap = []                            # negatives, for a max-heap
-    total = 0
-    for t, d in tasks:
-        heapq.heappush(heap, -t)
-        total += t
-        if total > d:                    # cannot fit: drop the worst
-            total += heapq.heappop(heap) # pop is negative, so this subtracts
-    return len(heap)
+```cpp
+int max_tasks(vector<pair<int, int>> tasks) {
+    sort(tasks.begin(), tasks.end(),
+         [](const pair<int, int>& a, const pair<int, int>& b) {
+             return a.second < b.second;      // by deadline
+         });
+    priority_queue<int> heap;                 // already a max-heap: no negating
+    long long total = 0;
+    for (auto [t, d] : tasks) {
+        heap.push(t);
+        total += t;
+        if (total > d) {                      // cannot fit: drop the worst
+            total -= heap.top();              // the longest task taken so far
+            heap.pop();
+        }
+    }
+    return (int)heap.size();
+}
 ```
 
 Why is dropping the longest correct? Because the count is what we are maximising, and every task in the set counts equally. If the set does not fit, removing any one task makes it fit less badly, and removing the longest frees the most time, which can only help future tasks. That is an exchange argument again: swapping the longest for anything shorter never hurts.
@@ -192,22 +207,70 @@ You will not have time for a full proof. Here is the practical procedure, in ord
 
 **Step 5: when in doubt, brute force against greedy.** Write the $\mathcal{O}(2^n)$ exhaustive solution, run both on a few thousand random inputs of size 8, and compare. This finds counterexamples faster than thinking does, and it takes five minutes. I do this more often than I do proofs.
 
-```python
-import itertools, random
+```cpp
+#include <random>
 
-def brute(items):
-    best = 0
-    for r in range(len(items) + 1):
-        for combo in itertools.combinations(items, r):
-            if valid(combo):
-                best = max(best, len(combo))
-    return best
+// True if this set of tasks can all meet their deadlines, run in deadline order.
+bool valid(vector<pair<int, int>> combo) {
+    sort(combo.begin(), combo.end(),
+         [](const pair<int, int>& a, const pair<int, int>& b) {
+             return a.second < b.second;                  // by deadline
+         });
+    long long total = 0;
+    for (auto [t, d] : combo) {
+        total += t;
+        if (total > d) return false;
+    }
+    return true;
+}
 
-for _ in range(2000):
-    items = [(random.randint(1, 9), random.randint(1, 9)) for _ in range(7)]
-    if greedy(items) != brute(items):
-        print('counterexample:', items)
-        break
+// The greedy rule under test: take every task, drop the longest when it overruns.
+int greedy(vector<pair<int, int>> items) {
+    sort(items.begin(), items.end(),
+         [](const pair<int, int>& a, const pair<int, int>& b) {
+             return a.second < b.second;                  // by deadline
+         });
+    priority_queue<int> heap;
+    long long total = 0;
+    for (auto [t, d] : items) {
+        heap.push(t);
+        total += t;
+        if (total > d) {
+            total -= heap.top();
+            heap.pop();
+        }
+    }
+    return (int)heap.size();
+}
+
+int brute(const vector<pair<int, int>>& items) {
+    int n = (int)items.size();
+    int best = 0;
+    for (int mask = 0; mask < (1 << n); mask++) {          // every subset
+        vector<pair<int, int>> combo;
+        for (int i = 0; i < n; i++)
+            if (mask >> i & 1) combo.push_back(items[i]);
+        if (valid(combo)) best = max(best, (int)combo.size());
+    }
+    return best;
+}
+
+int main() {
+    mt19937 rng(12345);                                    // fixed seed: reproducible
+    uniform_int_distribution<int> coin(1, 9);
+    for (int iter = 0; iter < 2000; iter++) {
+        vector<pair<int, int>> items;
+        for (int i = 0; i < 7; i++)
+            items.push_back({coin(rng), coin(rng)});
+        if (greedy(items) != brute(items)) {
+            cout << "counterexample:";
+            for (auto [t, d] : items) cout << " (" << t << "," << d << ")";
+            cout << "\n";
+            break;
+        }
+    }
+    return 0;
+}
 ```
 
 That loop has saved me more contest points than any proof I have ever written.

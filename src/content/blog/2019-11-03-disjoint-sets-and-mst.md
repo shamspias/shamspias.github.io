@@ -30,27 +30,31 @@ The trick is to store each group as a **tree**, with the root as its name. Then 
 
 ## 2. The implementation
 
-```python
-class DSU:
-    def __init__(self, n):
-        self.parent = list(range(n))       # everyone is their own root
-        self.size = [1] * n
+```cpp
+struct DSU {
+    vector<int> parent, size;
 
-    def find(self, x):
-        while self.parent[x] != x:
-            self.parent[x] = self.parent[self.parent[x]]   # path halving
-            x = self.parent[x]
-        return x
+    DSU(int n) : parent(n), size(n, 1) {
+        for (int i = 0; i < n; i++) parent[i] = i;         // everyone is their own root
+    }
 
-    def union(self, a, b):
-        ra, rb = self.find(a), self.find(b)
-        if ra == rb:
-            return False                  # already together
-        if self.size[ra] < self.size[rb]:
-            ra, rb = rb, ra               # attach the smaller under the bigger
-        self.parent[rb] = ra
-        self.size[ra] += self.size[rb]
-        return True
+    int find(int x) {
+        while (parent[x] != x) {
+            parent[x] = parent[parent[x]];                 // path halving
+            x = parent[x];
+        }
+        return x;
+    }
+
+    bool unite(int a, int b) {                             // "union" is a C++ keyword
+        int ra = find(a), rb = find(b);
+        if (ra == rb) return false;                        // already together
+        if (size[ra] < size[rb]) swap(ra, rb);             // attach the smaller under the bigger
+        parent[rb] = ra;
+        size[ra] += size[rb];
+        return true;
+    }
+};
 ```
 
 Twelve lines. Two optimisations are doing all the work, and both are one line each.
@@ -70,9 +74,9 @@ Twelve lines. Two optimisations are doing all the work, and both are one line ea
     0
 ```
 
-**Path compression.** During `find`, point nodes closer to the root. The line `self.parent[x] = self.parent[self.parent[x]]` is *path halving*: it points each node at its grandparent as it walks past, which halves the path length. It is a single line, needs no recursion, and is as good as full compression in practice.
+**Path compression.** During `find`, point nodes closer to the root. The line `parent[x] = parent[parent[x]]` is *path halving*: it points each node at its grandparent as it walks past, which halves the path length. It is a single line, needs no recursion, and is as good as full compression in practice.
 
-The `union` returning `False` when the two are already together is a small thing that turns out to be useful constantly: it tells you the edge you just tried to add would have created a cycle.
+The `unite` returning `false` when the two are already together (the method cannot be called `union`, since `union` is a C++ keyword) is a small thing that turns out to be useful constantly: it tells you the edge you just tried to add would have created a cycle.
 
 ## 3. The running time, and why nobody writes it down
 
@@ -84,19 +88,41 @@ So in practice: **treat it as constant time.** I write $\mathcal{O}(1)$ in my no
 
 **Counting components dynamically.** DFS counts components in a static graph. Union-find counts them while edges are being *added*, which DFS cannot do without rerunning.
 
-```python
-def components_after_each_edge(n, edges):
-    dsu = DSU(n)
-    count = n
-    out = []
-    for u, v in edges:
-        if dsu.union(u, v):
-            count -= 1                    # two groups became one
-        out.append(count)
-    return out
+```cpp
+struct DSU {                                               // as in section 2
+    vector<int> parent, size;
+    DSU(int n) : parent(n), size(n, 1) {
+        for (int i = 0; i < n; i++) parent[i] = i;
+    }
+    int find(int x) {
+        while (parent[x] != x) { parent[x] = parent[parent[x]]; x = parent[x]; }
+        return x;
+    }
+    bool unite(int a, int b) {
+        int ra = find(a), rb = find(b);
+        if (ra == rb) return false;
+        if (size[ra] < size[rb]) swap(ra, rb);
+        parent[rb] = ra;
+        size[ra] += size[rb];
+        return true;
+    }
+};
+
+vector<int> components_after_each_edge(int n, const vector<pair<int, int>>& edges) {
+    DSU dsu(n);
+    int count = n;
+    vector<int> out;
+    for (auto [u, v] : edges) {
+        if (dsu.unite(u, v)) {
+            count -= 1;                                    // two groups became one
+        }
+        out.push_back(count);
+    }
+    return out;
+}
 ```
 
-**Cycle detection while building.** If `union` returns `False`, both endpoints were already connected, so this edge closes a cycle.
+**Cycle detection while building.** If `unite` returns `false`, both endpoints were already connected, so this edge closes a cycle.
 
 **Kruskal's algorithm**, next section.
 
@@ -110,18 +136,50 @@ A **spanning tree** connects every vertex with no cycles, which takes exactly `V
 
 Sort the edges by weight. Take each one if it connects two different components. Stop at `V - 1` edges.
 
-```python
-def kruskal(n, edges):
-    """edges is a list of (weight, u, v). Returns (total, chosen)."""
-    dsu = DSU(n)
-    total, chosen = 0, []
-    for w, u, v in sorted(edges):
-        if dsu.union(u, v):               # different components
-            total += w
-            chosen.append((u, v, w))
-            if len(chosen) == n - 1:
-                break
-    return total, chosen
+```cpp
+struct Edge {
+    long long w;                                           // weight
+    int u, v;
+};
+
+struct DSU {                                               // as in section 2
+    vector<int> parent, size;
+    DSU(int n) : parent(n), size(n, 1) {
+        for (int i = 0; i < n; i++) parent[i] = i;
+    }
+    int find(int x) {
+        while (parent[x] != x) { parent[x] = parent[parent[x]]; x = parent[x]; }
+        return x;
+    }
+    bool unite(int a, int b) {
+        int ra = find(a), rb = find(b);
+        if (ra == rb) return false;
+        if (size[ra] < size[rb]) swap(ra, rb);
+        parent[rb] = ra;
+        size[ra] += size[rb];
+        return true;
+    }
+};
+
+// edges is a list of (weight, u, v). Returns (total, chosen).
+pair<long long, vector<Edge>> kruskal(int n, vector<Edge> edges) {
+    DSU dsu(n);
+    long long total = 0;
+    vector<Edge> chosen;
+    sort(edges.begin(), edges.end(), [](const Edge& a, const Edge& b) {
+        return tie(a.w, a.u, a.v) < tie(b.w, b.u, b.v);    // by weight, then endpoints
+    });
+    for (const Edge& e : edges) {
+        if (dsu.unite(e.u, e.v)) {                         // different components
+            total += e.w;
+            chosen.push_back(e);
+            if ((int)chosen.size() == n - 1) {
+                break;
+            }
+        }
+    }
+    return {total, chosen};
+}
 ```
 
 $\mathcal{O}(E \log E)$, which is the sort; the union-find part is effectively free. That is the whole algorithm, and union-find is what makes it four lines instead of forty.
@@ -151,26 +209,32 @@ Kruskal's takes the cheapest edge joining two components every time, which is ex
 
 The other one. Grow a single tree: repeatedly add the cheapest edge from the tree to a vertex outside it. Structurally it is Dijkstra with "distance from the tree" instead of "distance from the start".
 
-```python
-import heapq
-
-def prim(g, n, start=0):
-    """g[u] is a list of (neighbour, weight)."""
-    seen = [False] * n
-    pq = [(0, start)]
-    total = 0
-    taken = 0
-    while pq and taken < n:
-        w, u = heapq.heappop(pq)
-        if seen[u]:
-            continue
-        seen[u] = True
-        total += w
-        taken += 1
-        for v, wt in g[u]:
-            if not seen[v]:
-                heapq.heappush(pq, (wt, v))
-    return total if taken == n else None      # None if not connected
+```cpp
+// g[u] is a list of (neighbour, weight).
+long long prim(const vector<vector<pair<int, long long>>>& g, int n, int start = 0) {
+    vector<bool> seen(n, false);
+    priority_queue<pair<long long, int>, vector<pair<long long, int>>,
+                   greater<pair<long long, int>>> pq;      // min-heap, like heapq
+    pq.push({0, start});
+    long long total = 0;
+    int taken = 0;
+    while (!pq.empty() && taken < n) {
+        auto [w, u] = pq.top();
+        pq.pop();
+        if (seen[u]) {
+            continue;
+        }
+        seen[u] = true;
+        total += w;
+        taken += 1;
+        for (auto [v, wt] : g[u]) {
+            if (!seen[v]) {
+                pq.push({wt, v});
+            }
+        }
+    }
+    return taken == n ? total : -1;                        // -1 if not connected
+}
 ```
 
 $\mathcal{O}(E \log V)$.
@@ -191,47 +255,86 @@ I use Kruskal by default. The edge list is usually how the input arrives, the so
 
 **Clustering into `k` groups.** Run Kruskal but stop when `k` components remain. That is single-linkage clustering, and the largest edge you refused to add is the separation between clusters.
 
-```python
-def cluster(n, edges, k):
-    dsu = DSU(n)
-    groups = n
-    for w, u, v in sorted(edges):
-        if groups == k:
-            return w                      # the spacing between clusters
-        if dsu.union(u, v):
-            groups -= 1
-    return 0
+```cpp
+struct Edge {
+    long long w;                                           // weight
+    int u, v;
+};
+
+struct DSU {                                               // as in section 2
+    vector<int> parent, size;
+    DSU(int n) : parent(n), size(n, 1) {
+        for (int i = 0; i < n; i++) parent[i] = i;
+    }
+    int find(int x) {
+        while (parent[x] != x) { parent[x] = parent[parent[x]]; x = parent[x]; }
+        return x;
+    }
+    bool unite(int a, int b) {
+        int ra = find(a), rb = find(b);
+        if (ra == rb) return false;
+        if (size[ra] < size[rb]) swap(ra, rb);
+        parent[rb] = ra;
+        size[ra] += size[rb];
+        return true;
+    }
+};
+
+long long cluster(int n, vector<Edge> edges, int k) {
+    DSU dsu(n);
+    int groups = n;
+    sort(edges.begin(), edges.end(), [](const Edge& a, const Edge& b) {
+        return tie(a.w, a.u, a.v) < tie(b.w, b.u, b.v);
+    });
+    for (const Edge& e : edges) {
+        if (groups == k) {
+            return e.w;                                    // the spacing between clusters
+        }
+        if (dsu.unite(e.u, e.v)) {
+            groups -= 1;
+        }
+    }
+    return 0;
+}
 ```
 
-**Redundant connection.** Given `V` edges on `V` vertices, find the one edge whose removal leaves a tree. It is the first edge whose `union` returns `False`.
+**Redundant connection.** Given `V` edges on `V` vertices, find the one edge whose removal leaves a tree. It is the first edge whose `unite` returns `false`.
 
 ## 7. Two extensions worth knowing
 
 **Union-find with parity**, for "these two things are on opposite sides" constraints. Store, alongside the parent, whether a node is the same as or opposite to its parent, and combine as you walk. That solves bipartite checking under edge insertions, and it solves systems of "a and b differ" constraints.
 
-```python
-class DSUParity:
-    def __init__(self, n):
-        self.parent = list(range(n))
-        self.rel = [0] * n                # 0 same as parent, 1 opposite
+```cpp
+struct DSUParity {
+    vector<int> parent;
+    vector<int> rel;                                       // 0 same as parent, 1 opposite
 
-    def find(self, x):
-        """Returns (root, parity relative to the root)."""
-        p = 0
-        while self.parent[x] != x:
-            p ^= self.rel[x]
-            x = self.parent[x]
-        return x, p
+    DSUParity(int n) : parent(n), rel(n, 0) {
+        for (int i = 0; i < n; i++) parent[i] = i;
+    }
 
-    def union(self, a, b, differ):
-        """differ is 1 if a and b must be on opposite sides."""
-        ra, pa = self.find(a)
-        rb, pb = self.find(b)
-        if ra == rb:
-            return (pa ^ pb) == differ    # consistent with what we know?
-        self.parent[rb] = ra
-        self.rel[rb] = pa ^ pb ^ differ
-        return True
+    // Returns (root, parity relative to the root).
+    pair<int, int> find(int x) {
+        int p = 0;
+        while (parent[x] != x) {
+            p ^= rel[x];
+            x = parent[x];
+        }
+        return {x, p};
+    }
+
+    // differ is 1 if a and b must be on opposite sides.
+    bool unite(int a, int b, int differ) {
+        auto [ra, pa] = find(a);
+        auto [rb, pb] = find(b);
+        if (ra == rb) {
+            return (pa ^ pb) == differ;                    // consistent with what we know?
+        }
+        parent[rb] = ra;
+        rel[rb] = pa ^ pb ^ differ;
+        return true;
+    }
+};
 ```
 
 **Rollback**, for when you need to undo unions. Skip path compression, record every change on a stack, and pop to undo. Each operation becomes $\mathcal{O}(\log n)$ rather than nearly constant, which is the price of being able to go back. This is what "DSU on tree" and offline dynamic connectivity are built on.
@@ -251,7 +354,7 @@ class DSUParity:
 - Union-find stores each group as a tree named by its root. `union` is one pointer change, `find` is a walk up.
 - Two one-line optimisations do all the work: hang the smaller tree under the larger, and point nodes at their grandparents while walking. Skip either and it degrades to a linked list.
 - The real cost involves the inverse Ackermann function, which is under 5 for any storable `n`. Treat it as constant.
-- `union` returning false means the two were already connected, which is a cycle test you get for free.
+- `unite` returning false means the two were already connected, which is a cycle test you get for free.
 - Kruskal's MST is: sort the edges, take each one whose endpoints are in different components, stop at `V - 1`. Four lines on top of union-find.
 - Greedy is correct because of the cut property, and the proof is an exchange argument: adding the cheapest crossing edge creates a cycle you can break at something no cheaper.
 - Prim's is Dijkstra with distance-from-the-tree. Kruskal for sparse graphs and for disconnected input, Prim for dense.

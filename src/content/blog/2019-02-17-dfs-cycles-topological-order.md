@@ -21,30 +21,39 @@ math: true
 
 Recursive, which is how DFS wants to be written:
 
-```python
-def dfs(g, u, seen):
-    seen.add(u)
-    for v in g[u]:
-        if v not in seen:
-            dfs(g, v, seen)
+```cpp
+void dfs(const vector<vector<int>>& g, int u, vector<bool>& seen) {
+    seen[u] = true;
+    for (int v : g[u]) {
+        if (!seen[v]) {
+            dfs(g, v, seen);
+        }
+    }
+}
 ```
 
 Iterative, for when the graph is deeper than your stack:
 
-```python
-def dfs_iter(g, start):
-    seen = {start}
-    stack = [start]
-    while stack:
-        u = stack.pop()
-        for v in g[u]:
-            if v not in seen:
-                seen.add(v)
-                stack.append(v)
-    return seen
+```cpp
+vector<bool> dfs_iter(const vector<vector<int>>& g, int start) {
+    vector<bool> seen(g.size(), false);
+    seen[start] = true;
+    vector<int> stk{start};                  // a vector used as the stack
+    while (!stk.empty()) {
+        int u = stk.back();
+        stk.pop_back();
+        for (int v : g[u]) {
+            if (!seen[v]) {
+                seen[v] = true;
+                stk.push_back(v);
+            }
+        }
+    }
+    return seen;
+}
 ```
 
-Both are $\mathcal{O}(V + E)$. And with `V = 200,000` the recursive one will overflow Python's stack, so raise the limit or use the iterative form. [Part 7](/posts/2017/07/recursion-and-backtracking/) has the full discussion.
+Both are $\mathcal{O}(V + E)$. And with `V = 200,000` the recursive one can overflow the call stack, because the usual 1 MB to 8 MB of stack space does not hold 200,000 nested frames, so raise the stack limit with `ulimit -s` or use the iterative form. [Part 7](/posts/2017/07/recursion-and-backtracking/) has the full discussion.
 
 ```
         1 --- 2 --- 5
@@ -59,14 +68,18 @@ Both are $\mathcal{O}(V + E)$. And with `V = 200,000` the recursive one will ove
 
 Here is the actual difference. In DFS, each vertex has two timestamps: when you **entered** it and when you **left** it, having finished everything below.
 
-```python
-def dfs_times(g, u, seen, enter, leave, clock):
-    seen.add(u)
-    enter[u] = clock[0]; clock[0] += 1
-    for v in g[u]:
-        if v not in seen:
-            dfs_times(g, v, seen, enter, leave, clock)
-    leave[u] = clock[0]; clock[0] += 1
+```cpp
+void dfs_times(const vector<vector<int>>& g, int u, vector<bool>& seen,
+               vector<int>& enter, vector<int>& leave, int& clock) {
+    seen[u] = true;
+    enter[u] = clock++;
+    for (int v : g[u]) {
+        if (!seen[v]) {
+            dfs_times(g, v, seen, enter, leave, clock);
+        }
+    }
+    leave[u] = clock++;
+}
 ```
 
 Those two numbers nest: if `v` is a descendant of `u` in the search, then `u`'s interval strictly contains `v`'s.
@@ -84,22 +97,30 @@ That nesting is the source of everything else in this post. BFS has no equivalen
 
 The simplest use. Run DFS from every vertex not yet seen; each run covers exactly one component.
 
-```python
-def components(g, n):
-    seen, count = set(), 0
-    for s in range(n):
-        if s in seen:
-            continue
-        count += 1
-        stack = [s]
-        seen.add(s)
-        while stack:
-            u = stack.pop()
-            for v in g[u]:
-                if v not in seen:
-                    seen.add(v)
-                    stack.append(v)
-    return count
+```cpp
+int components(const vector<vector<int>>& g, int n) {
+    vector<bool> seen(n, false);
+    int count = 0;
+    for (int s = 0; s < n; s++) {
+        if (seen[s]) {
+            continue;
+        }
+        count++;
+        vector<int> stk{s};
+        seen[s] = true;
+        while (!stk.empty()) {
+            int u = stk.back();
+            stk.pop_back();
+            for (int v : g[u]) {
+                if (!seen[v]) {
+                    seen[v] = true;
+                    stk.push_back(v);
+                }
+            }
+        }
+    }
+    return count;
+}
 ```
 
 The outer loop is the point. A graph is not required to be connected, and forgetting to restart is one of the most common graph bugs there is. BFS would do this job equally well; components need reachability, not depth.
@@ -114,22 +135,34 @@ Now something DFS does and BFS cannot do cleanly. The two cases are genuinely di
 
 A cycle exists if DFS ever reaches a vertex it has already seen, *other than* the one it came from.
 
-```python
-def has_cycle_undirected(g, n):
-    seen = set()
+```cpp
+bool has_cycle_undirected(const vector<vector<int>>& g, int n) {
+    vector<bool> seen(n, false);
 
-    def go(u, parent):
-        seen.add(u)
-        for v in g[u]:
-            if v == parent:
-                continue                 # the edge we arrived on
-            if v in seen:
-                return True              # a second way to reach v
-            if go(v, u):
-                return True
-        return False
+    // self is the lambda itself, which is how a lambda recurses
+    auto go = [&](auto&& self, int u, int parent) -> bool {
+        seen[u] = true;
+        for (int v : g[u]) {
+            if (v == parent) {
+                continue;                // the edge we arrived on
+            }
+            if (seen[v]) {
+                return true;             // a second way to reach v
+            }
+            if (self(self, v, u)) {
+                return true;
+            }
+        }
+        return false;
+    };
 
-    return any(go(s, None) for s in range(n) if s not in seen)
+    for (int s = 0; s < n; s++) {
+        if (!seen[s] && go(go, s, -1)) {  // -1 stands for "no parent"
+            return true;
+        }
+    }
+    return false;
+}
 ```
 
 The `v == parent` skip is what stops every single edge from looking like a two-vertex cycle. If the graph can have parallel edges, skip by edge identity instead of by vertex, or the check will miss a genuine two-edge cycle.
@@ -146,23 +179,33 @@ Three colours:
 
 An edge to a grey vertex is a **back edge**, and a back edge is a cycle.
 
-```python
-WHITE, GREY, BLACK = 0, 1, 2
+```cpp
+const int WHITE = 0, GREY = 1, BLACK = 2;
 
-def has_cycle_directed(g, n):
-    colour = [WHITE] * n
+bool has_cycle_directed(const vector<vector<int>>& g, int n) {
+    vector<int> colour(n, WHITE);
 
-    def go(u):
-        colour[u] = GREY
-        for v in g[u]:
-            if colour[v] == GREY:
-                return True              # back edge: cycle
-            if colour[v] == WHITE and go(v):
-                return True
-        colour[u] = BLACK                # finished, off the path
-        return False
+    auto go = [&](auto&& self, int u) -> bool {
+        colour[u] = GREY;
+        for (int v : g[u]) {
+            if (colour[v] == GREY) {
+                return true;             // back edge: cycle
+            }
+            if (colour[v] == WHITE && self(self, v)) {
+                return true;
+            }
+        }
+        colour[u] = BLACK;               // finished, off the path
+        return false;
+    };
 
-    return any(colour[s] == WHITE and go(s) for s in range(n))
+    for (int s = 0; s < n; s++) {
+        if (colour[s] == WHITE && go(go, s)) {
+            return true;
+        }
+    }
+    return false;
+}
 ```
 
 ```
@@ -187,24 +230,34 @@ A **topological order** of a directed acyclic graph is an ordering of vertices w
 
 Push a vertex onto a list when you **finish** it, then reverse the list.
 
-```python
-def topo_dfs(g, n):
-    colour = [0] * n            # 0 white, 1 grey, 2 black
-    order = []
+```cpp
+vector<int> topo_dfs(const vector<vector<int>>& g, int n) {
+    vector<int> colour(n, 0);            // 0 white, 1 grey, 2 black
+    vector<int> order;
 
-    def go(u):
-        colour[u] = 1
-        for v in g[u]:
-            if colour[v] == 1:
-                raise ValueError('graph has a cycle')
-            if colour[v] == 0:
-                go(v)
-        colour[u] = 2
-        order.append(u)         # finished: everything after u is already in
-    for s in range(n):
-        if colour[s] == 0:
-            go(s)
-    return order[::-1]
+    auto go = [&](auto&& self, int u) -> bool {   // returns false on a cycle
+        colour[u] = 1;
+        for (int v : g[u]) {
+            if (colour[v] == 1) {
+                return false;            // grey neighbour: the graph has a cycle
+            }
+            if (colour[v] == 0 && !self(self, v)) {
+                return false;
+            }
+        }
+        colour[u] = 2;
+        order.push_back(u);              // finished: everything after u is already in
+        return true;
+    };
+
+    for (int s = 0; s < n; s++) {
+        if (colour[s] == 0 && !go(go, s)) {
+            return {};                   // an empty result means "cyclic"
+        }
+    }
+    reverse(order.begin(), order.end());
+    return order;
+}
 ```
 
 Why does that work? When `u` finishes, every vertex reachable from `u` has already finished, so every one of them is already in `order` before `u`. Reverse the list and `u` comes before all of them, which is exactly what an edge pointing forwards means. That is the timestamp nesting from section 2 doing the work, and it is why BFS cannot do this directly.
@@ -213,29 +266,40 @@ Why does that work? When `u` finishes, every vertex reachable from `u` has alrea
 
 Kahn's algorithm. Repeatedly take a vertex with no remaining incoming edges.
 
-```python
-from collections import deque
-
-def topo_kahn(g, n):
-    indeg = [0] * n
-    for u in range(n):
-        for v in g[u]:
-            indeg[v] += 1
-    q = deque(u for u in range(n) if indeg[u] == 0)
-    order = []
-    while q:
-        u = q.popleft()
-        order.append(u)
-        for v in g[u]:
-            indeg[v] -= 1
-            if indeg[v] == 0:
-                q.append(v)
-    if len(order) != n:
-        raise ValueError('graph has a cycle')
-    return order
+```cpp
+vector<int> topo_kahn(const vector<vector<int>>& g, int n) {
+    vector<int> indeg(n, 0);
+    for (int u = 0; u < n; u++) {
+        for (int v : g[u]) {
+            indeg[v]++;
+        }
+    }
+    queue<int> q;
+    for (int u = 0; u < n; u++) {
+        if (indeg[u] == 0) {
+            q.push(u);
+        }
+    }
+    vector<int> order;
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+        order.push_back(u);
+        for (int v : g[u]) {
+            indeg[v]--;
+            if (indeg[v] == 0) {
+                q.push(v);
+            }
+        }
+    }
+    if ((int)order.size() != n) {
+        return {};                       // short output means the graph has a cycle
+    }
+    return order;
+}
 ```
 
-Two things I like about this version. It detects cycles for free: if a cycle exists, its vertices never reach in-degree zero, so the output is short. And swapping the deque for a **heap** gives you the lexicographically smallest valid order, which problems ask for surprisingly often.
+Two things I like about this version. It detects cycles for free: if a cycle exists, its vertices never reach in-degree zero, so the output is short. And swapping the `std::queue` for a **heap**, a `priority_queue<int, vector<int>, greater<int>>`, gives you the lexicographically smallest valid order, which problems ask for surprisingly often.
 
 ```
   courses:  maths -> physics -> engineering
@@ -257,17 +321,44 @@ Worth naming explicitly, because it connects two things that look unrelated. Onc
 
 Longest path in a DAG, which is NP-hard in a general graph and linear here:
 
-```python
-def longest_path(g, n):
-    order = topo_kahn(g, n)
-    dp = [0] * n
-    for u in reversed(order):            # process after its successors
-        for v in g[u]:
-            dp[u] = max(dp[u], dp[v] + 1)
-    return max(dp)
+```cpp
+int longest_path(const vector<vector<int>>& g, int n) {
+    vector<int> indeg(n, 0);                     // Kahn's order, as in section 5
+    for (int u = 0; u < n; u++) {
+        for (int v : g[u]) {
+            indeg[v]++;
+        }
+    }
+    queue<int> q;
+    for (int u = 0; u < n; u++) {
+        if (indeg[u] == 0) {
+            q.push(u);
+        }
+    }
+    vector<int> order;
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+        order.push_back(u);
+        for (int v : g[u]) {
+            if (--indeg[v] == 0) {
+                q.push(v);
+            }
+        }
+    }
+
+    vector<int> dp(n, 0);
+    for (int i = (int)order.size() - 1; i >= 0; i--) {   // process after its successors
+        int u = order[i];
+        for (int v : g[u]) {
+            dp[u] = max(dp[u], dp[v] + 1);
+        }
+    }
+    return dp.empty() ? 0 : *max_element(dp.begin(), dp.end());
+}
 ```
 
-Counting paths between two vertices is the same shape with `+` instead of `max`. This is [part 9's four questions](/posts/2018/02/dp-as-a-table/) again, with question four, the order, answered by the topological sort.
+Counting paths between two vertices is the same shape with `+` instead of `max`, but make the DP table `long long` or reduce it modulo whatever the problem asks for, because path counts grow exponentially and a 32-bit `int` overflows silently. This is [part 9's four questions](/posts/2018/02/dp-as-a-table/) again, with question four, the order, answered by the topological sort.
 
 ## 7. Strongly connected components, briefly
 
@@ -275,39 +366,55 @@ In a directed graph, `u` and `v` are **strongly connected** if each can reach th
 
 Kosaraju's algorithm is two passes of DFS:
 
-```python
-def kosaraju(g, n):
-    order, seen = [], set()
+```cpp
+pair<vector<int>, int> kosaraju(const vector<vector<int>>& g, int n) {
+    vector<int> order;
+    vector<bool> seen(n, false);
 
-    def first(u):                          # pass one: finish times
-        seen.add(u)
-        for v in g[u]:
-            if v not in seen:
-                first(v)
-        order.append(u)
+    auto first = [&](auto&& self, int u) -> void {       // pass one: finish times
+        seen[u] = true;
+        for (int v : g[u]) {
+            if (!seen[v]) {
+                self(self, v);
+            }
+        }
+        order.push_back(u);
+    };
 
-    for s in range(n):
-        if s not in seen:
-            first(s)
+    for (int s = 0; s < n; s++) {
+        if (!seen[s]) {
+            first(first, s);
+        }
+    }
 
-    rg = {u: [] for u in range(n)}         # reverse every edge
-    for u in range(n):
-        for v in g[u]:
-            rg[v].append(u)
+    vector<vector<int>> rg(n);                           // reverse every edge
+    for (int u = 0; u < n; u++) {
+        for (int v : g[u]) {
+            rg[v].push_back(u);
+        }
+    }
 
-    comp, seen2 = [-1] * n, 0
+    vector<int> comp(n, -1);
+    int seen2 = 0;
 
-    def second(u, label):                  # pass two: on the reverse graph
-        comp[u] = label
-        for v in rg[u]:
-            if comp[v] == -1:
-                second(v, label)
+    auto second = [&](auto&& self, int u, int label) -> void {   // pass two: on the reverse graph
+        comp[u] = label;
+        for (int v : rg[u]) {
+            if (comp[v] == -1) {
+                self(self, v, label);
+            }
+        }
+    };
 
-    for u in reversed(order):
-        if comp[u] == -1:
-            second(u, seen2)
-            seen2 += 1
-    return comp, seen2
+    for (int i = (int)order.size() - 1; i >= 0; i--) {
+        int u = order[i];
+        if (comp[u] == -1) {
+            second(second, u, seen2);
+            seen2++;
+        }
+    }
+    return {comp, seen2};
+}
 ```
 
 Two DFS passes, $\mathcal{O}(V + E)$. I am not going to prove it here; the thing to take away is that it exists, it is linear, and the reason it works is once again about finish times. Tarjan's algorithm does the same in one pass and is shorter to run but harder to remember.

@@ -20,18 +20,22 @@ math: true
 
 A sorted array, and you want the index of `target`.
 
-```python
-def find(a, target):
-    lo, hi = 0, len(a) - 1
-    while lo <= hi:
-        mid = (lo + hi) // 2
-        if a[mid] == target:
-            return mid
-        if a[mid] < target:
-            lo = mid + 1
-        else:
-            hi = mid - 1
-    return -1
+```cpp
+int find(const vector<int>& a, int target) {
+    int lo = 0, hi = (int)a.size() - 1;
+    while (lo <= hi) {
+        int mid = (lo + hi) / 2;
+        if (a[mid] == target) {
+            return mid;
+        }
+        if (a[mid] < target) {
+            lo = mid + 1;
+        } else {
+            hi = mid - 1;
+        }
+    }
+    return -1;
+}
 ```
 
 $\mathcal{O}(\log n)$: the range halves each pass. On a million elements that is twenty comparisons.
@@ -40,38 +44,60 @@ Fine. Now let me talk about the bugs, because this loop is famously easy to get 
 
 ## 2. The three bugs, and how to stop having them
 
-**Bug one: overflow.** `(lo + hi) // 2` can overflow in a fixed-width integer language. In C++ with `int`, `lo + hi` exceeds two billion long before `hi` does. Write `lo + (hi - lo) / 2` instead. Python has arbitrary-size integers so it does not matter there, but the habit costs nothing.
+**Bug one: overflow.** `(lo + hi) / 2` can overflow, because every C++ integer type is fixed width. In C++ with `int`, `lo + hi` exceeds two billion long before `hi` does. Write `lo + (hi - lo) / 2` instead. Switching to `long long` only moves the cliff: bounds past $2^{62}$ overflow the sum just the same, and signed overflow is undefined behaviour, so the compiler owes you nothing at all, not even a wrong answer you can reproduce.
 
 **Bug two: the infinite loop.** If you write `lo = mid` instead of `lo = mid + 1`, and `mid` happens to equal `lo`, nothing changes and the loop spins forever. The rule: **every branch must shrink the range.**
 
-**Bug three: off by one at the boundary.** `while lo <= hi` with `hi = len(a) - 1`, or `while lo < hi` with `hi = len(a)`. Both work. Mixing them does not.
+**Bug three: off by one at the boundary.** `while lo <= hi` with `hi = (int)a.size() - 1`, or `while lo < hi` with `hi = (int)a.size()`. Take the cast seriously: `a.size()` is unsigned, so `a.size() - 1` on an empty vector wraps to a huge positive value instead of `-1`. Both work. Mixing them does not.
 
 Here is how I stopped having these bugs: I stopped writing that loop. Instead I write one shape, always, and it answers a different question.
 
-```python
-def first_true(lo, hi, ok):
-    """Smallest x in [lo, hi] with ok(x) true.
-    Requires: ok is false, false, ..., false, true, true, ..., true.
-    Returns hi + 1 if ok is never true."""
-    while lo < hi:
-        mid = lo + (hi - lo) // 2
-        if ok(mid):
-            hi = mid            # mid might be the answer, keep it
-        else:
-            lo = mid + 1        # mid is not, discard it
-    return lo
+```cpp
+// Smallest x in [lo, hi] with ok(x) true.
+// Requires: ok is false, false, ..., false, true, true, ..., true.
+// Returns hi + 1 if ok is never true.
+template <class Ok>
+long long first_true(long long lo, long long hi, Ok ok) {
+    while (lo < hi) {
+        long long mid = lo + (hi - lo) / 2;
+        if (ok(mid)) {
+            hi = mid;               // mid might be the answer, keep it
+        } else {
+            lo = mid + 1;           // mid is not, discard it
+        }
+    }
+    return lo;
+}
 ```
 
 One loop, `lo < hi`, `hi = mid` on true and `lo = mid + 1` on false. It always terminates because `mid < hi` whenever `lo < hi`, so the `hi = mid` branch strictly shrinks the range too. I have written this function from memory for eight years and it has never been wrong, because there is only one version of it to remember.
 
 Finding a value becomes a special case:
 
-```python
-i = first_true(0, len(a), lambda i: i < len(a) and a[i] >= target)
-found = i < len(a) and a[i] == target
+```cpp
+template <class Ok>
+long long first_true(long long lo, long long hi, Ok ok) {
+    while (lo < hi) {
+        long long mid = lo + (hi - lo) / 2;
+        if (ok(mid)) {
+            hi = mid;
+        } else {
+            lo = mid + 1;
+        }
+    }
+    return lo;
+}
+
+// Index of target in the sorted array a, or -1 if it is not there.
+long long find_via_first_true(const vector<int>& a, int target) {
+    long long n = (long long)a.size();
+    long long i = first_true(0, n, [&](long long j) { return j < n && a[j] >= target; });
+    bool found = i < n && a[i] == target;
+    return found ? i : -1;
+}
 ```
 
-And the standard library already has it: `bisect_left` in Python, `lower_bound` in C++.
+And the standard library already has it: `std::lower_bound` for the first element not less than `target`, and `std::upper_bound` for the first that is strictly greater.
 
 ## 3. The idea that matters: search the answer, not the data
 
@@ -103,26 +129,45 @@ Now apply the shift. **Guess the answer.** Suppose the answer is `x`, meaning "n
 
 That test is easy and greedy: walk left to right, keep adding to the current part, and start a new part the moment adding would exceed `x`.
 
-```python
-def parts_needed(a, x):
-    """How many parts, if no part may exceed x."""
-    parts, running = 1, 0
-    for v in a:
-        if running + v > x:
-            parts += 1
-            running = v
-        else:
-            running += v
-    return parts
+```cpp
+template <class Ok>
+long long first_true(long long lo, long long hi, Ok ok) {
+    while (lo < hi) {
+        long long mid = lo + (hi - lo) / 2;
+        if (ok(mid)) {
+            hi = mid;
+        } else {
+            lo = mid + 1;
+        }
+    }
+    return lo;
+}
 
-def min_largest_part(a, k):
-    lo, hi = max(a), sum(a)        # the answer is somewhere in here
-    return first_true(lo, hi, lambda x: parts_needed(a, x) <= k)
+// How many parts, if no part may exceed x.
+int parts_needed(const vector<int>& a, long long x) {
+    int parts = 1;
+    long long running = 0;
+    for (int v : a) {
+        if (running + v > x) {
+            parts += 1;
+            running = v;
+        } else {
+            running += v;
+        }
+    }
+    return parts;
+}
+
+long long min_largest_part(const vector<int>& a, int k) {
+    long long lo = *max_element(a.begin(), a.end());
+    long long hi = accumulate(a.begin(), a.end(), 0LL);      // the answer is somewhere in here
+    return first_true(lo, hi, [&](long long x) { return parts_needed(a, x) <= k; });
+}
 ```
 
 Check the two conditions.
 
-**The range.** The answer cannot be less than the largest single element, because that element sits in some part on its own at best. It cannot be more than the total, because one part containing everything is always allowed. So `[max(a), sum(a)]`.
+**The range.** The answer cannot be less than the largest single element, because that element sits in some part on its own at best. It cannot be more than the total, because one part containing everything is always allowed. So `[*max_element(a.begin(), a.end()), accumulate(a.begin(), a.end(), 0LL)]`. Note the `0LL`: seed `accumulate` with a plain `0` and it adds in `int`, overflowing at two billion long before your sum of $10^{14}$.
 
 **Monotonicity.** If a budget of `x` needs at most `k` parts, then a budget of `x + 1` needs at most as many, because every cut that was legal is still legal. So the test goes false, false, ..., true, true. Monotone.
 
@@ -150,8 +195,8 @@ Once you have the habit, you start seeing it constantly. A partial list, with th
 | Minimise the largest part of a split | the largest allowed part sum | greedy: how many parts does budget `x` need |
 | Ship packages in `d` days | daily capacity | greedy: how many days at capacity `x` |
 | Place `k` cows in stalls, maximise the minimum gap | the minimum gap | greedy: how many cows fit with gap at least `x` |
-| Cut `k` planks of equal length from logs | the plank length | sum of `log // x` over all logs |
-| Smallest `x` with $x^2 \ge n$ | the root | `x * x >= n`, no floating point needed |
+| Cut `k` planks of equal length from logs | the plank length | sum of `log / x` over all logs, integer division |
+| Smallest `x` with $x^2 \ge n$ | the root | `x * x >= n`, no floating point needed, but do the multiply in `long long` (or `__int128`) so the square cannot overflow |
 | Minimum time for `m` workers to finish | the time | how much work is done in time `x` |
 | Median of two sorted arrays | the split point | count of elements below |
 
@@ -161,15 +206,19 @@ The pattern in the middle column is always the same: **the thing being minimised
 
 Sometimes the answer is not an integer. The loop changes shape: you cannot iterate until `lo == hi`, because floating point may never get there.
 
-```python
-def first_true_real(lo, hi, ok, iterations=100):
-    for _ in range(iterations):
-        mid = (lo + hi) / 2
-        if ok(mid):
-            hi = mid
-        else:
-            lo = mid
-    return lo
+```cpp
+template <class Ok>
+double first_true_real(double lo, double hi, Ok ok, int iterations = 100) {
+    for (int i = 0; i < iterations; i++) {
+        double mid = (lo + hi) / 2;
+        if (ok(mid)) {
+            hi = mid;
+        } else {
+            lo = mid;
+        }
+    }
+    return lo;
+}
 ```
 
 Fix the iteration count instead of testing for equality. Each pass halves the interval, so 100 passes shrinks it by $2^{-100}$, which is far below any precision you will ever be asked for. 100 iterations of a cheap test is nothing, and it removes an entire category of "it hangs on some inputs" bug.
@@ -184,12 +233,12 @@ Do not write `while hi - lo > 1e-9`. Whether that terminates depends on the magn
 
 **The test is expensive.** The whole cost is (cost of test) × $\log(\text{range})$. If the test is $\mathcal{O}(n \log n)$ and the range is $10^{18}$, you have $60 n \log n$, which may be too slow. Usually the test is a linear greedy walk, which is the ideal case.
 
-**Integer division rounding.** With `lo + (hi - lo) // 2` and negative bounds, Python's floor division rounds toward negative infinity and C++ truncates toward zero. If your range can go negative, shift it to be non-negative or be very careful.
+**Integer division rounding.** C++ integer division truncates toward zero, so `(lo + hi) / 2` rounds *up* once the sum is negative. With `lo = -3` and `hi = -2` the midpoint comes out as `-2`, which is `hi`, so the `hi = mid` branch changes nothing and the loop spins forever. `lo + (hi - lo) / 2` divides a difference that is always non-negative, so it rounds down and stays correct for negative bounds too. One more reason to write it that way.
 
 ## The short version
 
 - Learn one binary search: `first_true(lo, hi, ok)`, with `lo < hi`, `hi = mid` on true and `lo = mid + 1` on false. One version to remember means no boundary bugs.
-- Use `lo + (hi - lo) // 2`, never `(lo + hi) // 2`, so the habit survives a language with fixed-width integers.
+- Use `lo + (hi - lo) / 2`, never `(lo + hi) / 2`: the sum of two large bounds overflows a fixed-width `int` or `long long`, and the difference form is also the one that survives negative bounds.
 - The real technique is binary search on the *answer*: guess the result, test it with a yes-or-no question, halve the range. No array and no sorting required.
 - It needs exactly two things: a range of candidate answers, and a test that is monotone. Monotonicity is the whole condition, and a failure here is almost always the reason it does not work.
 - "Minimise the maximum" and "maximise the minimum" in a problem statement are close to a guarantee that this applies.

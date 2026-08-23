@@ -9,7 +9,7 @@ tags:
   - "algorithms"
   - "pointers"
   - "linked lists"
-  - "c++"
+  - "cpp"
   - "problem solving"
 series: "Problem Solving From Zero"
 seriesOrder: 5

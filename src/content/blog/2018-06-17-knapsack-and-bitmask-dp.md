@@ -32,17 +32,21 @@ So, the [four questions](/posts/2018/02/dp-as-a-table/).
 
 For each item there are two choices: skip it, or take it if it fits.
 
-```python
-def knapsack(weights, values, W):
-    n = len(weights)
-    dp = [[0] * (W + 1) for _ in range(n + 1)]
-    for i in range(1, n + 1):
-        wi, vi = weights[i - 1], values[i - 1]
-        for w in range(W + 1):
-            dp[i][w] = dp[i - 1][w]                          # skip
-            if wi <= w:
-                dp[i][w] = max(dp[i][w], dp[i - 1][w - wi] + vi)   # take
-    return dp[n][W]
+```cpp
+int knapsack(const vector<int>& weights, const vector<int>& values, int W) {
+    int n = (int)weights.size();
+    vector<vector<int>> dp(n + 1, vector<int>(W + 1, 0));
+    for (int i = 1; i <= n; ++i) {
+        int wi = weights[i - 1], vi = values[i - 1];
+        for (int w = 0; w <= W; ++w) {
+            dp[i][w] = dp[i - 1][w];                         // skip
+            if (wi <= w) {
+                dp[i][w] = max(dp[i][w], dp[i - 1][w - wi] + vi);   // take
+            }
+        }
+    }
+    return dp[n][W];
+}
 ```
 
 $\mathcal{O}(nW)$ time and space.
@@ -64,13 +68,17 @@ $\mathcal{O}(nW)$ time and space.
 
 `dp[i]` only reads `dp[i-1]`, so one row is enough. But there is a trap, and it is the single most instructive detail in this whole post.
 
-```python
-def knapsack_1d(weights, values, W):
-    dp = [0] * (W + 1)
-    for wi, vi in zip(weights, values):
-        for w in range(W, wi - 1, -1):        # DOWNWARD
-            dp[w] = max(dp[w], dp[w - wi] + vi)
-    return dp[W]
+```cpp
+int knapsack_1d(const vector<int>& weights, const vector<int>& values, int W) {
+    vector<int> dp(W + 1, 0);
+    for (size_t i = 0; i < weights.size(); ++i) {
+        int wi = weights[i], vi = values[i];
+        for (int w = W; w >= wi; --w) {        // DOWNWARD
+            dp[w] = max(dp[w], dp[w - wi] + vi);
+        }
+    }
+    return dp[W];
+}
 ```
 
 The inner loop goes **downward**. Here is why. When we compute `dp[w]`, we want `dp[w - wi]` to be the value from the *previous* item, because each item may be used once. Going downward, `dp[w - wi]` is at a lower index that we have not touched yet this round, so it still holds the previous row. Going upward, we would already have updated it this round, and the item would be counted twice.
@@ -81,13 +89,17 @@ Which is a bug in the 0/1 problem and exactly the feature you want in the next o
 
 Same problem, but each item may be taken any number of times.
 
-```python
-def knapsack_unbounded(weights, values, W):
-    dp = [0] * (W + 1)
-    for wi, vi in zip(weights, values):
-        for w in range(wi, W + 1):            # UPWARD
-            dp[w] = max(dp[w], dp[w - wi] + vi)
-    return dp[W]
+```cpp
+int knapsack_unbounded(const vector<int>& weights, const vector<int>& values, int W) {
+    vector<int> dp(W + 1, 0);
+    for (size_t i = 0; i < weights.size(); ++i) {
+        int wi = weights[i], vi = values[i];
+        for (int w = wi; w <= W; ++w) {        // UPWARD
+            dp[w] = max(dp[w], dp[w - wi] + vi);
+        }
+    }
+    return dp[W];
+}
 ```
 
 The only change is the loop direction. Upward, `dp[w - wi]` has already been updated with this item, so the item can be reused, which is precisely the definition of unbounded.
@@ -107,28 +119,34 @@ Every one of these is the same recurrence with a different combining operation o
 
 **Subset sum.** Is there a subset that sums to exactly `T`? Same as 0/1 with values equal to weights, but boolean.
 
-```python
-def subset_sum(a, T):
-    dp = [False] * (T + 1)
-    dp[0] = True                              # the empty subset
-    for x in a:
-        for t in range(T, x - 1, -1):
-            dp[t] = dp[t] or dp[t - x]
-    return dp[T]
+```cpp
+bool subset_sum(const vector<int>& a, int T) {
+    vector<bool> dp(T + 1, false);
+    dp[0] = true;                             // the empty subset
+    for (int x : a) {
+        for (int t = T; t >= x; --t) {
+            dp[t] = dp[t] || dp[t - x];
+        }
+    }
+    return dp[T];
+}
 ```
 
-**Partition into two equal halves.** Subset sum with `T = total // 2`, after checking the total is even. A problem that sounds nothing like knapsack and is exactly knapsack.
+**Partition into two equal halves.** Subset sum with `T = total / 2`, after checking the total is even. In C++ `/` between two ints already truncates, and `//` would start a comment rather than divide. A problem that sounds nothing like knapsack and is exactly knapsack.
 
 **Counting the ways to make change.** Replace `max` with `+` and you are counting instead of optimising.
 
-```python
-def count_change(amount, coins):
-    dp = [0] * (amount + 1)
-    dp[0] = 1                                 # one way to make nothing
-    for c in coins:                           # coins outer: combinations
-        for a in range(c, amount + 1):
-            dp[a] += dp[a - c]
-    return dp[amount]
+```cpp
+long long count_change(int amount, const vector<int>& coins) {
+    vector<long long> dp(amount + 1, 0);      // counts outgrow 32 bits quickly
+    dp[0] = 1;                                // one way to make nothing
+    for (int c : coins) {                     // coins outer: combinations
+        for (int a = c; a <= amount; ++a) {
+            dp[a] += dp[a - c];
+        }
+    }
+    return dp[amount];
+}
 ```
 
 The loop nesting here decides what you are counting, and this catches people constantly:
@@ -144,17 +162,21 @@ Both are correct code. They answer different questions. Read the problem stateme
 
 **Bounded knapsack**, where item `i` may be taken up to `c[i]` times. The naive answer is to expand item `i` into `c[i]` copies and run 0/1, which costs $\mathcal{O}(W \sum c_i)$. The good answer is **binary splitting**: replace `c` copies with copies of size 1, 2, 4, 8, and a remainder, because any count up to `c` is a sum of those. That is $\mathcal{O}(W \sum \log c_i)$.
 
-```python
-def split_counts(count):
-    """1, 2, 4, ... and a remainder: any total up to count is reachable."""
-    out, k = [], 1
-    while k <= count:
-        out.append(k)
-        count -= k
-        k *= 2
-    if count:
-        out.append(count)
-    return out
+```cpp
+// 1, 2, 4, ... and a remainder: any total up to count is reachable.
+vector<int> split_counts(int count) {
+    vector<int> out;
+    int k = 1;
+    while (k <= count) {
+        out.push_back(k);
+        count -= k;
+        k *= 2;
+    }
+    if (count > 0) {
+        out.push_back(count);
+    }
+    return out;
+}
 ```
 
 Here is the family in one table:
@@ -163,7 +185,7 @@ Here is the family in one table:
 |---|---|---|---|
 | 0/1 knapsack, max value | `max` | down | `dp[0] = 0` |
 | Unbounded knapsack | `max` | up | `dp[0] = 0` |
-| Subset sum, feasibility | `or` | down | `dp[0] = True` |
+| Subset sum, feasibility | `\|\|` | down | `dp[0] = true` |
 | Count combinations | `+` | up, coins outer | `dp[0] = 1` |
 | Count permutations | `+` | up, amount outer | `dp[0] = 1` |
 | Minimum coins | `min` | up | `dp[0] = 0`, rest infinite |
@@ -187,14 +209,17 @@ If `n ≤ 20`, a set of items fits in a single integer. Bit `i` of the integer s
 
 The bit operations, since they are the whole vocabulary:
 
-```python
-mask | (1 << i)          # add item i
-mask & ~(1 << i)         # remove item i
-mask & (1 << i)          # is item i in the set (non-zero if yes)
-mask ^ (1 << i)          # toggle item i
-bin(mask).count('1')     # how many items (popcount)
-mask == (1 << n) - 1     # is the set complete
-sub = (sub - 1) & mask   # iterate submasks, from mask down to 0
+```cpp
+int bit_vocabulary(int mask, int i, int n, int sub) {
+    int added    = mask | (1 << i);            // add item i
+    int cleared  = mask & ~(1 << i);           // remove item i
+    int isIn     = mask & (1 << i);            // is item i in the set (non-zero if yes)
+    int toggled  = mask ^ (1 << i);            // toggle item i
+    int items    = __builtin_popcount(mask);   // how many items (popcount)
+    bool full    = mask == (1 << n) - 1;       // is the set complete
+    sub = (sub - 1) & mask;                    // iterate submasks, from mask down to 0
+    return added + cleared + isIn + toggled + items + full + sub;   // keeps every value used
+}
 ```
 
 ### The travelling salesman, properly
@@ -208,29 +233,41 @@ The insight: to decide where to go next, you do not need the *order* you visited
 3. **Base:** `dp[1][0] = 0`, only city 0 visited, standing at city 0.
 4. **Order:** increasing `mask`, since adding a city only ever increases the integer.
 
-```python
-def tsp(dist):
-    n = len(dist)
-    INF = float('inf')
-    dp = [[INF] * n for _ in range(1 << n)]
-    dp[1][0] = 0                                  # start at city 0
+```cpp
+long long tsp(const vector<vector<int>>& dist) {
+    int n = (int)dist.size();
+    const long long INF = LLONG_MAX / 4;          // headroom, so adding cannot overflow
+    vector<vector<long long>> dp(1 << n, vector<long long>(n, INF));
+    dp[1][0] = 0;                                 // start at city 0
 
-    for mask in range(1 << n):
-        for here in range(n):
-            if dp[mask][here] == INF:
-                continue
-            if not (mask & (1 << here)):
-                continue
-            for nxt in range(n):
-                if mask & (1 << nxt):             # already visited
-                    continue
-                new = mask | (1 << nxt)
-                cost = dp[mask][here] + dist[here][nxt]
-                if cost < dp[new][nxt]:
-                    dp[new][nxt] = cost
+    for (int mask = 0; mask < (1 << n); ++mask) {
+        for (int here = 0; here < n; ++here) {
+            if (dp[mask][here] == INF) {
+                continue;
+            }
+            if (!(mask & (1 << here))) {
+                continue;
+            }
+            for (int nxt = 0; nxt < n; ++nxt) {
+                if (mask & (1 << nxt)) {          // already visited
+                    continue;
+                }
+                int nmask = mask | (1 << nxt);    // `new` is a C++ keyword
+                long long cost = dp[mask][here] + dist[here][nxt];
+                if (cost < dp[nmask][nxt]) {
+                    dp[nmask][nxt] = cost;
+                }
+            }
+        }
+    }
 
-    full = (1 << n) - 1
-    return min(dp[full][c] + dist[c][0] for c in range(n))
+    int full = (1 << n) - 1;
+    long long best = INF;
+    for (int c = 0; c < n; ++c) {
+        best = min(best, dp[full][c] + dist[c][0]);
+    }
+    return best;
+}
 ```
 
 Cost: $2^n$ masks × `n` current cities × `n` next cities, so $\mathcal{O}(2^n n^2)$. At `n = 15` that is 7.4 million, instant. At `n = 20` it is a billion, borderline. Compare to $n!$ at 15: a trillion. The exponential did not go away, but $2^n$ is a very different exponential from $n!$.
@@ -247,24 +284,30 @@ Cost: $2^n$ masks × `n` current cities × `n` next cities, so $\mathcal{O}(2^n 
 
 The same shape solves a large family: `n` people, `n` jobs, a cost for each pairing, minimise the total. The state is the set of jobs already filled, and the number of people assigned so far is just the popcount of the mask, so it does not need its own dimension.
 
-```python
-def assignment(cost):
-    n = len(cost)
-    INF = float('inf')
-    dp = [INF] * (1 << n)
-    dp[0] = 0
-    for mask in range(1 << n):
-        if dp[mask] == INF:
-            continue
-        person = bin(mask).count('1')          # how many are placed already
-        if person == n:
-            continue
-        for job in range(n):
-            if mask & (1 << job):
-                continue
-            new = mask | (1 << job)
-            dp[new] = min(dp[new], dp[mask] + cost[person][job])
-    return dp[(1 << n) - 1]
+```cpp
+long long assignment(const vector<vector<int>>& cost) {
+    int n = (int)cost.size();
+    const long long INF = LLONG_MAX / 4;         // headroom, so adding cannot overflow
+    vector<long long> dp(1 << n, INF);
+    dp[0] = 0;
+    for (int mask = 0; mask < (1 << n); ++mask) {
+        if (dp[mask] == INF) {
+            continue;
+        }
+        int person = __builtin_popcount(mask);    // how many are placed already
+        if (person == n) {
+            continue;
+        }
+        for (int job = 0; job < n; ++job) {
+            if (mask & (1 << job)) {
+                continue;
+            }
+            int nmask = mask | (1 << job);       // `new` is a C++ keyword
+            dp[nmask] = min(dp[nmask], dp[mask] + cost[person][job]);
+        }
+    }
+    return dp[(1 << n) - 1];
+}
 ```
 
 $\mathcal{O}(2^n n)$, and the trick of reading one dimension of the state off the popcount instead of storing it is worth remembering. It is the difference between a table of $2^n$ and a table of $2^n \times n$.

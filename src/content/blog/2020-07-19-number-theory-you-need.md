@@ -21,39 +21,42 @@ math: true
 
 Is one number prime? Trial division up to the square root.
 
-```python
-def is_prime(n):
-    if n < 2:
-        return False
-    if n % 2 == 0:
-        return n == 2
-    d = 3
-    while d * d <= n:
-        if n % d == 0:
-            return False
-        d += 2
-    return True
+```cpp
+bool is_prime(long long n) {
+    if (n < 2)
+        return false;
+    if (n % 2 == 0)
+        return n == 2;
+    long long d = 3;
+    while (d * d <= n) {
+        if (n % d == 0)
+            return false;
+        d += 2;
+    }
+    return true;
+}
 ```
 
 $\mathcal{O}(\sqrt n)$. The square root bound is the only insight: if `n = a × b` with both above $\sqrt n$, then `a × b > n`, so at least one factor is at or below the root. Note `d * d <= n` rather than `d <= sqrt(n)`, which avoids floating point entirely and is therefore exactly right rather than nearly right.
 
 For *many* numbers, sieve instead.
 
-```python
-def sieve(n):
-    """Boolean array: prime[i] is True if i is prime, for i up to n."""
-    prime = [True] * (n + 1)
-    prime[0] = prime[1] = False
-    i = 2
-    while i * i <= n:
-        if prime[i]:
-            for j in range(i * i, n + 1, i):   # start at i*i, not 2*i
-                prime[j] = False
-        i += 1
-    return prime
+```cpp
+// Boolean array: prime[i] is true if i is prime, for i up to n.
+vector<bool> sieve(int n) {
+    vector<bool> prime(n + 1, true);
+    prime[0] = prime[1] = false;
+    for (int i = 2; i * i <= n; ++i) {
+        if (prime[i]) {
+            for (int j = i * i; j <= n; j += i)   // start at i*i, not 2*i
+                prime[j] = false;
+        }
+    }
+    return prime;
+}
 ```
 
-$\mathcal{O}(n \log \log n)$, which for any practical purpose is linear. At `n = 10^7` it runs in about a second in Python and instantly in C++.
+$\mathcal{O}(n \log \log n)$, which for any practical purpose is linear. At `n = 10^7` it runs in a small fraction of a second in C++, and `vector<bool>` packs the flags one to a bit, so the table costs about 1.2 MB rather than 10 MB.
 
 Two details that are not cosmetic. The inner loop starts at `i * i`, because every smaller multiple of `i` has a smaller prime factor and was already crossed out. And the outer loop stops at $\sqrt n$, because a composite number at most `n` has a factor at most $\sqrt n$.
 
@@ -61,44 +64,53 @@ Two details that are not cosmetic. The inner loop starts at `i * i`, because eve
 
 Instead of a boolean, store the **smallest prime factor** of each number. Same cost, and now factorising anything in the range is a walk down its factors.
 
-```python
-def smallest_factor(n):
-    spf = list(range(n + 1))
-    i = 2
-    while i * i <= n:
-        if spf[i] == i:                       # i is prime
-            for j in range(i * i, n + 1, i):
-                if spf[j] == j:               # not yet assigned
-                    spf[j] = i
-        i += 1
-    return spf
+```cpp
+vector<int> smallest_factor(int n) {
+    vector<int> spf(n + 1);
+    for (int i = 0; i <= n; ++i)
+        spf[i] = i;
+    for (int i = 2; i * i <= n; ++i) {
+        if (spf[i] == i) {                        // i is prime
+            for (int j = i * i; j <= n; j += i)
+                if (spf[j] == j)                  // not yet assigned
+                    spf[j] = i;
+        }
+    }
+    return spf;
+}
 
-def factorise(x, spf):
-    out = {}
-    while x > 1:
-        p = spf[x]
-        while x % p == 0:
-            out[p] = out.get(p, 0) + 1
-            x //= p
-    return out
+map<int, int> factorise(int x, const vector<int>& spf) {
+    map<int, int> out;
+    while (x > 1) {
+        int p = spf[x];
+        while (x % p == 0) {
+            out[p] += 1;
+            x /= p;
+        }
+    }
+    return out;
+}
 ```
 
 Factorising becomes $\mathcal{O}(\log x)$ instead of $\mathcal{O}(\sqrt x)$. When a problem asks you to factorise a hundred thousand numbers, this is the difference between passing and not.
 
 Without a sieve, single-number factorisation is trial division:
 
-```python
-def factorise_one(n):
-    out = {}
-    d = 2
-    while d * d <= n:
-        while n % d == 0:
-            out[d] = out.get(d, 0) + 1
-            n //= d
-        d += 1
-    if n > 1:
-        out[n] = out.get(n, 0) + 1            # the last prime factor
-    return out
+```cpp
+map<long long, int> factorise_one(long long n) {
+    map<long long, int> out;
+    long long d = 2;
+    while (d * d <= n) {
+        while (n % d == 0) {
+            out[d] += 1;
+            n /= d;
+        }
+        d += 1;
+    }
+    if (n > 1)
+        out[n] += 1;                          // the last prime factor
+    return out;
+}
 ```
 
 The `if n > 1` at the end is the line people drop. After the loop, whatever remains is either 1 or a prime larger than $\sqrt n$, and forgetting it loses that factor silently.
@@ -107,23 +119,28 @@ The `if n > 1` at the end is the line people drop. After the loop, whatever rema
 
 Euclid's algorithm, which is two thousand years old and still the answer.
 
-```python
-def gcd(a, b):
-    while b:
-        a, b = b, a % b
-    return a
+```cpp
+long long gcd(long long a, long long b) {
+    while (b) {
+        long long r = a % b;
+        a = b;
+        b = r;
+    }
+    return a;
+}
 ```
 
 $\mathcal{O}(\log \min(a, b))$. It works because any common divisor of `a` and `b` also divides `a % b`, so the pair `(b, a % b)` has the same common divisors and strictly smaller numbers.
 
 Least common multiple, with the division done first to avoid overflow:
 
-```python
-def lcm(a, b):
-    return a // gcd(a, b) * b                 # divide first
+```cpp
+long long lcm(long long a, long long b) {
+    return a / std::gcd(a, b) * b;            // divide first
+}
 ```
 
-`a * b // gcd(a, b)` gives the same answer and can overflow on the way in a fixed-width language. Divide first. The result is exact because `gcd(a, b)` divides `a`.
+`a * b / std::gcd(a, b)` gives the same answer, but C++ forms the product `a * b` first and it overflows `long long` once both values get large. Divide first. The result is exact because `gcd(a, b)` divides `a`.
 
 ### Extended Euclid, which gives you more
 
@@ -135,13 +152,14 @@ $$
 
 That is Bézout's identity, and the coefficients are what give modular inverses.
 
-```python
-def ext_gcd(a, b):
-    """Returns (g, x, y) with a*x + b*y = g = gcd(a, b)."""
-    if b == 0:
-        return a, 1, 0
-    g, x1, y1 = ext_gcd(b, a % b)
-    return g, y1, x1 - (a // b) * y1
+```cpp
+// Returns (g, x, y) with a*x + b*y = g = gcd(a, b).
+tuple<long long, long long, long long> ext_gcd(long long a, long long b) {
+    if (b == 0)
+        return {a, 1LL, 0LL};
+    auto [g, x1, y1] = ext_gcd(b, a % b);
+    return {g, y1, x1 - (a / b) * y1};
+}
 ```
 
 ## 3. Modular arithmetic
@@ -161,10 +179,12 @@ Addition, subtraction and multiplication all commute with taking the remainder. 
 
 Two traps before we get there.
 
-**Negative remainders.** In Python, `-5 % 3` is `1`, which is the mathematically conventional answer. In C, C++, Java and Go it is `-2`. If you port code between them, wrap subtraction:
+**Negative remainders.** In C++, `-5 % 3` is `-2`, not the mathematically conventional `1`. Integer division truncates toward zero, so `%` takes the sign of its left operand, and any subtraction under a modulus needs wrapping:
 
-```python
-result = (a - b) % MOD                        # Python: already correct
+```cpp
+long long sub_mod_naive(long long a, long long b, long long MOD) {
+    return (a - b) % MOD;                 // can come out negative when b > a
+}
 ```
 ```cpp
 long long sub_mod(long long a, long long b, long long MOD) {
@@ -172,25 +192,27 @@ long long sub_mod(long long a, long long b, long long MOD) {
 }
 ```
 
-**Overflow.** In C++ with 32-bit `int`, multiplying two numbers just under $10^9$ overflows. Use 64-bit types for the intermediate. Python has arbitrary precision, so this is one of the few places where Python is simply safer.
+**Overflow.** In C++ with 32-bit `int`, multiplying two numbers just under $10^9$ overflows. Use `long long` for the intermediate: two values below $10^9$ multiply to under $10^{18}$, which still fits comfortably. Watch the subtlety that `int * int` is computed as `int` even when you assign the result to a `long long`, so cast one operand before multiplying.
 
 ### Fast exponentiation
 
 Computing $a^b \bmod m$ by multiplying `b` times is $\mathcal{O}(b)$, and `b` can be $10^{18}$. Square instead: exponentiation by squaring, from [part 8](/posts/2017/07/recursion-and-backtracking/).
 
-```python
-def power(a, b, m):
-    result = 1
-    a %= m
-    while b:
-        if b & 1:
-            result = result * a % m
-        a = a * a % m
-        b >>= 1
-    return result
+```cpp
+long long power(long long a, long long b, long long m) {
+    long long result = 1;
+    a %= m;
+    while (b) {
+        if (b & 1)
+            result = result * a % m;
+        a = a * a % m;                        // needs 64 bits: m can be 1e9
+        b >>= 1;
+    }
+    return result;
+}
 ```
 
-$\mathcal{O}(\log b)$. Python has this built in as `pow(a, b, m)`, and it is faster than anything you write, so use it. Knowing the loop matters for other languages and for understanding what follows.
+$\mathcal{O}(\log b)$. The C++ standard library has no modular exponentiation of its own (`std::pow` is floating point and loses precision here), so this is a loop you write out once and keep in your template.
 
 ## 4. Modular inverses, and division
 
@@ -204,37 +226,61 @@ $$
 a^{m-1} \equiv 1 \pmod m \quad\Longrightarrow\quad a^{-1} \equiv a^{m-2} \pmod m
 $$
 
-```python
-MOD = 10**9 + 7
+```cpp
+const long long MOD = 1000000007;
 
-def inverse(a):
-    return pow(a, MOD - 2, MOD)               # MOD must be prime
+long long power(long long a, long long b, long long m) {   // no modpow in the library
+    long long result = 1;
+    a %= m;
+    while (b) {
+        if (b & 1)
+            result = result * a % m;
+        a = a * a % m;
+        b >>= 1;
+    }
+    return result;
+}
+
+long long inverse(long long a) {
+    return power(a, MOD - 2, MOD);            // MOD must be prime
+}
 ```
 
 One line, and the reason $10^9+7$ is chosen as the modulus everywhere: it is prime, so this works.
 
 **Extended Euclid, for any coprime modulus.**
 
-```python
-def inverse_any(a, m):
-    g, x, _ = ext_gcd(a % m, m)
-    if g != 1:
-        raise ValueError('no inverse: a and m share a factor')
-    return x % m
+```cpp
+tuple<long long, long long, long long> ext_gcd(long long a, long long b) {
+    if (b == 0)
+        return {a, 1LL, 0LL};
+    auto [g, x1, y1] = ext_gcd(b, a % b);
+    return {g, y1, x1 - (a / b) * y1};
+}
+
+// Returns the inverse of a modulo m, or -1 when a and m share a factor.
+long long inverse_any(long long a, long long m) {
+    long long g, x;
+    tie(g, x, ignore) = ext_gcd(((a % m) + m) % m, m);
+    if (g != 1)
+        return -1;                            // no inverse: a and m share a factor
+    return ((x % m) + m) % m;                 // force it non-negative
+}
 ```
 
-**All inverses from 1 to `n`, in linear time.** When you need many, this is much better than `n` calls to `pow`.
+**All inverses from 1 to `n`, in linear time.** When you need many, this is much better than `n` calls to `power`.
 
-```python
-def inverses_up_to(n, m):
-    inv = [0] * (n + 1)
-    inv[1] = 1
-    for i in range(2, n + 1):
-        inv[i] = (m - (m // i) * inv[m % i] % m) % m
-    return inv
+```cpp
+vector<long long> inverses_up_to(int n, long long m) {
+    vector<long long> inv(n + 1, 0);
+    inv[1] = 1;
+    for (int i = 2; i <= n; ++i)
+        inv[i] = (m - (m / i) * inv[m % i] % m) % m;   // the product needs 64 bits
+    return inv;
+}
 ```
 
-That recurrence is worth having in your notes even if you never derive it. It comes from writing `m = (m // i) * i + (m % i)`, taking it modulo `m`, and rearranging.
+That recurrence is worth having in your notes even if you never derive it. It comes from writing `m = (m / i) * i + (m % i)`, taking it modulo `m`, and rearranging.
 
 ## 5. Binomial coefficients modulo a prime
 
@@ -248,28 +294,44 @@ has a division in it, so we need inverses.
 
 Precompute factorials and their inverses once, then answer each query in constant time.
 
-```python
-MOD = 10**9 + 7
-N = 200_001
+```cpp
+const long long MOD = 1000000007;
+const int N = 200001;
 
-fact = [1] * N
-for i in range(1, N):
-    fact[i] = fact[i - 1] * i % MOD
+vector<long long> fact(N, 1);
+vector<long long> inv_fact(N, 1);
 
-inv_fact = [1] * N
-inv_fact[N - 1] = pow(fact[N - 1], MOD - 2, MOD)
-for i in range(N - 1, 0, -1):                 # backwards: one pow, not N
-    inv_fact[i - 1] = inv_fact[i] * i % MOD
+long long power(long long a, long long b, long long m) {
+    long long result = 1;
+    a %= m;
+    while (b) {
+        if (b & 1)
+            result = result * a % m;
+        a = a * a % m;
+        b >>= 1;
+    }
+    return result;
+}
 
-def choose(n, k):
-    if k < 0 or k > n:
-        return 0
-    return fact[n] * inv_fact[k] % MOD * inv_fact[n - k] % MOD
+void build_tables() {                         // call this once from main
+    for (int i = 1; i < N; ++i)
+        fact[i] = fact[i - 1] * i % MOD;
+
+    inv_fact[N - 1] = power(fact[N - 1], MOD - 2, MOD);
+    for (int i = N - 1; i > 0; --i)            // backwards: one power, not N
+        inv_fact[i - 1] = inv_fact[i] * i % MOD;
+}
+
+long long choose(int n, int k) {
+    if (k < 0 || k > n)
+        return 0;
+    return fact[n] * inv_fact[k] % MOD * inv_fact[n - k] % MOD;
+}
 ```
 
-The backwards loop for `inv_fact` is the trick worth keeping. Since $\frac{1}{(i-1)!} = \frac{1}{i!} \times i$, one modular exponentiation at the top gives every inverse factorial below it. The naive version calls `pow` `N` times and is a hundred times slower.
+The backwards loop for `inv_fact` is the trick worth keeping. Since $\frac{1}{(i-1)!} = \frac{1}{i!} \times i$, one modular exponentiation at the top gives every inverse factorial below it. The naive version calls `power` `N` times and is a hundred times slower.
 
-The `if k < 0 or k > n: return 0` guard prevents an index error and matches the mathematical convention. Put it in; it saves a debugging session.
+The `if (k < 0 || k > n) return 0;` guard matches the mathematical convention and, more urgently, prevents an out-of-range `vector` read, which in C++ is undefined behaviour rather than a clean exception. Put it in; it saves a debugging session.
 
 ## 6. The Chinese remainder theorem, briefly
 
@@ -281,19 +343,32 @@ $$
 
 If the moduli are pairwise coprime there is exactly one solution modulo the product.
 
-```python
-def crt(pairs):
-    """pairs is a list of (a, m) with the m pairwise coprime."""
-    a0, m0 = 0, 1
-    for a, m in pairs:
-        g, p, _ = ext_gcd(m0, m)
-        if (a - a0) % g:
-            return None                       # inconsistent
-        lcm_val = m0 // g * m
-        shift = (a - a0) // g * p % (m // g)
-        a0 = (a0 + m0 * shift) % lcm_val
-        m0 = lcm_val
-    return a0, m0
+```cpp
+tuple<long long, long long, long long> ext_gcd(long long a, long long b) {
+    if (b == 0)
+        return {a, 1LL, 0LL};
+    auto [g, x1, y1] = ext_gcd(b, a % b);
+    return {g, y1, x1 - (a / b) * y1};
+}
+
+// pairs is a list of (a, m) with the m pairwise coprime.
+// Returns (x, lcm of the moduli); (-1, -1) means the system is inconsistent.
+pair<long long, long long> crt(const vector<pair<long long, long long>>& pairs) {
+    long long a0 = 0, m0 = 1;
+    for (auto [a, m] : pairs) {
+        long long g, p;
+        tie(g, p, ignore) = ext_gcd(m0, m);
+        if ((a - a0) % g != 0)
+            return {-1, -1};                  // inconsistent
+        long long lcm_val = m0 / g * m;
+        long long md = m / g;
+        long long shift = (a - a0) / g % md * (p % md) % md;
+        shift = (shift + md) % md;            // C++ % can come out negative
+        a0 = (a0 + m0 * shift) % lcm_val;
+        m0 = lcm_val;
+    }
+    return {a0, m0};
+}
 ```
 
 It comes up in two situations: a modulus that is not prime but factorises into distinct primes, so you solve modulo each and combine; and problems literally about cycles that align.
@@ -306,19 +381,22 @@ $$
 \varphi(n) = n \prod_{p \mid n} \left(1 - \frac{1}{p}\right)
 $$
 
-```python
-def totient(n):
-    result = n
-    p = 2
-    while p * p <= n:
-        if n % p == 0:
-            while n % p == 0:
-                n //= p
-            result -= result // p
-        p += 1
-    if n > 1:
-        result -= result // n
-    return result
+```cpp
+long long totient(long long n) {
+    long long result = n;
+    long long p = 2;
+    while (p * p <= n) {
+        if (n % p == 0) {
+            while (n % p == 0)
+                n /= p;
+            result -= result / p;
+        }
+        p += 1;
+    }
+    if (n > 1)
+        result -= result / n;
+    return result;
+}
 ```
 
 It generalises Fermat: $a^{\varphi(m)} \equiv 1 \pmod m$ for any `a` coprime to `m`, so the inverse is $a^{\varphi(m)-1}$ even when `m` is composite.
@@ -331,19 +409,19 @@ These are the ones that produce wrong answers from code that looks right.
 
 **Forgetting the last prime factor.** The `if n > 1` after trial division.
 
-**Negative modulo.** Language-dependent. Always add the modulus after a subtraction, outside Python.
+**Negative modulo.** In C++, `%` keeps the sign of its left operand. Always add the modulus back after a subtraction: `((a - b) % m + m) % m`.
 
-**Overflow in the intermediate.** `a * b` before the `% m`, in a fixed-width language.
+**Overflow in the intermediate.** `a * b` before the `% m`. Two 32-bit `int`s near $10^9$ wrap around silently; make at least one operand `long long` first.
 
-**Using Fermat with a composite modulus.** `pow(a, m-2, m)` is silently wrong unless `m` is prime. If the modulus is $2^{32}$ or $10^9$, it does not apply.
+**Using Fermat with a composite modulus.** `power(a, m - 2, m)` is silently wrong unless `m` is prime. If the modulus is $2^{32}$ or $10^9$, it does not apply.
 
 **No inverse when the base shares a factor with the modulus.** Check `gcd` before dividing.
 
-**Calling `pow` inside a loop.** Precompute factorials and inverse factorials, and use the backwards trick.
+**Calling `power` inside a loop.** Precompute factorials and inverse factorials, and use the backwards trick.
 
 **Starting the sieve's inner loop at `2 * i`.** Correct but slower. Start at `i * i`.
 
-**Using floating point.** `int(sqrt(n))` can be off by one for large `n`, and `math.floor(a / b)` is not integer division. Keep everything in integers: `d * d <= n`, and `//`.
+**Using floating point.** `(long long)sqrt(n)` can be off by one for large `n`, because a `double` carries only 53 bits of mantissa, and `floor(a / (double)b)` is not integer division. Keep everything in integers: `d * d <= n`, and plain `/` between integer types.
 
 ## The short version
 
@@ -352,8 +430,8 @@ These are the ones that produce wrong answers from code that looks right.
 - After trial division, `if n > 1` picks up the remaining large prime factor. Forgetting it loses a factor silently.
 - Euclid for gcd; divide before multiplying for lcm. Extended Euclid gives Bézout coefficients, which give inverses.
 - Addition, subtraction and multiplication pass through a modulus. Division does not: multiply by the inverse instead.
-- With a prime modulus the inverse is `pow(a, m - 2, m)`. That is why $10^9+7$ is prime, and it is silently wrong for a composite modulus.
-- For binomial coefficients, precompute factorials, then compute the inverse factorials backwards from a single `pow`. One exponentiation, not `n`.
+- With a prime modulus the inverse is `power(a, m - 2, m)` by fast exponentiation. That is why $10^9+7$ is prime, and it is silently wrong for a composite modulus.
+- For binomial coefficients, precompute factorials, then compute the inverse factorials backwards from a single `power` call. One exponentiation, not `n`.
 - Keep everything in integers. `d * d <= n`, never `d <= sqrt(n)`.
 
 Next: strings. Hashing, KMP, and the Z-function, which answer "where does this pattern occur" in linear time.

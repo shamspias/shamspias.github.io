@@ -34,28 +34,30 @@ Two representations, and the choice matters.
 
 **Adjacency list.** For each vertex, a list of its neighbours. Space $\mathcal{O}(V + E)$.
 
-```python
-from collections import defaultdict
-
-def build(n, edges, directed=False):
-    g = defaultdict(list)
-    for u, v in edges:
-        g[u].append(v)
-        if not directed:
-            g[v].append(u)
-    return g
+```cpp
+vector<vector<int>> build(int n, const vector<pair<int, int>>& edges, bool directed = false) {
+    vector<vector<int>> g(n);                       // one neighbour list per vertex
+    for (auto [u, v] : edges) {
+        g[u].push_back(v);
+        if (!directed)
+            g[v].push_back(u);
+    }
+    return g;
+}
 ```
 
 **Adjacency matrix.** A `V × V` grid where `m[u][v]` says whether the edge exists. Space $\mathcal{O}(V^2)$.
 
-```python
-def build_matrix(n, edges, directed=False):
-    m = [[0] * n for _ in range(n)]
-    for u, v in edges:
-        m[u][v] = 1
-        if not directed:
-            m[v][u] = 1
-    return m
+```cpp
+vector<vector<int>> build_matrix(int n, const vector<pair<int, int>>& edges, bool directed = false) {
+    vector<vector<int>> m(n, vector<int>(n, 0));
+    for (auto [u, v] : edges) {
+        m[u][v] = 1;
+        if (!directed)
+            m[v][u] = 1;
+    }
+    return m;
+}
 ```
 
 | | Adjacency list | Adjacency matrix |
@@ -71,19 +73,24 @@ def build_matrix(n, edges, directed=False):
 
 BFS visits vertices in order of how many edges away they are. A queue is the whole implementation.
 
-```python
-from collections import deque
-
-def bfs(g, start):
-    dist = {start: 0}
-    q = deque([start])
-    while q:
-        u = q.popleft()
-        for v in g[u]:
-            if v not in dist:            # not seen yet
-                dist[v] = dist[u] + 1
-                q.append(v)
-    return dist
+```cpp
+vector<int> bfs(const vector<vector<int>>& g, int start) {
+    vector<int> dist(g.size(), -1);      // -1 marks unvisited
+    dist[start] = 0;
+    queue<int> q;
+    q.push(start);
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+        for (int v : g[u]) {
+            if (dist[v] == -1) {         // not seen yet
+                dist[v] = dist[u] + 1;
+                q.push(v);
+            }
+        }
+    }
+    return dist;
+}
 ```
 
 $\mathcal{O}(V + E)$: every vertex enters the queue once, and every edge is examined once from each end.
@@ -108,7 +115,7 @@ Two details that are the difference between working and not.
 
 **Mark when you enqueue, not when you dequeue.** In the code above, `dist[v]` is set at the moment `v` is added to the queue. If you instead check and mark at pop time, a vertex reachable from two places gets queued twice, and on a dense graph that degenerates badly.
 
-**The `dist` dictionary is doing two jobs.** It stores distances and it serves as the visited set. That is deliberate: two structures that must agree are two structures that can disagree.
+**The `dist` vector is doing two jobs (a `std::unordered_map` or `std::map` when the vertices are not small integers).** It stores distances and it serves as the visited set. That is deliberate: two structures that must agree are two structures that can disagree.
 
 ## 4. Why BFS gives shortest paths
 
@@ -122,57 +129,69 @@ The step that argument depends on is "every edge adds exactly one to the distanc
 
 Distances are usually not enough; you want the route. Keep a parent pointer, exactly as in [part 10](/posts/2018/02/dp-as-a-table/).
 
-```python
-def bfs_path(g, start, goal):
-    parent = {start: None}
-    q = deque([start])
-    while q:
-        u = q.popleft()
-        if u == goal:
-            break
-        for v in g[u]:
-            if v not in parent:
-                parent[v] = u
-                q.append(v)
-    if goal not in parent:
-        return None
-    path, node = [], goal
-    while node is not None:
-        path.append(node)
-        node = parent[node]
-    return path[::-1]
+```cpp
+vector<int> bfs_path(const vector<vector<int>>& g, int start, int goal) {
+    vector<int> parent(g.size(), -2);               // -2 not seen, -1 no parent
+    parent[start] = -1;
+    queue<int> q;
+    q.push(start);
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+        if (u == goal)
+            break;
+        for (int v : g[u]) {
+            if (parent[v] == -2) {
+                parent[v] = u;
+                q.push(v);
+            }
+        }
+    }
+    if (parent[goal] == -2)
+        return {};                                  // goal unreachable
+    vector<int> path;
+    for (int node = goal; node != -1; node = parent[node])
+        path.push_back(node);
+    reverse(path.begin(), path.end());
+    return path;
+}
 ```
 
 ## 6. The grid, which is the most common graph you will meet
 
 Grid problems are graph problems where the edges are implicit: each cell connects to its neighbours. There is no need to build an adjacency list at all.
 
-```python
-def bfs_grid(grid, start):
-    rows, cols = len(grid), len(grid[0])
-    DIRS = ((-1, 0), (1, 0), (0, -1), (0, 1))       # up down left right
-    dist = [[-1] * cols for _ in range(rows)]
-    sr, sc = start
-    dist[sr][sc] = 0
-    q = deque([start])
-    while q:
-        r, c = q.popleft()
-        for dr, dc in DIRS:
-            nr, nc = r + dr, c + dc
-            if not (0 <= nr < rows and 0 <= nc < cols):
-                continue                            # off the board
-            if grid[nr][nc] == '#' or dist[nr][nc] != -1:
-                continue                            # wall, or already seen
-            dist[nr][nc] = dist[r][c] + 1
-            q.append((nr, nc))
-    return dist
+```cpp
+vector<vector<int>> bfs_grid(const vector<string>& grid, pair<int, int> start) {
+    int rows = grid.size(), cols = grid[0].size();
+    const vector<pair<int, int>> DIRS = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};   // up down left right
+    vector<vector<int>> dist(rows, vector<int>(cols, -1));
+    auto [sr, sc] = start;
+    dist[sr][sc] = 0;
+    queue<pair<int, int>> q;
+    q.push(start);
+    while (!q.empty()) {
+        auto [r, c] = q.front();
+        q.pop();
+        for (auto [dr, dc] : DIRS) {
+            int nr = r + dr, nc = c + dc;
+            if (nr < 0 || nr >= rows || nc < 0 || nc >= cols)
+                continue;                           // off the board
+            if (grid[nr][nc] == '#' || dist[nr][nc] != -1)
+                continue;                           // wall, or already seen
+            dist[nr][nc] = dist[r][c] + 1;
+            q.push({nr, nc});
+        }
+    }
+    return dist;
+}
 ```
 
-The `DIRS` tuple is the idiom worth copying. Writing the four neighbours out by hand as four blocks of code is four chances to make a typo, and eight-direction movement then means eight blocks. One tuple and one loop means one place to be wrong. For diagonals, add the four combinations of ±1.
+The `DIRS` array, a `const std::vector<std::pair<int, int>>`, is the idiom worth copying. Writing the four neighbours out by hand as four blocks of code is four chances to make a typo, and eight-direction movement then means eight blocks. One array and one loop means one place to be wrong. For diagonals, add the four combinations of ±1.
 
 Two habits that eliminate most grid bugs:
 
-**Check the bounds before reading the cell.** Every time. In Python a negative index silently wraps around to the other end of the row, so an out-of-bounds read does not crash, it returns the wrong cell, and you get a wrong answer with no error.
+**Check the bounds before reading the cell.** Every time. In C++ indexing a `std::vector` or `std::string` out of range with `[]` is undefined behaviour: there is no wrap-around and no check, so it reads whatever memory happens to sit there, which may give a wrong answer silently, corrupt something else, or crash far from the real bug. (`.at()` throws `std::out_of_range` instead, so it at least fails loudly.)
 
 **Use `-1` for unvisited in the distance array**, not `0`, so distance zero is representable and distinguishable.
 
@@ -180,16 +199,18 @@ Two habits that eliminate most grid bugs:
 
 Underrated technique. If the question is "distance to the *nearest* of these things", do not run BFS from each of them. Put them all in the queue at distance zero.
 
-```python
-def nearest_source(grid, sources):
-    rows, cols = len(grid), len(grid[0])
-    dist = [[-1] * cols for _ in range(rows)]
-    q = deque()
-    for r, c in sources:
-        dist[r][c] = 0
-        q.append((r, c))
-    # then exactly the same loop as before
-    ...
+```cpp
+vector<vector<int>> nearest_source(const vector<string>& grid, const vector<pair<int, int>>& sources) {
+    int rows = grid.size(), cols = grid[0].size();
+    vector<vector<int>> dist(rows, vector<int>(cols, -1));
+    queue<pair<int, int>> q;
+    for (auto [r, c] : sources) {
+        dist[r][c] = 0;                             // every source starts at zero
+        q.push({r, c});
+    }
+    // then exactly the same loop as before
+    return dist;
+}
 ```
 
 The layers now expand from every source at once, so each cell ends up with the distance to its closest source. One BFS instead of `k`, so $\mathcal{O}(V + E)$ instead of $\mathcal{O}(k(V + E))$. "Rotting oranges", "distance to the nearest wall", "how long until the fire reaches every cell": all multi-source BFS.
@@ -200,22 +221,28 @@ A halfway case worth knowing, because it lets you avoid Dijkstra entirely in a c
 
 Use a deque. Push zero-weight edges to the **front** and one-weight edges to the **back**. The deque stays sorted by distance without a priority queue.
 
-```python
-def bfs01(g, start, n):
-    INF = float('inf')
-    dist = [INF] * n
-    dist[start] = 0
-    q = deque([start])
-    while q:
-        u = q.popleft()
-        for v, w in g[u]:               # w is 0 or 1
-            if dist[u] + w < dist[v]:
-                dist[v] = dist[u] + w
-                if w == 0:
-                    q.appendleft(v)
-                else:
-                    q.append(v)
-    return dist
+```cpp
+vector<long long> bfs01(const vector<vector<pair<int, int>>>& g, int start, int n) {
+    const long long INF = 1e18;
+    vector<long long> dist(n, INF);
+    dist[start] = 0;
+    deque<int> q;
+    q.push_back(start);
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop_front();
+        for (auto [v, w] : g[u]) {      // w is 0 or 1
+            if (dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                if (w == 0)
+                    q.push_front(v);
+                else
+                    q.push_back(v);
+            }
+        }
+    }
+    return dist;
+}
 ```
 
 $\mathcal{O}(V + E)$, no log factor. The classic use: a grid where moving is free but breaking a wall costs one, and you want the fewest walls broken.
@@ -230,51 +257,65 @@ The real skill is recognising the graph. In each of these, the vertices are not 
 
 **The state graph.** This is the one that unlocks the hardest problems. Vertices need not be places; they can be *situations*. Two jugs of capacity 3 and 5 litres, and you want exactly 4 litres. The vertices are pairs `(a, b)` of current contents, the edges are fill, empty and pour, and BFS finds the fewest moves.
 
-```python
-def jugs(cap_a, cap_b, target):
-    start = (0, 0)
-    dist = {start: 0}
-    q = deque([start])
-    while q:
-        a, b = q.popleft()
-        if a == target or b == target:
-            return dist[(a, b)]
-        pour_ab = min(a, cap_b - b)
-        pour_ba = min(b, cap_a - a)
-        moves = [
-            (cap_a, b), (a, cap_b),                  # fill either
-            (0, b), (a, 0),                          # empty either
-            (a - pour_ab, b + pour_ab),              # pour a into b
-            (a + pour_ba, b - pour_ba),              # pour b into a
-        ]
-        for s in moves:
-            if s not in dist:
-                dist[s] = dist[(a, b)] + 1
-                q.append(s)
-    return -1
+```cpp
+int jugs(int cap_a, int cap_b, int target) {
+    pair<int, int> start = {0, 0};
+    map<pair<int, int>, int> dist;
+    dist[start] = 0;
+    queue<pair<int, int>> q;
+    q.push(start);
+    while (!q.empty()) {
+        auto [a, b] = q.front();
+        q.pop();
+        if (a == target || b == target)
+            return dist[{a, b}];
+        int pour_ab = min(a, cap_b - b);
+        int pour_ba = min(b, cap_a - a);
+        vector<pair<int, int>> moves = {
+            {cap_a, b}, {a, cap_b},                  // fill either
+            {0, b}, {a, 0},                          // empty either
+            {a - pour_ab, b + pour_ab},              // pour a into b
+            {a + pour_ba, b - pour_ba},              // pour b into a
+        };
+        for (auto s : moves) {
+            if (dist.count(s) == 0) {
+                dist[s] = dist[{a, b}] + 1;
+                q.push(s);
+            }
+        }
+    }
+    return -1;
+}
 ```
 
 That is BFS on a graph with no edges written down anywhere. **The habit: when a problem says "minimum number of moves", ask what a situation is, and what one move does to it.** If you can answer both, you have a graph and BFS solves it.
 
 **Bipartite checking.** Colour the start black, its neighbours white, theirs black. If BFS ever tries to give a vertex a colour it already has differently, the graph has an odd cycle and is not bipartite.
 
-```python
-def is_bipartite(g, n):
-    colour = [-1] * n
-    for s in range(n):
-        if colour[s] != -1:
-            continue
-        colour[s] = 0
-        q = deque([s])
-        while q:
-            u = q.popleft()
-            for v in g[u]:
-                if colour[v] == -1:
-                    colour[v] = 1 - colour[u]
-                    q.append(v)
-                elif colour[v] == colour[u]:
-                    return False
-    return True
+```cpp
+bool is_bipartite(const vector<vector<int>>& g, int n) {
+    vector<int> colour(n, -1);
+    for (int s = 0; s < n; s++) {
+        if (colour[s] != -1)
+            continue;
+        colour[s] = 0;
+        queue<int> q;
+        q.push(s);
+        while (!q.empty()) {
+            int u = q.front();
+            q.pop();
+            for (int v : g[u]) {
+                if (colour[v] == -1) {
+                    colour[v] = 1 - colour[u];
+                    q.push(v);
+                } else if (colour[v] == colour[u]) {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
 ```
 
 The outer loop over `s` is the part people forget: the graph may have several components, and each needs its own start.
@@ -285,7 +326,7 @@ The outer loop over `s` is the part people forget: the graph may have several co
 - Use an adjacency list unless the graph is genuinely dense. At `V = 200,000` a matrix cannot be allocated at all.
 - BFS is a queue. Mark vertices when you enqueue them, not when you dequeue them, and let the distance map double as the visited set.
 - BFS gives shortest paths because every edge adds exactly one. That is also precisely why it stops working the moment edges have different weights.
-- For grids, keep the four offsets in one tuple and loop over it. Check bounds before reading the cell: in Python a negative index quietly returns the wrong cell rather than failing.
+- For grids, keep the four offsets in one array of `std::pair<int, int>` and loop over it. Check bounds before reading the cell: in C++ a negative or too-large index with `[]` is undefined behaviour, so it quietly returns garbage rather than failing.
 - If the question is "distance to the nearest of these", seed the queue with all of them at once. One BFS, not `k`.
 - When every weight is 0 or 1, use a deque and push zero-weight edges to the front. Linear time, no priority queue.
 - When a problem says "minimum number of moves", ask what a situation is and what a move does to it. That gives you a graph even when no graph was mentioned.

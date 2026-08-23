@@ -36,15 +36,16 @@ Climbing stairs. You can go up one step or two at a time. How many distinct ways
 3. **Base:** `dp[0] = 1`, one way to be at the bottom, namely do nothing. `dp[1] = 1`.
 4. **Order:** increasing `i`, because `dp[i]` needs `dp[i-1]` and `dp[i-2]`.
 
-```python
-def stairs(n):
-    dp = [0] * (n + 1)
-    dp[0] = 1
-    if n >= 1:
-        dp[1] = 1
-    for i in range(2, n + 1):
-        dp[i] = dp[i - 1] + dp[i - 2]
-    return dp[n]
+```cpp
+long long stairs(int n) {
+    vector<long long> dp(n + 1, 0);
+    dp[0] = 1;
+    if (n >= 1) dp[1] = 1;
+    for (int i = 2; i <= n; i++) {
+        dp[i] = dp[i - 1] + dp[i - 2];
+    }
+    return dp[n];
+}
 ```
 
 ```
@@ -58,12 +59,16 @@ Which is Fibonacci, of course. The point is not the answer; it is that the four 
 
 And once the table is written, notice: `dp[i]` only ever reads the two entries behind it. So the array is unnecessary.
 
-```python
-def stairs(n):
-    a, b = 1, 1                # dp[i-2], dp[i-1]
-    for _ in range(2, n + 1):
-        a, b = b, a + b
-    return b
+```cpp
+long long stairs(int n) {
+    long long a = 1, b = 1;            // dp[i-2], dp[i-1]
+    for (int i = 2; i <= n; i++) {
+        long long next = a + b;
+        a = b;
+        b = next;
+    }
+    return b;
+}
 ```
 
 $\mathcal{O}(n)$ time, $\mathcal{O}(1)$ space. **Look at what the recurrence reads, and keep only that.** This is the standard space optimisation and it applies to a large fraction of DP problems.
@@ -77,21 +82,23 @@ Count the paths from the top-left of an `r × c` grid to the bottom-right, movin
 3. **Base:** `dp[0][0] = 1` if that cell is open.
 4. **Order:** row by row, left to right, because `(i, j)` depends on `(i-1, j)` and `(i, j-1)`, both of which come earlier in that order.
 
-```python
-def paths(grid):
-    r, c = len(grid), len(grid[0])
-    dp = [[0] * c for _ in range(r)]
-    dp[0][0] = 1 if grid[0][0] == '.' else 0
-    for i in range(r):
-        for j in range(c):
-            if grid[i][j] == '#':          # blocked
-                dp[i][j] = 0
-                continue
-            if i > 0:
-                dp[i][j] += dp[i - 1][j]
-            if j > 0:
-                dp[i][j] += dp[i][j - 1]
-    return dp[r - 1][c - 1]
+```cpp
+long long paths(const vector<string>& grid) {
+    int r = (int)grid.size(), c = (int)grid[0].size();
+    vector<vector<long long>> dp(r, vector<long long>(c, 0));
+    dp[0][0] = (grid[0][0] == '.') ? 1 : 0;
+    for (int i = 0; i < r; i++) {
+        for (int j = 0; j < c; j++) {
+            if (grid[i][j] == '#') {           // blocked
+                dp[i][j] = 0;
+                continue;
+            }
+            if (i > 0) dp[i][j] += dp[i - 1][j];
+            if (j > 0) dp[i][j] += dp[i][j - 1];
+        }
+    }
+    return dp[r - 1][c - 1];
+}
 ```
 
 ```
@@ -111,18 +118,22 @@ The `dp[0][0]` base and the two `if` guards handle the edges. Note that I did no
 
 Space again: row `i` only reads row `i-1`. So one row suffices, updated in place.
 
-```python
-def paths_small(grid):
-    r, c = len(grid), len(grid[0])
-    row = [0] * c
-    row[0] = 1 if grid[0][0] == '.' else 0
-    for i in range(r):
-        for j in range(c):
-            if grid[i][j] == '#':
-                row[j] = 0
-            elif j > 0:
-                row[j] += row[j - 1]      # row[j] is still the row above
-    return row[c - 1]
+```cpp
+long long paths_small(const vector<string>& grid) {
+    int r = (int)grid.size(), c = (int)grid[0].size();
+    vector<long long> row(c, 0);
+    row[0] = (grid[0][0] == '.') ? 1 : 0;
+    for (int i = 0; i < r; i++) {
+        for (int j = 0; j < c; j++) {
+            if (grid[i][j] == '#') {
+                row[j] = 0;
+            } else if (j > 0) {
+                row[j] += row[j - 1];     // row[j] is still the row above
+            }
+        }
+    }
+    return row[c - 1];
+}
 ```
 
 That works because when we reach `row[j]`, it still holds the value from the row above, and `row[j-1]` has already been updated to this row. Reading an array that is half-updated is either a beautiful trick or an impossible bug, depending entirely on whether you wrote down which is which. Write a comment. I always do.
@@ -138,15 +149,19 @@ The state choice here is instructive, because the obvious one does not work. "Th
 3. **Base:** `dp[i] = 1` for all `i`, since any single element is a subsequence of length 1.
 4. **Order:** increasing `i`, looking back at all `j < i`.
 
-```python
-def lis(a):
-    n = len(a)
-    dp = [1] * n
-    for i in range(n):
-        for j in range(i):
-            if a[j] < a[i]:
-                dp[i] = max(dp[i], dp[j] + 1)
-    return max(dp) if dp else 0
+```cpp
+int lis(const vector<int>& a) {
+    int n = (int)a.size();
+    vector<int> dp(n, 1);
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < i; j++) {
+            if (a[j] < a[i]) {
+                dp[i] = max(dp[i], dp[j] + 1);
+            }
+        }
+    }
+    return dp.empty() ? 0 : *max_element(dp.begin(), dp.end());
+}
 ```
 
 ```
@@ -161,7 +176,7 @@ def lis(a):
   answer: max(dp) = 4, and it is not dp[7] by luck
 ```
 
-$\mathcal{O}(n^2)$. The answer is `max(dp)`, not `dp[n-1]`, because the longest subsequence does not have to end at the last element. That is a real bug people write.
+$\mathcal{O}(n^2)$. The answer is `*max_element(dp.begin(), dp.end())`, not `dp[n-1]`, because the longest subsequence does not have to end at the last element. That is a real bug people write.
 
 The lesson to take: **"ending at `i`" is one of the most useful state definitions there is.** It appears in maximum subarray, in LIS, in longest palindromic substring, and in most path problems. When "the answer for the first `i` things" is not enough, adding "and it ends here" is usually what fixes it.
 
@@ -173,22 +188,31 @@ DP usually gives you a number, and often the question asks for the actual thing.
 
 **Store a parent pointer.** Alongside each entry, record which earlier entry produced it, then walk backwards.
 
-```python
-def lis_sequence(a):
-    n = len(a)
-    dp = [1] * n
-    parent = [-1] * n
-    for i in range(n):
-        for j in range(i):
-            if a[j] < a[i] and dp[j] + 1 > dp[i]:
-                dp[i] = dp[j] + 1
-                parent[i] = j
-    end = max(range(n), key=lambda i: dp[i])
-    out = []
-    while end != -1:
-        out.append(a[end])
-        end = parent[end]
-    return out[::-1]
+```cpp
+vector<int> lis_sequence(const vector<int>& a) {
+    int n = (int)a.size();
+    vector<int> dp(n, 1);
+    vector<int> parent(n, -1);
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < i; j++) {
+            if (a[j] < a[i] && dp[j] + 1 > dp[i]) {
+                dp[i] = dp[j] + 1;
+                parent[i] = j;
+            }
+        }
+    }
+    int end = -1;                          // index of the largest dp value
+    for (int i = 0; i < n; i++) {
+        if (end == -1 || dp[i] > dp[end]) end = i;
+    }
+    vector<int> out;
+    while (end != -1) {
+        out.push_back(a[end]);
+        end = parent[end];
+    }
+    reverse(out.begin(), out.end());
+    return out;
+}
 ```
 
 **Or walk the table backwards afterwards.** From the final cell, ask which predecessor is consistent with the value you see, and step there. This uses no extra memory but needs care to break ties consistently.
@@ -201,26 +225,30 @@ One more, to show the four questions surviving contact with something less obvio
 
 1. **State:** a position in the string.
 2. **Meaning:** `dp[i]` is true if the first `i` characters can be cut into dictionary words.
-3. **Base:** `dp[0] = True`, the empty prefix is trivially cuttable.
-4. **Order:** increasing `i`. For each `i`, try every `j < i` and ask whether `dp[j]` is true and `s[j:i]` is a word.
+3. **Base:** `dp[0] = true`, the empty prefix is trivially cuttable.
+4. **Order:** increasing `i`. For each `i`, try every `j < i` and ask whether `dp[j]` is true and `s.substr(j, i - j)` is a word.
 
-```python
-def word_break(s, words):
-    vocab = set(words)
-    n = len(s)
-    dp = [False] * (n + 1)
-    dp[0] = True
-    for i in range(1, n + 1):
-        for j in range(i):
-            if dp[j] and s[j:i] in vocab:
-                dp[i] = True
-                break
-    return dp[n]
+```cpp
+bool word_break(const string& s, const vector<string>& words) {
+    unordered_set<string> vocab(words.begin(), words.end());
+    int n = (int)s.size();
+    vector<bool> dp(n + 1, false);
+    dp[0] = true;
+    for (int i = 1; i <= n; i++) {
+        for (int j = 0; j < i; j++) {
+            if (dp[j] && vocab.count(s.substr(j, i - j))) {
+                dp[i] = true;
+                break;
+            }
+        }
+    }
+    return dp[n];
+}
 ```
 
-$\mathcal{O}(n^2)$ pairs, and the slice `s[j:i]` costs its own length, so strictly $\mathcal{O}(n^3)$ in the worst case. Fine for a few hundred characters. Note the `vocab = set(words)`, which is [the hidden loop from part 1](/posts/2016/02/counting-the-steps/): `in` on a list would have made this a factor of `len(words)` slower.
+$\mathcal{O}(n^2)$ pairs, and `s.substr(j, i - j)` allocates a fresh string and so costs its own length, so strictly $\mathcal{O}(n^3)$ in the worst case. Fine for a few hundred characters. Note the `unordered_set<string> vocab`, which is [the hidden loop from part 1](/posts/2016/02/counting-the-steps/): scanning the `vector<string>` with `std::find` would have made this a factor of `words.size()` slower.
 
-The `dp[0] = True` base is the interesting line, and it is the same structural point as the `seen[0] = 1` in the prefix-sum counting problem and the `p[0] = 0` in the prefix array. **The empty case is almost always a real case, and forgetting it is almost always the bug.**
+The `dp[0] = true` base is the interesting line, and it is the same structural point as the `seen[0] = 1` in the prefix-sum counting problem and the `p[0] = 0` in the prefix array. **The empty case is almost always a real case, and forgetting it is almost always the bug.**
 
 ## 7. How to recognise a DP problem
 
@@ -228,7 +256,7 @@ Signals, roughly in order of reliability:
 
 - **"Count the number of ways"** and the count is large or asked for modulo something.
 - **"Minimum or maximum cost to do X"** where choices interact.
-- **Small `n` with a big answer.** `n ≤ 1000` and an answer that needs a big integer is DP-shaped.
+- **Small `n` with a big answer.** `n ≤ 1000` and an answer that overflows 32 bits is DP-shaped. Nothing widens for you in C++, so that means `long long`, or arithmetic modulo whatever the problem asks for.
 - **A greedy rule that you can break with a counterexample.** [Part 6](/posts/2017/04/greedy-when-it-works/) says look for one; finding one is evidence for DP.
 - **Overlapping subproblems in the recursion.** If you write the brute force and see the same call twice, that is the tell.
 
@@ -241,7 +269,7 @@ When it gives the wrong answer, the fault is nearly always in one of four places
 1. **The base case.** Print `dp` after initialisation. Is `dp[0]` what you claimed? Should it be 0 or 1, and does "0 ways" or "1 way to do nothing" match the question?
 2. **The order.** Print the table and check that everything an entry read was already filled. Reading a zero that should have been a value is the classic symptom.
 3. **The meaning.** Say the sentence out loud: "`dp[i]` is the ...". Then check one entry by hand against that sentence. If they disagree, the recurrence is computing something other than what you think.
-4. **The final read.** `dp[n]` or `max(dp)`? Getting this wrong looks like a subtle algorithm bug and is a one-character fix.
+4. **The final read.** `dp[n]` or `*max_element(dp.begin(), dp.end())`? Getting this wrong looks like a subtle algorithm bug and is a one-character fix.
 
 Print the whole table for a five-element input. Every time. It takes a minute and it beats staring at the recurrence.
 

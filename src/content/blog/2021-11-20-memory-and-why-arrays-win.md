@@ -89,24 +89,27 @@ Which is why: **in competitive programming, use arrays.** Use an array-backed qu
 
 Concretely, for graphs, this layout is what fast solutions use:
 
-```python
-# adjacency stored as flat arrays: one contiguous block, no per-node objects
-def build_flat(n, edges):
-    deg = [0] * (n + 1)
-    for u, v in edges:
-        deg[u] += 1
-        deg[v] += 1
-    start = [0] * (n + 2)
-    for i in range(1, n + 1):
-        start[i + 1] = start[i] + deg[i]
-    adj = [0] * (2 * len(edges))
-    fill = start[:]
-    for u, v in edges:
-        adj[fill[u]] = v; fill[u] += 1
-        adj[fill[v]] = u; fill[v] += 1
-    return start, adj
+```cpp
+// adjacency stored as flat arrays: one contiguous block, no per-node objects
+pair<vector<int>, vector<int>> build_flat(int n, const vector<pair<int, int>>& edges) {
+    vector<int> deg(n + 1, 0);
+    for (auto [u, v] : edges) {
+        deg[u] += 1;
+        deg[v] += 1;
+    }
+    vector<int> start(n + 2, 0);
+    for (int i = 1; i <= n; i++)
+        start[i + 1] = start[i] + deg[i];
+    vector<int> adj(2 * edges.size(), 0);
+    vector<int> fill = start;                 // running write position per vertex
+    for (auto [u, v] : edges) {
+        adj[fill[u]] = v; fill[u] += 1;
+        adj[fill[v]] = u; fill[v] += 1;
+    }
+    return {start, adj};
+}
 
-# neighbours of u are adj[start[u] : start[u + 1]], all contiguous
+// neighbours of u are adj[start[u] .. start[u + 1] - 1], all contiguous
 ```
 
 That is called compressed sparse row, and it is the layout every serious graph library uses.
@@ -115,37 +118,52 @@ That is called compressed sparse row, and it is the layout every serious graph l
 
 The most famous example, and worth doing yourself once so it is not just a story.
 
-A two-dimensional array in C, C++, Go or NumPy is stored **row by row**. So `m[i][j]` and `m[i][j+1]` are neighbours in memory, while `m[i][j]` and `m[i+1][j]` are a whole row apart.
+A two-dimensional array in C, C++ or Go is stored **row by row**. A `vector<vector<double>>` is not one block, each row is its own allocation, so the rule holds inside a row and a column walk is worse still. So `m[i][j]` and `m[i][j+1]` are neighbours in memory, while `m[i][j]` and `m[i+1][j]` are a whole row apart.
 
-```python
-# fast: walks memory in order
-for i in range(n):
-    for j in range(n):
-        total += m[i][j]
+```cpp
+// fast: walks memory in order
+long long sum_fast(const vector<vector<int>>& m, int n) {
+    long long total = 0;
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            total += m[i][j];
+    return total;
+}
 
-# slow: jumps a row every step
-for j in range(n):
-    for i in range(n):
-        total += m[i][j]
+// slow: jumps a row every step
+long long sum_slow(const vector<vector<int>>& m, int n) {
+    long long total = 0;
+    for (int j = 0; j < n; j++)
+        for (int i = 0; i < n; i++)
+            total += m[i][j];
+    return total;
+}
 ```
 
 Same steps. Same answer. On a 2000 by 2000 matrix of doubles, the second is commonly five to ten times slower in a compiled language, because every read is a fresh cache line and the array is far too big to keep resident.
 
 **The rule: the innermost loop should vary the last index.** For matrix multiplication that means reordering the classic triple loop:
 
-```python
-# the naive order: k innermost walks B down a column
-for i in range(n):
-    for j in range(n):
-        for k in range(n):
-            C[i][j] += A[i][k] * B[k][j]
+```cpp
+// the naive order: k innermost walks B down a column
+void matmul_ijk(const vector<vector<double>>& A, const vector<vector<double>>& B,
+                vector<vector<double>>& C, int n) {
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            for (int k = 0; k < n; k++)
+                C[i][j] += A[i][k] * B[k][j];
+}
 
-# ikj order: the innermost loop walks both A's row and B's row
-for i in range(n):
-    for k in range(n):
-        aik = A[i][k]
-        for j in range(n):
-            C[i][j] += aik * B[k][j]
+// ikj order: the innermost loop walks both A's row and B's row
+void matmul_ikj(const vector<vector<double>>& A, const vector<vector<double>>& B,
+                vector<vector<double>>& C, int n) {
+    for (int i = 0; i < n; i++)
+        for (int k = 0; k < n; k++) {
+            double aik = A[i][k];                 // hoisted out of the inner loop
+            for (int j = 0; j < n; j++)
+                C[i][j] += aik * B[k][j];
+        }
+}
 ```
 
 Identical arithmetic, identical $\mathcal{O}(n^3)$, and the second is several times faster because every innermost access is sequential. This is the single most-cited example in the subject and it is genuinely that stark.
@@ -182,7 +200,7 @@ Identical arithmetic, identical $\mathcal{O}(n^3)$, and the second is several ti
 
 ## 7. Measure, do not guess
 
-Everything above is a tendency, not a law. Your processor's line size, cache sizes, prefetcher and out-of-order execution all interfere, and so does your language. In Python, every integer is a heap-allocated object and every list is a list of pointers, so the array-versus-list distinction largely disappears into interpreter overhead; use `array` or NumPy if the layout matters.
+Everything above is a tendency, not a law. Your processor's line size, cache sizes, prefetcher and out-of-order execution all interfere, and so does your language. In C++ a `vector<int>` really is one contiguous block of machine integers, so everything above shows up directly, but the containers can still surprise you: `vector<vector<int>>` is one allocation per row rather than one block, `vector<bool>` packs bits and pays a shift on every access, and `std::list` or `std::map` hands you exactly the scattered-node layout this part warns about.
 
 So the honest procedure:
 

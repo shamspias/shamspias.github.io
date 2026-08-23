@@ -26,9 +26,10 @@ You are given an array of 200,000 numbers and 200,000 questions. Each question i
 
 The obvious answer:
 
-```python
-def range_sum(a, l, r):
-    return sum(a[l:r + 1])
+```cpp
+long long range_sum(const vector<int>& a, int l, int r) {
+    return accumulate(a.begin() + l, a.begin() + r + 1, 0LL);
+}
 ```
 
 For one question that is fine. For 200,000 questions, each potentially covering the whole array, we are looking at $\mathcal{O}(qn)$ where both are 200,000: forty billion steps. Using [part 1's budget](/posts/2016/02/counting-the-steps/), we are about four hundred times over.
@@ -39,19 +40,21 @@ Here is the fix, and it is three lines.
 
 Build a new array where each entry holds the sum of everything up to that point.
 
-```python
-def build_prefix(a):
-    p = [0] * (len(a) + 1)
-    for i, x in enumerate(a):
-        p[i + 1] = p[i] + x
-    return p
+```cpp
+vector<long long> build_prefix(const vector<int>& a) {
+    vector<long long> p(a.size() + 1, 0);          // p[0] = 0 is the empty prefix
+    for (int i = 0; i < (int)a.size(); ++i)
+        p[i + 1] = p[i] + a[i];
+    return p;
+}
 ```
 
 Now any range sum is one subtraction:
 
-```python
-def range_sum(p, l, r):
-    return p[r + 1] - p[l]
+```cpp
+long long range_sum(const vector<long long>& p, int l, int r) {
+    return p[r + 1] - p[l];
+}
 ```
 
 Why that works, drawn out. `p[i]` is the sum of the first `i` elements, so `p[r+1]` covers everything from the start through `r`, and `p[l]` covers everything strictly before `l`. Subtract and the shared front cancels, leaving exactly the middle.
@@ -73,7 +76,7 @@ Why that works, drawn out. `p[i]` is the sum of the first `i` elements, so `p[r+
 
 The two arrays are offset by one, and that offset is where every bug in this technique comes from. Note the shape of it: `p` has `n + 1` entries, `p[i]` sums the first `i` elements of `a`, and `p[0] = 0` stands for the empty prefix. The leading zero is not decoration. It is what makes a query starting at `l = 0` work without a special case.
 
-Before using a prefix array, do this: write down in words what `p[i]` holds, then check one query by hand on a four-element example. An off-by-one here is silent. You do not get a crash or an exception, you get a number, and the number is wrong. Silent wrong answers are far more expensive than loud ones, which is why the thirty seconds of checking is worth it every time.
+Before using a prefix array, do this: write down in words what `p[i]` holds, then check one query by hand on a four-element example. An off-by-one here is silent. You do not get a crash, you get a number, and the number is wrong. In C++ it is quieter still: reading `p[r + 1]` one past the end of a `vector` with `[]` is undefined behaviour rather than a thrown exception, so you get a plausible-looking garbage value instead of a complaint. Use `.at()` while debugging if you want the bounds check. Silent wrong answers are far more expensive than loud ones, which is why the thirty seconds of checking is worth it every time.
 
 Total cost: $\mathcal{O}(n)$ to build, $\mathcal{O}(1)$ per question. Forty billion steps became four hundred thousand.
 
@@ -81,17 +84,19 @@ Total cost: $\mathcal{O}(n)$ to build, $\mathcal{O}(1)$ per question. Forty bill
 
 The same idea in a grid, which is where it starts to feel like magic. `P[i][j]` is the sum of the rectangle from the top-left corner to `(i-1, j-1)`.
 
-```python
-def build_prefix_2d(g):
-    r, c = len(g), len(g[0])
-    P = [[0] * (c + 1) for _ in range(r + 1)]
-    for i in range(r):
-        for j in range(c):
-            P[i + 1][j + 1] = g[i][j] + P[i][j + 1] + P[i + 1][j] - P[i][j]
-    return P
+```cpp
+vector<vector<long long>> build_prefix_2d(const vector<vector<int>>& g) {
+    int r = (int)g.size(), c = (int)g[0].size();
+    vector<vector<long long>> P(r + 1, vector<long long>(c + 1, 0));
+    for (int i = 0; i < r; ++i)
+        for (int j = 0; j < c; ++j)
+            P[i + 1][j + 1] = g[i][j] + P[i][j + 1] + P[i + 1][j] - P[i][j];
+    return P;
+}
 
-def rect_sum(P, r1, c1, r2, c2):
-    return P[r2 + 1][c2 + 1] - P[r1][c2 + 1] - P[r2 + 1][c1] + P[r1][c1]
+long long rect_sum(const vector<vector<long long>>& P, int r1, int c1, int r2, int c2) {
+    return P[r2 + 1][c2 + 1] - P[r1][c2 + 1] - P[r2 + 1][c1] + P[r1][c1];
+}
 ```
 
 Both formulas are inclusion and exclusion. Adding the block above and the block to the left double-counts their overlap, so subtract it once:
@@ -118,20 +123,25 @@ Prefix sums answer range questions. Turn them around and they *apply* range upda
 
 Suppose you must add `v` to every element from `l` to `r`, many times, and only read the array at the end. Instead of touching the range, record the change at its two edges:
 
-```python
-def build_difference(n):
-    return [0] * (n + 1)
+```cpp
+vector<long long> build_difference(int n) {
+    return vector<long long>(n + 1, 0);            // one extra slot for d[r + 1]
+}
 
-def add_range(d, l, r, v):
-    d[l] += v
-    d[r + 1] -= v          # cancel the addition after the range ends
+void add_range(vector<long long>& d, int l, int r, long long v) {
+    d[l] += v;
+    d[r + 1] -= v;         // cancel the addition after the range ends
+}
 
-def finish(d, n):
-    out, running = [], 0
-    for i in range(n):
-        running += d[i]
-        out.append(running)
-    return out
+vector<long long> finish(const vector<long long>& d, int n) {
+    vector<long long> out;
+    long long running = 0;
+    for (int i = 0; i < n; ++i) {
+        running += d[i];
+        out.push_back(running);
+    }
+    return out;
+}
 ```
 
 Each update is two writes instead of `r - l + 1`, and one final pass turns the record into the answer. This is exactly the same identity read backwards, and it is the standard answer to "there are 200,000 range updates and one query".
@@ -148,18 +158,20 @@ Put one pointer at each end. Look at the sum:
 - Too big? The only way to make it smaller is to move the right pointer left.
 - Equal? Found it.
 
-```python
-def has_pair(a, target):
-    lo, hi = 0, len(a) - 1
-    while lo < hi:
-        s = a[lo] + a[hi]
-        if s == target:
-            return (lo, hi)
-        if s < target:
-            lo += 1
-        else:
-            hi -= 1
-    return None
+```cpp
+pair<int, int> has_pair(const vector<int>& a, long long target) {
+    int lo = 0, hi = (int)a.size() - 1;
+    while (lo < hi) {
+        long long s = (long long)a[lo] + a[hi];    // widen before adding
+        if (s == target)
+            return {lo, hi};
+        if (s < target)
+            ++lo;
+        else
+            --hi;
+    }
+    return {-1, -1};                               // no such pair
+}
 ```
 
 ```
@@ -182,18 +194,22 @@ Now the version you will reach for most often. Given an array of **positive** nu
 
 Both pointers move right this time. The right edge expands to bring the sum up; the left edge contracts while the sum is still large enough, recording the best length as it goes.
 
-```python
-def shortest_at_least(a, target):
-    best = float('inf')
-    left = 0
-    running = 0
-    for right, x in enumerate(a):
-        running += x
-        while running >= target:            # shrink while still valid
-            best = min(best, right - left + 1)
-            running -= a[left]
-            left += 1
-    return None if best == float('inf') else best
+```cpp
+int shortest_at_least(const vector<int>& a, long long target) {
+    const long long INF = (long long)1e18;
+    long long best = INF;
+    int left = 0;
+    long long running = 0;
+    for (int right = 0; right < (int)a.size(); ++right) {
+        running += a[right];
+        while (running >= target) {                       // shrink while still valid
+            best = min(best, (long long)(right - left + 1));
+            running -= a[left];
+            ++left;
+        }
+    }
+    return best == INF ? -1 : (int)best;                  // -1 means no such run
+}
 ```
 
 ```
@@ -230,19 +246,21 @@ $$
 
 So walk left to right keeping a count of every prefix value seen so far. At each position, the number of subarrays ending here with sum `k` is the number of times `p[r+1] - k` has already appeared.
 
-```python
-from collections import defaultdict
-
-def count_subarrays(a, k):
-    seen = defaultdict(int)
-    seen[0] = 1              # the empty prefix, so a[0..r] can be counted
-    running = 0
-    total = 0
-    for x in a:
-        running += x
-        total += seen[running - k]
-        seen[running] += 1
-    return total
+```cpp
+long long count_subarrays(const vector<int>& a, long long k) {
+    unordered_map<long long, long long> seen;
+    seen[0] = 1;             // the empty prefix, so a[0..r] can be counted
+    long long running = 0;
+    long long total = 0;
+    for (int x : a) {
+        running += x;
+        auto it = seen.find(running - k);
+        if (it != seen.end())
+            total += it->second;   // count 0 if that prefix never appeared
+        seen[running] += 1;
+    }
+    return total;
+}
 ```
 
 $\mathcal{O}(n)$ time, $\mathcal{O}(n)$ space, and it handles negatives without a special case. The `seen[0] = 1` line is the one people forget: without it, a subarray that starts at index 0 is never counted, because its matching prefix is the empty one.

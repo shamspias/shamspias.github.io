@@ -20,14 +20,14 @@ math: true
 
 Fibonacci, written the way the definition reads.
 
-```python
-def fib(n):
-    if n <= 1:
-        return n
-    return fib(n - 1) + fib(n - 2)
+```cpp
+long long fib(int n) {
+    if (n <= 1) return n;
+    return fib(n - 1) + fib(n - 2);
+}
 ```
 
-Correct, and catastrophically slow. `fib(40)` takes seconds. `fib(60)` will not finish in your lifetime.
+Correct, and catastrophically slow. `fib(40)` takes about a second even in C++. `fib(60)` runs for hours, and `fib(100)` will not finish in your lifetime.
 
 Draw two levels of the call tree and the reason is obvious:
 
@@ -51,31 +51,41 @@ And here is the thing worth noticing: there are only **41** distinct values of `
 
 Keep a dictionary. Before computing, look; after computing, store.
 
-```python
-def fib(n, memo={}):
-    if n <= 1:
-        return n
-    if n in memo:
-        return memo[n]
-    memo[n] = fib(n - 1, memo) + fib(n - 2, memo)
-    return memo[n]
+```cpp
+long long fib(int n, unordered_map<int, long long>& memo) {
+    if (n <= 1) return n;
+    auto it = memo.find(n);
+    if (it != memo.end()) return it->second;              // look before computing
+    long long value = fib(n - 1, memo) + fib(n - 2, memo);
+    memo[n] = value;                                      // store after computing
+    return value;
+}
+
+long long fib(int n) {                                    // wrapper: one fresh cache per call
+    unordered_map<int, long long> memo;
+    return fib(n, memo);
+}
 ```
 
-`fib(500)` is now instant. The cost went from $\mathcal{O}(1.618^n)$ to $\mathcal{O}(n)$, because each of the `n` distinct subproblems is computed exactly once and looked up thereafter.
+`fib(500)` is now instant, though in C++ the value itself overflows a 64-bit `long long` after `fib(92)`, so a genuine answer needs a big-integer type or a modulus. The cost went from $\mathcal{O}(1.618^n)$ to $\mathcal{O}(n)$, because each of the `n` distinct subproblems is computed exactly once and looked up thereafter.
 
-In Python the standard library does it for you, and this is what I actually write:
+C++ has no ready-made caching wrapper in the standard library, so the cache is two lines you write yourself, and this is what I actually write:
 
-```python
-from functools import lru_cache
-
-@lru_cache(maxsize=None)
-def fib(n):
-    return n if n <= 1 else fib(n - 1) + fib(n - 2)
+```cpp
+long long fib(int n) {
+    static unordered_map<int, long long> memo;    // created once, shared by every call
+    if (n <= 1) return n;
+    auto it = memo.find(n);
+    if (it != memo.end()) return it->second;      // already worked out
+    long long value = fib(n - 1) + fib(n - 2);
+    memo[n] = value;
+    return value;
+}
 ```
 
-One decorator. Nothing else changed. That is the entire technique.
+One `static` table and two lines around the body. Nothing else changed. That is the entire technique.
 
-A warning about the first version, since it is a classic Python trap: `memo={}` as a default argument is created **once**, when the function is defined, and shared by every call. For a pure function of `n` that is exactly what you want, and it is why the trick works. But if the "right" answer ever depends on something outside `n`, that shared dictionary will hand you a stale result from a previous run and you will spend an hour finding it. Use `lru_cache`, or pass the dictionary explicitly.
+A warning about the second version, since it is the same trap in C++ clothing: a `static` local `unordered_map` is created **once**, on the first call, and shared by every call afterwards. For a pure function of `n` that is exactly what you want, and it is why the trick works. But if the "right" answer ever depends on something outside `n`, that shared map will hand you a stale result from a previous run and you will spend an hour finding it. Drop the `static` and pass the map in by reference, so each top-level call gets its own cache.
 
 ## 3. When memoisation applies
 
@@ -95,7 +105,7 @@ That single formula is how you decide whether a memoised recursion will be fast 
 
 ## 4. Choosing the state, which is the actual skill
 
-The code is a decorator. The thinking is picking what to memoise on, and getting it wrong shows up in two ways: a cache that never hits, or a cache that hits when it should not and returns wrong answers.
+The code is a lookup and a store. The thinking is picking what to memoise on, and getting it wrong shows up in two ways: a cache that never hits, or a cache that hits when it should not and returns wrong answers.
 
 Three rules.
 
@@ -103,22 +113,31 @@ Three rules.
 
 **Include nothing else.** Every extra dimension multiplies the state count. If you pass the whole remaining list when an index would do, every call has a unique key and the cache is dead weight.
 
-**States must be hashable and cheap to hash.** A tuple of integers is ideal. A list is not hashable. A frozenset works but hashing it costs proportional to its size, which can quietly dominate.
+**States must be cheap to look up.** A couple of small integers is ideal, because you can index a `vector` directly and skip hashing altogether. `std::unordered_map` has no built-in hash for `pair`, `tuple` or `vector`, so keying on one means writing a hash functor yourself or falling back to `std::map`, which pays a comparison per level of the tree. Hashing or comparing a `set` or a `vector` costs time proportional to its size, which can quietly dominate.
 
 Here is the mistake in its natural habitat. Counting paths through a grid, only moving right or down:
 
-```python
-# Wrong: the key is the whole remaining grid, so nothing ever repeats
-@lru_cache(maxsize=None)
-def paths(grid_tuple, r, c):
-    ...
+```cpp
+// Wrong: the key is the whole grid, so nothing ever repeats
+long long paths_wrong(const vector<vector<int>>& grid, int r, int c,
+                      map<tuple<vector<vector<int>>, int, int>, long long>& memo) {
+    if (r == 0 || c == 0) return 1;
+    auto key = make_tuple(grid, r, c);                    // the whole grid copied into the key
+    auto it = memo.find(key);
+    if (it != memo.end()) return it->second;
+    long long total = paths_wrong(grid, r - 1, c, memo)
+                    + paths_wrong(grid, r, c - 1, memo);
+    memo[key] = total;
+    return total;
+}
 
-# Right: the grid never changes, so it is not part of the state
-@lru_cache(maxsize=None)
-def paths(r, c):
-    if r == 0 or c == 0:
-        return 1
-    return paths(r - 1, c) + paths(r, c - 1)
+// Right: the grid never changes, so it is not part of the state
+long long paths(int r, int c, vector<vector<long long>>& memo) {
+    if (r == 0 || c == 0) return 1;
+    if (memo[r][c] != -1) return memo[r][c];              // look before computing
+    memo[r][c] = paths(r - 1, c, memo) + paths(r, c - 1, memo);
+    return memo[r][c];
+}
 ```
 
 The grid is constant across the whole computation, so putting it in the key adds nothing but cost. Everything that varies goes in; everything that does not, stays out.
@@ -139,22 +158,27 @@ Follow the [recursion habit from part 8](/posts/2017/07/recursion-and-backtracki
 - insert `b[j-1]`, leaving `dist(i, j-1)`
 - substitute, leaving `dist(i-1, j-1)`
 
-```python
-from functools import lru_cache
+```cpp
+// dist(i, j) is the edit distance between the first i characters of a
+// and the first j characters of b
+int dist(int i, int j, const string& a, const string& b, vector<vector<int>>& memo) {
+    if (i == 0) return j;                        // insert everything left of b
+    if (j == 0) return i;                        // delete everything left of a
+    if (memo[i][j] != -1) return memo[i][j];     // already worked out
+    if (a[i - 1] == b[j - 1])
+        memo[i][j] = dist(i - 1, j - 1, a, b, memo);
+    else
+        memo[i][j] = 1 + min({dist(i - 1, j, a, b, memo),        // delete
+                              dist(i, j - 1, a, b, memo),        // insert
+                              dist(i - 1, j - 1, a, b, memo)});  // substitute
+    return memo[i][j];
+}
 
-def edit_distance(a, b):
-    @lru_cache(maxsize=None)
-    def dist(i, j):
-        if i == 0:
-            return j                 # insert everything left of b
-        if j == 0:
-            return i                 # delete everything left of a
-        if a[i - 1] == b[j - 1]:
-            return dist(i - 1, j - 1)
-        return 1 + min(dist(i - 1, j),        # delete
-                       dist(i, j - 1),        # insert
-                       dist(i - 1, j - 1))    # substitute
-    return dist(len(a), len(b))
+int edit_distance(const string& a, const string& b) {
+    int n = (int)a.size(), m = (int)b.size();
+    vector<vector<int>> memo(n + 1, vector<int>(m + 1, -1));      // -1 means not computed yet
+    return dist(n, m, a, b, memo);
+}
 ```
 
 States: $i$ from 0 to $n$, $j$ from 0 to $m$, so $(n+1)(m+1)$ of them. Work per state: constant, three comparisons and a `min`. Total: $\mathcal{O}(nm)$.
@@ -198,32 +222,43 @@ My habit, and I recommend it: **write it top-down first.** The recursion follows
 
 **Coin change, counting the ways.** How many ways to make `amount` from a list of coin values, order not mattering?
 
-```python
-def ways(amount, coins):
-    @lru_cache(maxsize=None)
-    def go(i, left):
-        if left == 0:
-            return 1
-        if left < 0 or i == len(coins):
-            return 0
-        return go(i + 1, left) + go(i, left - coins[i])
-    return go(0, amount)
+```cpp
+long long go(int i, int left, const vector<int>& coins, vector<vector<long long>>& memo) {
+    if (left == 0) return 1;
+    if (left < 0 || i == (int)coins.size()) return 0;
+    if (memo[i][left] != -1) return memo[i][left];             // already worked out
+    memo[i][left] = go(i + 1, left, coins, memo)               // give up on coin i
+                  + go(i, left - coins[i], coins, memo);       // use coin i once more
+    return memo[i][left];
+}
+
+long long ways(int amount, const vector<int>& coins) {
+    vector<vector<long long>> memo(coins.size(),
+                                   vector<long long>(amount + 1, -1));   // -1 means not computed
+    return go(0, amount, coins, memo);
+}
 ```
 
 The state is `(i, left)`: which coins remain available, and how much is left to make. Passing `i` rather than allowing any coin at any time is what stops `2 + 3` and `3 + 2` being counted separately.
 
 **Longest common subsequence.** The other half of `diff`.
 
-```python
-def lcs(a, b):
-    @lru_cache(maxsize=None)
-    def go(i, j):
-        if i == 0 or j == 0:
-            return 0
-        if a[i - 1] == b[j - 1]:
-            return 1 + go(i - 1, j - 1)
-        return max(go(i - 1, j), go(i, j - 1))
-    return go(len(a), len(b))
+```cpp
+int go(int i, int j, const string& a, const string& b, vector<vector<int>>& memo) {
+    if (i == 0 || j == 0) return 0;
+    if (memo[i][j] != -1) return memo[i][j];                   // already worked out
+    if (a[i - 1] == b[j - 1])
+        memo[i][j] = 1 + go(i - 1, j - 1, a, b, memo);
+    else
+        memo[i][j] = max(go(i - 1, j, a, b, memo), go(i, j - 1, a, b, memo));
+    return memo[i][j];
+}
+
+int lcs(const string& a, const string& b) {
+    int n = (int)a.size(), m = (int)b.size();
+    vector<vector<int>> memo(n + 1, vector<int>(m + 1, -1));    // -1 means not computed yet
+    return go(n, m, a, b, memo);
+}
 ```
 
 Same state space as edit distance, same $\mathcal{O}(nm)$. Notice how similar the two functions are: once you see the shape "two indices walking backwards through two sequences", a whole family of problems opens up at once.
@@ -234,19 +269,19 @@ Same state space as edit distance, same $\mathcal{O}(nm)$. Notice how similar th
 
 **Cache key too big.** No speedup, and memory blowing up. Check that the state count is what you think it is.
 
-**Unhashable state.** Lists and dictionaries cannot be keys. Convert to tuples, and if you are tempted to key on a set, ask whether an index would do instead.
+**A key with no hash.** `std::unordered_map` will not accept a `pair`, `tuple` or `vector` key without a hand-written hash functor. Pack the state into small integers and index a `vector`, or use `std::map` and pay the comparisons, and if you are tempted to key on a `set`, ask whether an index would do instead.
 
-**Stack depth.** A memoised recursion `n` levels deep still needs `n` stack frames the first time down. With `n = 200,000`, raise the limit or go bottom-up.
+**Stack depth.** A memoised recursion `n` levels deep still needs `n` stack frames the first time down. With `n = 200,000` there is no recursion limit to raise in C++: the default stack is a few megabytes and it simply overflows, so either enlarge the stack or go bottom-up.
 
 **Memory.** An $n \times m$ cache with both at 10,000 is $10^8$ entries, which will not fit. That is the case where bottom-up plus keeping only the previous row is not an optimisation but the only option.
 
 ## The short version
 
 - A recursion that recomputes subproblems is doing exponential work for a linear amount of information. `fib(40)` computes `fib(2)` a hundred million times to produce forty-one numbers.
-- The fix is a dictionary: look before computing, store after. In Python that is one `lru_cache` decorator.
+- The fix is a dictionary: look before computing, store after. In C++ that is a `static` table, or a `vector` you pass by reference.
 - It applies when the function is pure and subproblems actually repeat. It is a trade of memory for repeated work, not a free speedup.
 - Cost is the number of distinct states times the work per state. Count the states before writing anything and compare against the budget.
-- Choosing the state is the real skill. Include everything the answer depends on, nothing else, and keep it a tuple of integers.
+- Choosing the state is the real skill. Include everything the answer depends on, nothing else, and keep it a couple of small integers you can index a table with.
 - A key that is too small gives wrong answers quietly. A key that is too big gives no speedup at all.
 - Write it top-down first, because the recursion follows the definition and is hard to get wrong. Convert to bottom-up when you need the smaller constant or the smaller memory.
 
