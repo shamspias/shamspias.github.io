@@ -28,6 +28,7 @@ scripts/
   build-assets.mjs      favicon, icons, social card, KaTeX subset  (npm run assets)
   audit.mjs             responsive + a11y sweep, 14 pages x 10 viewports
   contrast.mjs          WCAG check on every token pair
+  glyphs.mjs            asserts the mono face carries the diagram characters
   shots.mjs             screenshot sheet for design review
 public/                 CNAME, robots.txt, and everything build-assets generates
 ```
@@ -95,10 +96,21 @@ posts need:
 ## Checks
 
 ```bash
-node scripts/contrast.mjs   # every token pair against WCAG AA
+npm run verify              # contrast + mono glyph coverage, no server needed
 node scripts/audit.mjs      # needs a server on :4321
 node scripts/shots.mjs ./shots
 ```
+
+`glyphs.mjs` is worth explaining. The diagrams in these posts are drawn with
+1,657 box-drawing characters, 155 block elements and 197 arrows. A `latin`-subset
+webfont usually contains none of them, so they resolve from whatever monospace
+font the visitor has installed. On macOS that is Menlo, whose advance is also
+0.6em, so the drawings look perfect and the bug is invisible; on a machine that
+falls back to Consolas at 0.55em the same drawings shear. This is why the site
+uses **Commit Mono** (1,932 glyphs in the latin subset, all of them present) and
+not JetBrains Mono (394 glyphs, zero box-drawing). The script opens the emitted
+`.woff2` and asserts coverage in the file, because measuring the rendered page
+only tells you what the machine running the test happens to have installed.
 
 `audit.mjs` drives the locally installed Chrome across ten viewports from 320px to
 3840px and fails on horizontal overflow, missing alt text, a heading outline with more

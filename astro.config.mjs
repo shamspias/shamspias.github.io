@@ -53,7 +53,17 @@ export default defineConfig({
     },
     {
       provider: fontProviders.fontsource(),
-      name: 'JetBrains Mono',
+      // Commit Mono, not JetBrains Mono, and the reason is measured rather than
+      // aesthetic. This corpus draws its diagrams with 1,657 box-drawing
+      // characters, 155 block elements and 197 arrows. JetBrains Mono's latin
+      // subset is 394 glyphs and contains none of them, so every one of those
+      // characters silently fell back to a system font at a different advance
+      // width and sheared the drawings. Commit Mono's latin subset is 1,932
+      // glyphs and covers box drawing, blocks, geometric shapes, arrows, maths
+      // operators, Greek and subscripts, all at the same 0.6em advance.
+      // `node scripts/glyphs.mjs` asserts this; do not swap this face without
+      // running it.
+      name: 'Commit Mono',
       cssVariable: '--font-mono',
       weights: [400, 500, 600],
       styles: ['normal'],

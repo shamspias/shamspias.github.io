@@ -178,9 +178,9 @@ $$
 \text{Gain} = H(\text{parent}) - \left(\frac{|L|}{|S|}H(L) + \frac{|R|}{|S|}H(R)\right)
 $$
 
-- $$ (H(\text{parent})) $$ = entropy of the big pile before splitting  
-- $$ (H(L) \), \( H(R)) $$ = entropy of the left/right piles
-- $$ (\\|L\\|/\\|S\\| \), \( \\|R\\|/\\|S\\|) $$ = how big each new pile is, as a fraction
+- $H(\text{parent})$ = entropy of the big pile before splitting
+- $H(L)$, $H(R)$ = entropy of the left/right piles
+- $|L|/|S|$, $|R|/|S|$ = how big each new pile is, as a fraction
 
 In our example:
 
