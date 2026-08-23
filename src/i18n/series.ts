@@ -12,6 +12,15 @@ import { DEFAULT_LOCALE, type Locale } from './config';
 type Blurbs = Partial<Record<Locale, string>>;
 
 const SERIES: Record<string, Blurbs> = {
+  'LLM and Agent Security': {
+    en:
+      'Security for systems built on language models, where the oldest bug wears a new face: ' +
+      'the model treats every piece of text as an instruction, so untrusted input is untrusted ' +
+      'code. Prompt injection, direct and indirect, the blast radius of a tool-calling agent, ' +
+      'masking PII and secrets before they reach the model, exfiltration through the model own ' +
+      'output, and the harness that keeps an agent inside the authority of the person who asked. ' +
+      'Every attack paired with the practice that contains it.',
+  },
   'Security From the Ground Up': {
     en:
       'How systems get broken, and how they get defended, from first principles. Every ' +
