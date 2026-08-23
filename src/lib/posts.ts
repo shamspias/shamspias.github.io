@@ -86,23 +86,5 @@ export function byYear(posts: Post[]): { year: number; posts: Post[] }[] {
   return [...years.entries()].sort((a, b) => b[0] - a[0]).map(([year, ps]) => ({ year, posts: ps }));
 }
 
-const EMOJI_RUN =
-  /(?:\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic}|[\u{1F3FB}-\u{1F3FF}])*)+|[\u{1F1E6}-\u{1F1FF}]{2}/gu;
-
-const escapeHtml = (s: string) =>
-  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-/**
- * Every post title in this collection ends in an emoji. The rehype pass handles
- * headings inside the rendered body; titles come from frontmatter and never
- * touch that pipeline, so they are wrapped here instead. Output is escaped
- * first, so this is safe to hand to `set:html`.
- */
-export function wrapEmoji(text: string): string {
-  return escapeHtml(text).replace(EMOJI_RUN, (m) => `<span class="e" role="presentation">${m}</span>`);
-}
-
-/** The title with its emoji removed, for <title>, meta tags and the RSS feed. */
-export function plainTitle(text: string): string {
-  return text.replace(EMOJI_RUN, '').replace(/\s+/g, ' ').trim();
-}
+/** Titles are plain text now that no emoji remain in them. */
+export const plainTitle = (text: string) => text.trim();

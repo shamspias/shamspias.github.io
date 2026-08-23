@@ -13,7 +13,6 @@ import {
   seriesOf,
   slugifyTag,
   urlOf,
-  wrapEmoji,
   type Post,
 } from '../../lib/posts';
 
@@ -86,7 +85,7 @@ const schema = {
           </p>
         )
       }
-      <h1 class="display article__title" set:html={wrapEmoji(title)} />
+      <h1 class="display article__title">{title}</h1>
     </header>
 
     <div class="article__grid">
@@ -129,7 +128,7 @@ const schema = {
               <ol class="toc__list">
                 {toc.map((h: { slug: string; text: string }) => (
                   <li>
-                    <a href={`#${h.slug}`} set:html={wrapEmoji(h.text)} />
+                    <a href={`#${h.slug}`}>{h.text}</a>
                   </li>
                 ))}
               </ol>
@@ -159,9 +158,9 @@ const schema = {
                     {String(s.data.seriesOrder ?? 0).padStart(2, '0')}
                   </span>
                   {current ? (
-                    <span class="series-strip__title" aria-current="page" set:html={wrapEmoji(s.data.title)} />
+                    <span class="series-strip__title" aria-current="page">{s.data.title}</span>
                   ) : (
-                    <a class="series-strip__title" href={urlOf(s)} set:html={wrapEmoji(s.data.title)} />
+                    <a class="series-strip__title" href={urlOf(s)}>{s.data.title}</a>
                   )}
                 </li>
               );
@@ -179,7 +178,7 @@ const schema = {
             {older && (
               <a class="adjacent__link" href={urlOf(older)} rel="prev">
                 <span class="label">Previous</span>
-                <span class="adjacent__title" set:html={wrapEmoji(older.data.title)} />
+                <span class="adjacent__title">{older.data.title}</span>
               </a>
             )}
           </div>
@@ -187,7 +186,7 @@ const schema = {
             {newer && (
               <a class="adjacent__link" href={urlOf(newer)} rel="next">
                 <span class="label">Next</span>
-                <span class="adjacent__title" set:html={wrapEmoji(newer.data.title)} />
+                <span class="adjacent__title">{newer.data.title}</span>
               </a>
             )}
           </div>

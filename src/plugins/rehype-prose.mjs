@@ -8,55 +8,12 @@
 const HEADINGS = new Set(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']);
 
 /** Contiguous runs of emoji, including ZWJ sequences and variation selectors. */
-const EMOJI_RUN =
-  /(?:\p{Extended_Pictographic}(?:️|‍\p{Extended_Pictographic}|[\u{1F3FB}-\u{1F3FF}])*)+|[\u{1F1E6}-\u{1F1FF}]{2}/gu;
-
 function walk(node, parent, fn) {
   if (!node || typeof node !== 'object') return;
   fn(node, parent);
   const kids = node.children;
   if (!Array.isArray(kids)) return;
   for (let i = 0; i < kids.length; i++) walk(kids[i], node, fn);
-}
-
-/**
- * Every post in this collection puts an emoji at the end of its title and of
- * most headings. Left alone at full size they shout; wrapped in a span they can
- * be held back to read as ornament. CSS cannot select an emoji, so this is the
- * only place the job can be done.
- */
-export function rehypeHeadingEmoji() {
-  return (tree) => {
-    walk(tree, null, (node) => {
-      if (node.type !== 'element' || !HEADINGS.has(node.tagName)) return;
-      node.children = splitEmoji(node.children);
-    });
-  };
-}
-
-function splitEmoji(children) {
-  const out = [];
-  for (const child of children) {
-    if (child.type !== 'text' || !EMOJI_RUN.test(child.value)) {
-      out.push(child);
-      continue;
-    }
-    EMOJI_RUN.lastIndex = 0;
-    let last = 0;
-    let m;
-    while ((m = EMOJI_RUN.exec(child.value)) !== null) {
-      if (m.index > last) out.push({ type: 'text', value: child.value.slice(last, m.index) });
-      out.push({
-        type: 'element',
-        tagName: 'span',
-        properties: { className: ['e'], role: 'presentation' },
-        children: [{ type: 'text', value: m[0] }],
-      });
-      last = m.index + m[0].length;
-    }
-    if (last < child.value.length) out.push({ type: 'text', value: child.value.slice(last) });
-  }
-  return out;
 }
 
 /**

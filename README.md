@@ -3,6 +3,11 @@
 Personal site of Shamsuddin Ahmed. Static, built with [Astro](https://astro.build), no
 client-side framework, deployed to GitHub Pages.
 
+The design is a letterpress technical monograph: brown-black ink on warm paper, one
+vermilion spent only on links and counters, and **no sans-serif anywhere**. Literata sets
+every word; the entire UI register (nav, metadata, table headers, dates, labels) is
+tracked uppercase Commit Mono, which is the decision that stops it reading as software.
+
 ```bash
 npm install
 npm run dev        # http://localhost:4321
@@ -26,6 +31,7 @@ src/
   styles/global.css     the whole design system, as custom properties
 scripts/
   build-assets.mjs      favicon, icons, social card, KaTeX subset  (npm run assets)
+  cutout.swift          lifts the subject out of a photo via Vision, writes a PNG
   audit.mjs             responsive + a11y sweep, 14 pages x 10 viewports
   contrast.mjs          WCAG check on every token pair
   glyphs.mjs            asserts the mono face carries the diagram characters
@@ -42,10 +48,24 @@ public/                 CNAME, robots.txt, and everything build-assets generates
 | `/posts/YYYY/MM/slug/` | `pages/posts/[...path].astro` |
 | `/series/`, `/series/<slug>/` | `pages/series/` |
 | `/tags/`, `/tags/<slug>/` | `pages/tags/` |
-| `/cv/` | `pages/cv.astro` |
+| `/cv/` | `pages/cv.astro` (unlisted, see below) |
 | `/projects/` | `pages/projects.astro` |
 | `/rss.xml` | `pages/rss.xml.ts` |
 | `/404.html` | `pages/404.astro` |
+
+**The CV is unlisted.** It is fully built and reachable at `/cv/` by anyone holding the
+link, but it is absent from the nav, absent from the sitemap, not linked anywhere on the
+site, and carries `noindex`. Removing it from `NAV` in `src/consts.ts` is what hides it;
+the route itself is untouched.
+
+**The portrait is a cut-out.** `scripts/cutout.swift` runs the same Vision request that
+backs "Copy Subject" in Preview, so the matte follows hair and jacket edges, and writes a
+transparent PNG. The figure then stands directly on the paper with a hairline baseline
+and no frame. It needs no network and no model download:
+
+```bash
+swift scripts/cutout.swift photo.jpg src/assets/shamsuddin-ahmed.png
+```
 
 **Post URLs come from frontmatter, not from the filename.** Every post carries a
 `permalink` that was inherited from the previous Jekyll site, and the route reads it
@@ -84,13 +104,11 @@ every post's maths was authored against `remark-math` semantics. On top of that,
 small local plugins in `src/plugins/rehype-prose.mjs` handle things these particular
 posts need:
 
-- **`rehypeDemoteHeadings`** — two posts use `#` for their in-body sections, which
+- **`rehypeDemoteHeadings`**, two posts use `#` for their in-body sections, which
   would put nineteen `h1`s under the page title. Every heading shifts down one level
   when a document contains an `h1`, so the outline is correct without editing prose.
-- **`rehypeHeadingEmoji`** — nearly every heading ends in an emoji. CSS cannot select
-  one, so they are wrapped in a span and held back to read as ornament.
-- **`rehypeHeadingAnchors`** — a `#` deep link on every `h2`/`h3`/`h4`.
-- **`rehypeScrollableTables`** — wraps each table so a wide comparison table scrolls
+- **`rehypeHeadingAnchors`** - a `#` deep link on every `h2`/`h3`/`h4`.
+- **`rehypeScrollableTables`**, wraps each table so a wide comparison table scrolls
   inside its own box instead of giving the page a horizontal scrollbar.
 
 ## Checks

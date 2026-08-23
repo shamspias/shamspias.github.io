@@ -1,11 +1,15 @@
 /* ==========================================================================
    shamspias.com — design system
 
-   The governing idea is a technical journal: a serif for titles and the lead
-   paragraph, a tight neutral sans for prose, and mono used *structurally* for
-   dates, tags and series numbering rather than decoratively. Nothing sits in a
-   box. Hairline rules do the separating, edge to edge, so the measured column
-   in the middle reads as a deliberate composition at any width.
+   Ink, paper, one red.
+
+   A letterpress technical monograph printed in two inks on warm paper. There is
+   no sans-serif anywhere: Literata sets every word, and the whole UI register
+   arrives as tracked uppercase mono, which is the single decision that stops
+   this reading as software. One vermilion, spent sparingly, is the only colour
+   on the site. No rounded corners, no shadows, no gradients. Nothing sits in a
+   box; hairline rules do the separating, edge to edge, so the measured column
+   reads as a deliberate composition at any width.
    ========================================================================== */
 
 /* --- reset ---------------------------------------------------------------- */
@@ -55,33 +59,38 @@ textarea {
 :root {
   color-scheme: light;
 
-  /* Paper, warmed by a few degrees so it never glares. */
-  --bg: #fcfbf8;
-  --bg-sunken: #f5f3ee;
-  --bg-code: #f7f5f0;
-  --bg-mark: #f6efd7;
+  /* Uncoated paper stock, warm enough to read as a page rather than a screen. */
+  --bg: #faf7f0;
+  --bg-sunken: #f2eee3;
+  --bg-code: #f5f1e6;
+  --bg-mark: #f6e6b8;
 
-  /* Ink, cooled slightly, which reads crisper on warm paper than a warm black. */
-  --fg: #191c20; /* 16.5:1 on --bg */
-  --fg-strong: #0d0f12; /* 18.6:1 */
-  --fg-muted: #545a62; /*  6.7:1 */
-  --fg-faint: #656c75; /*  5.1:1, and 4.8:1 on the sunken surfaces */
+  /* Ink. Brown-black, the colour of letterpress on rag paper, never pure black. */
+  --fg: #1c1815;
+  --fg-strong: #0f0d0b;
+  --fg-muted: #56504a;
+  --fg-faint: #6a635b;
 
-  --rule: #e3e0d8;
-  --rule-strong: #cdc8bd;
+  --rule: #e3dccc;
+  --rule-strong: #c9bfa8;
 
-  --accent: #0f5c74; /*  7.2:1 */
-  --accent-hover: #0a4356;
-  --accent-wash: #e6eef1;
+  /* The one red. Links, the current nav rule, section numerals, series counters,
+     and nothing else. If it starts appearing anywhere a reader cannot click or
+     count, it has been overspent. */
+  --accent: #a8290f;
+  --accent-hover: #7d1c07;
+  --accent-wash: #f6e7e1;
 
-  --selection: #dfe9ec;
+  --selection: #f2e2c9;
 
   /* --- tokens: type ------------------------------------------------------ */
 
   /* Font stacks are wired to the Astro Fonts API variables, each of which
      already carries a metric-matched fallback so there is no layout shift. */
-  --face-display: var(--font-display), Iowan Old Style, Palatino, Georgia, serif;
-  --face-sans: var(--font-sans), -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif;
+  --face-text: var(--font-text), Iowan Old Style, Charter, Georgia, serif;
+  --face-display: var(--face-text);
+  --face-sans: var(--face-text);
+  /* Kept only so the mono label mixin below reads clearly. */
   --face-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   /* A ~1.22 scale, fluid from 360px to 1600px. The 4K uplift is a second step
@@ -136,48 +145,49 @@ textarea {
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --bg: #14161a;
-  --bg-sunken: #1a1d22;
-  --bg-code: #1b1e23;
-  --bg-mark: #3a3520;
+  /* The same page after dark: ink and paper trade places, the warmth stays. */
+  --bg: #15130f;
+  --bg-sunken: #1d1a15;
+  --bg-code: #1e1b15;
+  --bg-mark: #453a1c;
 
-  --fg: #e7e5e0; /* 14.4:1 on --bg */
-  --fg-strong: #f6f4f0; /* 16.5:1 */
-  --fg-muted: #a3a8b0; /*  7.6:1 */
-  --fg-faint: #868c94; /*  5.3:1, and 4.9:1 on the sunken surfaces */
+  --fg: #e9e3d7;
+  --fg-strong: #f7f3ea;
+  --fg-muted: #a69d8f;
+  --fg-faint: #8d8477;
 
-  --rule: #262a30;
-  --rule-strong: #363b43;
+  --rule: #2b2620;
+  --rule-strong: #3d372d;
 
-  --accent: #79c2dc; /*  9.1:1 */
-  --accent-hover: #a3d6e8;
-  --accent-wash: #1b2a31;
+  --accent: #f0705a;
+  --accent-hover: #f79781;
+  --accent-wash: #2c1c17;
 
-  --selection: #26333a;
+  --selection: #3a2a20;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
 
-    --bg: #14161a;
-    --bg-sunken: #1a1d22;
-    --bg-code: #1b1e23;
-    --bg-mark: #3a3520;
+    --bg: #15130f;
+    --bg-sunken: #1d1a15;
+    --bg-code: #1e1b15;
+    --bg-mark: #453a1c;
 
-    --fg: #e7e5e0;
-    --fg-strong: #f6f4f0;
-    --fg-muted: #a3a8b0;
-    --fg-faint: #868c94;
+    --fg: #e9e3d7;
+    --fg-strong: #f7f3ea;
+    --fg-muted: #a69d8f;
+    --fg-faint: #8d8477;
 
-    --rule: #262a30;
-    --rule-strong: #363b43;
+    --rule: #2b2620;
+    --rule-strong: #3d372d;
 
-    --accent: #79c2dc;
-    --accent-hover: #a3d6e8;
-    --accent-wash: #1b2a31;
+    --accent: #f0705a;
+    --accent-hover: #f79781;
+    --accent-wash: #2c1c17;
 
-    --selection: #26333a;
+    --selection: #3a2a20;
   }
 }
 
@@ -341,7 +351,7 @@ time,
 
 .display {
   font-family: var(--face-display);
-  font-weight: 500;
+  font-weight: 600;
   line-height: var(--lh-tight);
   letter-spacing: var(--tr-tight);
   text-wrap: balance;
@@ -355,17 +365,6 @@ time,
   line-height: 1.5;
   color: var(--fg-muted);
   text-wrap: pretty;
-}
-
-/* Emoji inside headings are wrapped by a rehype plugin. Every post title and
-   heading in the archive carries one, so they are held back to read as
-   ornament instead of as shouting. */
-.e {
-  font-size: 0.82em;
-  opacity: 0.72;
-  vertical-align: 0.04em;
-  font-style: normal;
-  letter-spacing: 0;
 }
 
 /* --- links that behave like index entries -------------------------------- */
@@ -484,8 +483,10 @@ time,
   text-decoration-color: currentColor;
 }
 
+/* One family sets everything, so bold has to be genuinely bold to register
+   against 400 body text. */
 .prose strong {
-  font-weight: 600;
+  font-weight: 700;
   color: var(--fg-strong);
 }
 

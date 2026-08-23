@@ -13,9 +13,9 @@ import sharp from 'sharp';
 const ROOT = path.resolve(import.meta.dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
 
-const INK = '#191c20';
-const PAPER = '#fcfbf8';
-const ACCENT = '#0f5c74';
+const INK = '#1c1815';
+const PAPER = '#faf7f0';
+const ACCENT = '#a8290f';
 
 /* --- the mark -------------------------------------------------------------
    A serif S held inside a hairline square, with one corner left open. The open
@@ -41,16 +41,16 @@ const ogSvg = `
   <rect x="0" y="0" width="1200" height="6" fill="${ACCENT}"/>
   <g transform="translate(96 150)">
     <text x="0" y="0" font-family="ui-monospace, 'DejaVu Sans Mono', monospace" font-size="20"
-          letter-spacing="6" fill="#757c85">SENIOR SOFTWARE ENGINEER</text>
+          letter-spacing="6" fill="#6a635b">SENIOR SOFTWARE ENGINEER</text>
     <text x="0" y="112" font-family="Georgia, 'DejaVu Serif', serif" font-size="96"
           font-weight="500" fill="${INK}">Shamsuddin Ahmed</text>
-    <line x1="0" y1="176" x2="1008" y2="176" stroke="#e3e0d8" stroke-width="2"/>
+    <line x1="0" y1="176" x2="1008" y2="176" stroke="#c9bfa8" stroke-width="2"/>
     <text x="0" y="236" font-family="Georgia, 'DejaVu Serif', serif" font-size="38"
-          font-style="italic" fill="#545a62">Agent harnesses, LLM infrastructure,</text>
+          font-style="italic" fill="#56504a">Agent harnesses, LLM infrastructure,</text>
     <text x="0" y="290" font-family="Georgia, 'DejaVu Serif', serif" font-size="38"
-          font-style="italic" fill="#545a62">and machine learning for biology.</text>
+          font-style="italic" fill="#56504a">and machine learning for biology.</text>
     <text x="0" y="384" font-family="ui-monospace, 'DejaVu Sans Mono', monospace" font-size="20"
-          letter-spacing="4" fill="#757c85">SHAMSPIAS.COM</text>
+          letter-spacing="4" fill="#6a635b">SHAMSPIAS.COM</text>
   </g>
 </svg>`;
 

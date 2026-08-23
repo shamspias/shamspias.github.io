@@ -32,7 +32,11 @@ const isCurrent = (href: string) => (href === '/' ? here === '/' : here.startsWi
 </header>
 
 <style>
+  /* The one red, stated once at the head of every page. A press sheet carries
+     its second ink at the trim edge; this is that, and it is the only place the
+     accent appears as a field rather than as a mark on something clickable. */
   .site-header {
+    border-top: 3px solid var(--accent);
     border-bottom: var(--rule-w) solid var(--rule);
     background: var(--bg);
   }

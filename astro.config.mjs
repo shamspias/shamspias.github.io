@@ -8,7 +8,6 @@ import rehypeKatex from 'rehype-katex';
 import {
   rehypeDemoteHeadings,
   rehypeHeadingAnchors,
-  rehypeHeadingEmoji,
   rehypeScrollableTables,
 } from './src/plugins/rehype-prose.mjs';
 
@@ -22,47 +21,38 @@ export default defineConfig({
 
   integrations: [
     sitemap({
-      filter: (page) => !page.includes('/404'),
+      // The CV is unlisted: reachable by anyone holding the link, absent from
+      // the nav and absent from the sitemap.
+      filter: (page) => !page.includes('/404') && !page.includes('/cv'),
     }),
   ],
 
   // Self-hosted, subset, with metric-matched fallbacks so there is no layout shift.
+  // Two families, no sans-serif. Literata carries every word on the site, with
+  // display weight coming off its `wght` axis rather than a second serif; the
+  // entire UI register (nav, metadata, table headers, labels, dates) is tracked
+  // uppercase Commit Mono, which is the decision that stops this reading as
+  // software. Self-hosted, subset to latin, metric-matched fallbacks.
   fonts: [
     {
       provider: fontProviders.fontsource(),
-      name: 'Newsreader',
-      cssVariable: '--font-display',
-      // Static instances, not a variable range. Newsreader's variable build
-      // carries an optical-size axis that pushes the latin subset to 132 kB per
-      // style; the three weights actually used come to a third of that.
-      weights: [400, 500, 600],
+      name: 'Literata',
+      cssVariable: '--font-text',
+      weights: ['400 700'],
       styles: ['normal', 'italic'],
       subsets: ['latin'],
-      fallbacks: ['Iowan Old Style', 'Palatino', 'Georgia', 'serif'],
-      display: 'swap',
-    },
-    {
-      provider: fontProviders.fontsource(),
-      name: 'Inter Tight',
-      cssVariable: '--font-sans',
-      weights: [400, 600],
-      styles: ['normal'],
-      subsets: ['latin'],
-      fallbacks: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'system-ui', 'sans-serif'],
+      fallbacks: ['Iowan Old Style', 'Charter', 'Georgia', 'serif'],
       display: 'swap',
     },
     {
       provider: fontProviders.fontsource(),
       // Commit Mono, not JetBrains Mono, and the reason is measured rather than
-      // aesthetic. This corpus draws its diagrams with 1,657 box-drawing
-      // characters, 155 block elements and 197 arrows. JetBrains Mono's latin
-      // subset is 394 glyphs and contains none of them, so every one of those
-      // characters silently fell back to a system font at a different advance
-      // width and sheared the drawings. Commit Mono's latin subset is 1,932
-      // glyphs and covers box drawing, blocks, geometric shapes, arrows, maths
-      // operators, Greek and subscripts, all at the same 0.6em advance.
-      // `node scripts/glyphs.mjs` asserts this; do not swap this face without
-      // running it.
+      // aesthetic. This corpus draws its diagrams with box-drawing characters,
+      // block elements and arrows. JetBrains Mono's latin subset is 394 glyphs
+      // and contains none of them, so each one silently fell back to a system
+      // font at a different advance width. Commit Mono's latin subset is 1,932
+      // glyphs and covers all of it at a uniform 0.6em advance.
+      // `npm run verify` asserts this; do not swap this face without running it.
       name: 'Commit Mono',
       cssVariable: '--font-mono',
       weights: [400, 500, 600],
@@ -96,7 +86,6 @@ export default defineConfig({
             macros: { '\\R': '\\mathbb{R}' },
           },
         ],
-        rehypeHeadingEmoji,
         rehypeHeadingAnchors,
         rehypeScrollableTables,
       ],

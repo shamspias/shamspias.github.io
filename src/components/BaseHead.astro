@@ -29,8 +29,8 @@ const ogImage = new URL('/og.png', Astro.site ?? SITE.url).href;
 {noindex && <meta name="robots" content="noindex, follow" />}
 
 <meta name="author" content={SITE.name} />
-<meta name="theme-color" content="#fcfbf8" media="(prefers-color-scheme: light)" />
-<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#faf7f0" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#15130f" media="(prefers-color-scheme: dark)" />
 
 <meta property="og:type" content={article ? 'article' : 'website'} />
 <meta property="og:site_name" content={SITE.name} />
@@ -57,8 +57,7 @@ const ogImage = new URL('/og.png', Astro.site ?? SITE.url).href;
     of a family at once. Astro emits a metric-matched fallback for each face, so
     `font-display: swap` swaps without shifting the layout, and the browser
     fetches only the instances a given page actually uses. */}
-<Font cssVariable="--font-display" />
-<Font cssVariable="--font-sans" />
+<Font cssVariable="--font-text" />
 <Font cssVariable="--font-mono" />
 
 {math && <link rel="stylesheet" href="/katex/katex.min.css" />}

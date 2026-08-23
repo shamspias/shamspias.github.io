@@ -1,7 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import { allPosts } from '../lib/posts';
-import { urlOf, wrapEmoji } from '../lib/posts';
+import { urlOf } from '../lib/posts';
 
 const recent = (await allPosts()).slice(0, 4);
 ---
@@ -32,7 +32,7 @@ const recent = (await allPosts()).slice(0, 4);
         {
           recent.map((p) => (
             <li>
-              <a href={urlOf(p)} set:html={wrapEmoji(p.data.title)} />
+              <a href={urlOf(p)}>{p.data.title}</a>
             </li>
           ))
         }

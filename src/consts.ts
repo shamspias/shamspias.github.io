@@ -13,10 +13,14 @@ export const SITE = {
   since: 2021,
 } as const;
 
+/**
+ * The CV is deliberately absent. It stays reachable at /cv/ for anyone given
+ * the link, but it is not advertised in the nav, the footer, the sitemap or to
+ * search engines.
+ */
 export const NAV = [
   { label: 'Writing', href: '/writing/' },
   { label: 'Projects', href: '/projects/' },
-  { label: 'CV', href: '/cv/' },
 ] as const;
 
 export const SOCIAL = [

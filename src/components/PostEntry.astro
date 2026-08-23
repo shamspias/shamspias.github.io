@@ -1,6 +1,6 @@
 ---
 import type { Post } from '../lib/posts';
-import { isoDate, shortDate, urlOf, wrapEmoji } from '../lib/posts';
+import { isoDate, shortDate, urlOf } from '../lib/posts';
 
 interface Props {
   post: Post;
@@ -15,7 +15,7 @@ const { title, description, date, series, seriesOrder } = post.data;
 <article class:list={['entry', `entry--${variant}`]}>
   <a class="entry-link" href={urlOf(post)}>
     <time class="entry__date label tnum" datetime={isoDate(date)}>{shortDate(date)}</time>
-    <h3 class="entry-title entry__title" set:html={wrapEmoji(title)} />
+    <h3 class="entry-title entry__title">{title}</h3>
     {variant === 'card' && <p class="entry__desc">{description}</p>}
     {
       series && (

@@ -1,6 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { allPosts, groupBySeries, shortDate, slugifyTag, urlOf, wrapEmoji } from '../../lib/posts';
+import { allPosts, groupBySeries, shortDate, slugifyTag, urlOf } from '../../lib/posts';
 
 const posts = await allPosts();
 const series = groupBySeries(posts);
@@ -54,7 +54,7 @@ const BLURBS: Record<string, string> = {
                   <span class="run__n label tnum">
                     {String(p.data.seriesOrder ?? 0).padStart(2, '0')}
                   </span>
-                  <a class="run__link" href={urlOf(p)} set:html={wrapEmoji(p.data.title)} />
+                  <a class="run__link" href={urlOf(p)}>{p.data.title}</a>
                   <time class="run__date label tnum" datetime={p.data.date.toISOString().slice(0, 10)}>
                     {shortDate(p.data.date)}
                   </time>

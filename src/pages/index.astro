@@ -2,7 +2,7 @@
 import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import PostEntry from '../components/PostEntry.astro';
-import portrait from '../assets/shamsuddin-ahmed.jpg';
+import portrait from '../assets/shamsuddin-ahmed.png';
 import { SITE, SOCIAL } from '../consts';
 import { allPosts, groupBySeries } from '../lib/posts';
 
@@ -113,7 +113,7 @@ const THREADS = [
         <p class="hero__cta">
           <a href="/writing/">Read the writing</a>
           <span class="hero__sep" aria-hidden="true"></span>
-          <a href="/cv/">See the CV</a>
+          <a href="/projects/">See the projects</a>
           <span class="hero__sep" aria-hidden="true"></span>
           <a href="https://github.com/shamspias" rel="me noopener">GitHub</a>
         </p>
@@ -256,13 +256,31 @@ const THREADS = [
     order: -1;
   }
 
-  /* The portrait sits inside a frame drawn with two rules, echoing the mark.
-     No shadow, no rounded corner: the photo is an object on paper. */
+  /* The subject is cut out of its background, so there is no frame and no
+     edge: he stands on the paper itself, the way a plate sits in a monograph.
+     A hairline baseline under the figure is the only thing holding him down. */
+  .hero__portrait {
+    border-bottom: var(--rule-w) solid var(--rule-strong);
+  }
+
   .hero__portrait :global(img) {
     width: 100%;
-    filter: saturate(0.92) contrast(1.02);
-    border: var(--rule-w) solid var(--rule-strong);
-    border-radius: 2px;
+    filter: saturate(0.94) contrast(1.02);
+    mix-blend-mode: multiply;
+  }
+
+  /* multiply would eat the figure against a dark ground, so the dark theme
+     leaves the alpha to do the work on its own. */
+  :global(:root[data-theme='dark']) .hero__portrait :global(img) {
+    mix-blend-mode: normal;
+    filter: saturate(0.9) contrast(1.04) brightness(1.06);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme='light'])) .hero__portrait :global(img) {
+      mix-blend-mode: normal;
+      filter: saturate(0.9) contrast(1.04) brightness(1.06);
+    }
   }
 
   @media (min-width: 46rem) {
