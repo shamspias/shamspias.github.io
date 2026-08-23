@@ -34,6 +34,7 @@ export const SOCIAL = [
  */
 export const SERIES_ORDER = [
   'Biomechanics from Video',
+  'Security From the Ground Up',
   'Problem Solving From Zero',
   'Agent Harness',
   'Machine Learning for Biology',

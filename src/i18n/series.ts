@@ -12,6 +12,14 @@ import { DEFAULT_LOCALE, type Locale } from './config';
 type Blurbs = Partial<Record<Locale, string>>;
 
 const SERIES: Record<string, Blurbs> = {
+  'Security From the Ground Up': {
+    en:
+      'How systems get broken, and how they get defended, from first principles. Every ' +
+      'vulnerability is one confusion: code mistaking data for instructions, or trusting ' +
+      'input it should have checked. SQL injection, cross-site scripting, cross-site request ' +
+      'forgery, broken access control, memory corruption, and what actually stops each one. ' +
+      'Written to make you a developer who does not ship the bug, not a headline.',
+  },
   'Problem Solving From Zero': {
     en:
       'Twenty parts, written between 2016 and 2021, from counting the steps in a loop to ' +
