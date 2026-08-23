@@ -11,7 +11,7 @@ tags:
   - "grundy"
   - "problem solving"
 series: "Problem Solving From Zero"
-seriesOrder: 15
+seriesOrder: 16
 math: true
 ---
 
@@ -209,10 +209,10 @@ The signals: two players, alternating, both playing optimally, and a question of
 
 The procedure I follow, in order:
 
-1. **Write the brute-force recursion.** Position in, win or lose out, memoised. This is [part 8](/posts/2017/11/memoisation/) with a boolean result.
+1. **Write the brute-force recursion.** Position in, win or lose out, memoised. This is [part 9](/posts/2017/11/memoisation/) with a boolean result.
 2. **Print the table for small inputs.** Look for a period, a modulus, a parity, or a power of two.
 3. **If the game splits into independent parts, compute Grundy values and exclusive-or them.** Independence is the condition: the parts must not interact at all.
-4. **Guess the pattern, then verify it against the brute force** for `n` up to a few thousand. This is the same brute-force-comparison habit from [part 6](/posts/2017/04/greedy-when-it-works/), and it is how you get certainty without a proof.
+4. **Guess the pattern, then verify it against the brute force** for `n` up to a few thousand. This is the same brute-force-comparison habit from [part 7](/posts/2017/04/greedy-when-it-works/), and it is how you get certainty without a proof.
 
 ```python
 from functools import lru_cache

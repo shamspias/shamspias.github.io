@@ -247,7 +247,7 @@ def count_subarrays(a, k):
 
 $\mathcal{O}(n)$ time, $\mathcal{O}(n)$ space, and it handles negatives without a special case. The `seen[0] = 1` line is the one people forget: without it, a subarray that starts at index 0 is never counted, because its matching prefix is the empty one.
 
-Note the shape of the move. We turned "find a pair of positions with a property" into "for each right end, look up how many left ends work". That reframing, from searching pairs to counting matches, is one of the highest-value habits in competitive programming, and it will come back in part 17 on hashing.
+Note the shape of the move. We turned "find a pair of positions with a property" into "for each right end, look up how many left ends work". That reframing, from searching pairs to counting matches, is one of the highest-value habits in competitive programming, and it will come back in part 18 on hashing.
 
 ## 6. When to reach for which
 
@@ -261,9 +261,9 @@ A short decision table, which is really what this part is for.
 | sorted array, find a pair | two pointers from both ends |
 | shortest or longest run with a property, all positive | sliding window |
 | count subarrays with an exact sum, negatives allowed | prefix sums plus a hash map |
-| range sums **and** updates, interleaved | a Fenwick tree, part 18 |
+| range sums **and** updates, interleaved | a Fenwick tree, part 19 |
 
-That last row is the honest limit of this part. Prefix sums are static: change one element and the whole array behind it is wrong, costing $\mathcal{O}(n)$ to repair. When updates and queries are mixed, you need a structure that can do both in $\mathcal{O}(\log n)$, and that is what part 18 is about.
+That last row is the honest limit of this part. Prefix sums are static: change one element and the whole array behind it is wrong, costing $\mathcal{O}(n)$ to repair. When updates and queries are mixed, you need a structure that can do both in $\mathcal{O}(\log n)$, and that is what part 19 is about.
 
 ## The short version
 

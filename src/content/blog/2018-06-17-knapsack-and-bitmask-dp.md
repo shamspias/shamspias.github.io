@@ -11,7 +11,7 @@ tags:
   - "bitmask"
   - "problem solving"
 series: "Problem Solving From Zero"
-seriesOrder: 10
+seriesOrder: 11
 math: true
 ---
 
@@ -21,7 +21,7 @@ math: true
 
 `n` items, each with a weight and a value. A bag that holds `W` weight. Each item may be taken once or not at all. Maximise the value.
 
-Greedy by value per weight fails, and [part 6](/posts/2017/04/greedy-when-it-works/) explains why: with indivisible items, the densest item can leave a gap that a slightly less dense one would have filled exactly.
+Greedy by value per weight fails, and [part 7](/posts/2017/04/greedy-when-it-works/) explains why: with indivisible items, the densest item can leave a gap that a slightly less dense one would have filled exactly.
 
 So, the [four questions](/posts/2018/02/dp-as-a-table/).
 

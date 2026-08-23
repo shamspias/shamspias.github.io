@@ -11,7 +11,7 @@ tags:
   - "primes"
   - "problem solving"
 series: "Problem Solving From Zero"
-seriesOrder: 16
+seriesOrder: 17
 math: true
 ---
 
@@ -166,15 +166,17 @@ Two traps before we get there.
 ```python
 result = (a - b) % MOD                        # Python: already correct
 ```
-```c
-result = ((a - b) % MOD + MOD) % MOD;         /* C: needs the fix */
+```cpp
+long long sub_mod(long long a, long long b, long long MOD) {
+    return ((a - b) % MOD + MOD) % MOD;   // C and C++: force it non-negative
+}
 ```
 
 **Overflow.** In C++ with 32-bit `int`, multiplying two numbers just under $10^9$ overflows. Use 64-bit types for the intermediate. Python has arbitrary precision, so this is one of the few places where Python is simply safer.
 
 ### Fast exponentiation
 
-Computing $a^b \bmod m$ by multiplying `b` times is $\mathcal{O}(b)$, and `b` can be $10^{18}$. Square instead: exponentiation by squaring, from [part 7](/posts/2017/07/recursion-and-backtracking/).
+Computing $a^b \bmod m$ by multiplying `b` times is $\mathcal{O}(b)$, and `b` can be $10^{18}$. Square instead: exponentiation by squaring, from [part 8](/posts/2017/07/recursion-and-backtracking/).
 
 ```python
 def power(a, b, m):

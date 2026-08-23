@@ -10,7 +10,7 @@ tags:
   - "problem solving"
   - "proofs"
 series: "Problem Solving From Zero"
-seriesOrder: 6
+seriesOrder: 7
 math: true
 ---
 
@@ -127,7 +127,7 @@ These come up over and over. Learn the rule *and* why it is right.
 
 **Interval scheduling: sort by end time.** As above.
 
-**Fractional knapsack: sort by value per weight.** You can take fractions, so fill with the densest item until the bag is full. The exchange argument: if an optimal solution leaves room while a denser item remains, swapping a unit of something less dense for a unit of the denser one raises the value. (This fails the moment items are indivisible, which is why the 0/1 knapsack needs dynamic programming. Part 10.)
+**Fractional knapsack: sort by value per weight.** You can take fractions, so fill with the densest item until the bag is full. The exchange argument: if an optimal solution leaves room while a denser item remains, swapping a unit of something less dense for a unit of the denser one raises the value. (This fails the moment items are indivisible, which is why the 0/1 knapsack needs dynamic programming. Part 11.)
 
 **Minimum coins, only for canonical systems.** Greedy is optimal for real currency systems, including 1, 2, 5, 10, 20, 50, and provably not for arbitrary sets. If the coin set is given as input, use DP.
 

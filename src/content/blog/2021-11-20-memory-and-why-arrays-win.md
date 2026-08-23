@@ -12,7 +12,7 @@ tags:
   - "performance"
   - "problem solving"
 series: "Problem Solving From Zero"
-seriesOrder: 20
+seriesOrder: 21
 math: true
 ---
 
@@ -158,9 +158,9 @@ Identical arithmetic, identical $\mathcal{O}(n^3)$, and the second is several ti
 
 **BFS against DFS.** BFS's queue is written at one end and read at the other, both sequential. DFS's stack is written and read at the same end, which is even better for the cache. Both, however, follow edges to arbitrary vertices, and that is the miss you cannot avoid. It is the reason graph algorithms are memory-bound rather than compute-bound, and the reason vertex reordering, relabelling vertices so neighbours have nearby indices, is a real optimisation.
 
-**Dynamic programming.** A DP over a two-dimensional table is a cache exercise. Filling row by row is sequential; filling column by column on a row-major table is a miss per cell. The one-row space optimisation from [part 9](/posts/2018/02/dp-as-a-table/) is not only about memory: a single row usually fits in L2, so it is faster as well as smaller. That is my favourite instance of two goals pointing the same way.
+**Dynamic programming.** A DP over a two-dimensional table is a cache exercise. Filling row by row is sequential; filling column by column on a row-major table is a miss per cell. The one-row space optimisation from [part 10](/posts/2018/02/dp-as-a-table/) is not only about memory: a single row usually fits in L2, so it is faster as well as smaller. That is my favourite instance of two goals pointing the same way.
 
-**Segment trees.** The iterative bottom-up form in [part 18](/posts/2021/03/fenwick-and-segment-trees/) beats the recursive form for two reasons: no call overhead, and the array layout means the nodes on a path are close together, so several of them share a cache line near the leaves.
+**Segment trees.** The iterative bottom-up form in [part 19](/posts/2021/03/fenwick-and-segment-trees/) beats the recursive form for two reasons: no call overhead, and the array layout means the nodes on a path are close together, so several of them share a cache line near the leaves.
 
 ## 6. Four practical techniques
 

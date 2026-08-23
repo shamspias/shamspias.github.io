@@ -10,7 +10,7 @@ tags:
   - "dynamic programming"
   - "problem solving"
 series: "Problem Solving From Zero"
-seriesOrder: 8
+seriesOrder: 9
 math: true
 ---
 
@@ -127,7 +127,7 @@ The grid is constant across the whole computation, so putting it in the key adds
 
 The real thing. Given two strings, what is the smallest number of single-character insertions, deletions and substitutions that turns one into the other? This is the algorithm behind spell-checkers, `diff`, and DNA sequence alignment.
 
-Follow the [recursion habit from part 7](/posts/2017/07/recursion-and-backtracking/): write the contract, find the base case, build from the smaller calls.
+Follow the [recursion habit from part 8](/posts/2017/07/recursion-and-backtracking/): write the contract, find the base case, build from the smaller calls.
 
 **Contract.** `dist(i, j)` is the edit distance between the first `i` characters of `a` and the first `j` characters of `b`.
 

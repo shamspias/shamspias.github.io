@@ -196,7 +196,7 @@ Counting steps tells you how the cost *grows*. It deliberately says nothing abou
 That is not a flaw, it is the point. Growth is the part that survives a new laptop; the constant is not. But it means two honest things follow:
 
 1. For small inputs, the "worse" algorithm often wins. Insertion sort beats quicksort below about a dozen elements, which is why real sort implementations switch to it at the bottom.
-2. When two solutions have the same growth, the constant is all there is, and then you *do* measure. Part 20 of this series is entirely about constants that come from memory rather than from step counts.
+2. When two solutions have the same growth, the constant is all there is, and then you *do* measure. Part 21 of this series is entirely about constants that come from memory rather than from step counts.
 
 ## 7. Practice that actually helps
 

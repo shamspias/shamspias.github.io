@@ -11,7 +11,7 @@ tags:
   - "topological sort"
   - "problem solving"
 series: "Problem Solving From Zero"
-seriesOrder: 12
+seriesOrder: 13
 math: true
 ---
 

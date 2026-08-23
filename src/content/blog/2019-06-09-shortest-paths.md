@@ -11,7 +11,7 @@ tags:
   - "dijkstra"
   - "problem solving"
 series: "Problem Solving From Zero"
-seriesOrder: 13
+seriesOrder: 14
 math: true
 ---
 

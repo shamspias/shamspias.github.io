@@ -11,7 +11,7 @@ tags:
   - "k-means"
   - "decision trees"
 series: "Problem Solving From Zero"
-seriesOrder: 19
+seriesOrder: 20
 math: true
 ---
 

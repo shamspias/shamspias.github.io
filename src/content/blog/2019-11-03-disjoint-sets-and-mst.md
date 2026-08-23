@@ -11,7 +11,7 @@ tags:
   - "minimum spanning tree"
   - "problem solving"
 series: "Problem Solving From Zero"
-seriesOrder: 14
+seriesOrder: 15
 math: true
 ---
 
@@ -141,7 +141,7 @@ $\mathcal{O}(E \log E)$, which is the sort; the union-find part is effectively f
 
 ### Why greedy works here
 
-Worth a paragraph, since [part 6](/posts/2017/04/greedy-when-it-works/) insisted on proofs. The relevant fact is the **cut property**: for any way of splitting the vertices into two halves, the cheapest edge crossing the split is in some minimum spanning tree.
+Worth a paragraph, since [part 7](/posts/2017/04/greedy-when-it-works/) insisted on proofs. The relevant fact is the **cut property**: for any way of splitting the vertices into two halves, the cheapest edge crossing the split is in some minimum spanning tree.
 
 The exchange argument: take an MST that does not contain that cheapest crossing edge `e`. Adding `e` creates a cycle, and that cycle must cross the split somewhere else, at an edge `f` that is at least as expensive. Swap `e` in and `f` out: still spanning, still a tree, and no more expensive. So an MST containing `e` exists.
 

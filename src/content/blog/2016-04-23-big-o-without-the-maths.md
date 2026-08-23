@@ -209,7 +209,7 @@ A typical limit is 256 MB. A 64-bit integer is 8 bytes, so an array of $10^7$ of
   O(n²) space     a table of all pairs: n = 20,000 is already too big
 ```
 
-This matters most in part 9, on dynamic programming, where the naive table is often $\mathcal{O}(n^2)$ and the trick is noticing you only ever read the previous row, which brings it down to $\mathcal{O}(n)$.
+This matters most in part 10, on dynamic programming, where the naive table is often $\mathcal{O}(n^2)$ and the trick is noticing you only ever read the previous row, which brings it down to $\mathcal{O}(n)$.
 
 ## 7. Where Big-O will lie to you
 
@@ -217,7 +217,7 @@ Being straight about the limits, since I have spent a post selling the tool.
 
 **Constants matter at real sizes.** $\mathcal{O}(n \log n)$ with a huge constant loses to $\mathcal{O}(n^2)$ with a tiny one at `n = 100`. Real sort implementations switch to insertion sort for small chunks for exactly this reason.
 
-**Memory access is not one step.** Reading a value your processor already has in cache is roughly a hundred times cheaper than reading one from main memory. Two algorithms with identical step counts can differ by an order of magnitude because one walks memory in order and the other jumps around. This is the whole subject of part 20, and it is the reason an array of numbers beats a linked list of numbers in practice even where the step counts say otherwise.
+**Memory access is not one step.** Reading a value your processor already has in cache is roughly a hundred times cheaper than reading one from main memory. Two algorithms with identical step counts can differ by an order of magnitude because one walks memory in order and the other jumps around. This is the whole subject of part 21, and it is the reason an array of numbers beats a linked list of numbers in practice even where the step counts say otherwise.
 
 **The hidden constant in the notation.** $\mathcal{O}(n)$ with a constant of 1000 is worse than $\mathcal{O}(n \log n)$ for every input you will ever see.
 

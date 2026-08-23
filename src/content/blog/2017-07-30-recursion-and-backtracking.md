@@ -11,7 +11,7 @@ tags:
   - "backtracking"
   - "problem solving"
 series: "Problem Solving From Zero"
-seriesOrder: 7
+seriesOrder: 8
 math: true
 ---
 
@@ -122,7 +122,7 @@ def factorial_loop(n):
     return out
 ```
 
-**Manage your own stack** when the structure is genuinely a tree but too deep. Push work onto a list and loop until it is empty. This is what part 12 does for depth-first search on large graphs, and it is the standard answer for a graph with $10^5$ nodes in a language without deep stacks.
+**Manage your own stack** when the structure is genuinely a tree but too deep. Push work onto a list and loop until it is empty. This is what part 13 does for depth-first search on large graphs, and it is the standard answer for a graph with $10^5$ nodes in a language without deep stacks.
 
 ```python
 def total_iterative(root):
@@ -200,7 +200,7 @@ def subsets(items):
     return out
 ```
 
-$2^n$ subsets. For `n ≤ 20` this is a perfectly good answer, and part 10 shows how to do it with bitmasks instead, which is faster and often clearer.
+$2^n$ subsets. For `n ≤ 20` this is a perfectly good answer, and part 11 shows how to do it with bitmasks instead, which is faster and often clearer.
 
 ### Where backtracking earns its keep: pruning
 
@@ -279,7 +279,7 @@ def power(base, exp, mod):
     return result
 ```
 
-$\log(\text{exp})$ multiplications instead of `exp` of them. Computing $3^{1000000007}$ takes about thirty multiplications. That function appears in part 16 on number theory and you will use it constantly.
+$\log(\text{exp})$ multiplications instead of `exp` of them. Computing $3^{1000000007}$ takes about thirty multiplications. That function appears in part 17 on number theory and you will use it constantly.
 
 To reason about the cost of these, the pattern is: work per level times number of levels. Splitting in half gives $\log n$ levels; if each level does linear work the total is $n \log n$, and if each level does constant work it is $\log n$.
 

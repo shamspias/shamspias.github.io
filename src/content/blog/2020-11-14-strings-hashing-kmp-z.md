@@ -11,7 +11,7 @@ tags:
   - "kmp"
   - "problem solving"
 series: "Problem Solving From Zero"
-seriesOrder: 17
+seriesOrder: 18
 math: true
 ---
 

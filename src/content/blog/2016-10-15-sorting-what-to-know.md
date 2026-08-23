@@ -122,7 +122,7 @@ Most problems that "need sorting" are really asking you to notice *which order m
 
 Classic problem: you have `n` meetings with start and end times, and one room. What is the maximum number of meetings you can hold?
 
-Sort by **end** time and take greedily. Sort by start time and you get the wrong answer. The reason is the whole of [part 6 on greedy algorithms](/posts/2017/04/greedy-when-it-works/), but the point here is that both are one-line sorts and only one is correct.
+Sort by **end** time and take greedily. Sort by start time and you get the wrong answer. The reason is the whole of [part 7 on greedy algorithms](/posts/2017/04/greedy-when-it-works/), but the point here is that both are one-line sorts and only one is correct.
 
 ```python
 meetings.sort(key=lambda m: m.end)
@@ -207,7 +207,7 @@ Sorting is cheap, not free. Three cases where it is the wrong reflex.
 
 **You only need the median, or the `k`-th smallest.** Quickselect does that in $\mathcal{O}(n)$ average, without sorting.
 
-**The data arrives as a stream and you need answers as you go.** A sorted structure that supports insertion, such as a balanced tree or a Fenwick tree over values, is what you want. Part 18.
+**The data arrives as a stream and you need answers as you go.** A sorted structure that supports insertion, such as a balanced tree or a Fenwick tree over values, is what you want. Part 19.
 
 ## The short version
 
@@ -219,4 +219,4 @@ Sorting is cheap, not free. Three cases where it is the wrong reflex.
 - Ask "is there an order in which this problem becomes obvious?" That question, not the sorting algorithm, is where the solution usually is.
 - Do not sort when you only need the top `k`, only need the median, or the data is a stream.
 
-Next: binary search, and the version of it that is far more useful than searching a sorted array.
+Next: pointers and linked lists, the data structure built entirely from addresses, and the one place an array is not the answer.

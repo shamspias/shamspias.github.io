@@ -15,7 +15,7 @@
     "preview": "astro preview",
     "check": "astro check",
     "sync": "astro sync",
-    "verify": "node scripts/contrast.mjs && node scripts/glyphs.mjs && node scripts/check-figures.mjs && node scripts/lint-posts.mjs",
+    "verify": "node scripts/contrast.mjs && node scripts/glyphs.mjs && node scripts/check-figures.mjs && node scripts/check-series.mjs && node scripts/check-cpp.mjs && node scripts/lint-posts.mjs",
     "seo": "node scripts/seo.mjs",
     "gates": "npm run build && npm run verify && npm run seo"
   },

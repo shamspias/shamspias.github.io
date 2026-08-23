@@ -10,7 +10,7 @@ tags:
   - "bfs"
   - "problem solving"
 series: "Problem Solving From Zero"
-seriesOrder: 11
+seriesOrder: 12
 math: true
 ---
 
@@ -116,11 +116,11 @@ Worth understanding rather than accepting, because it tells you exactly when it 
 
 BFS processes vertices in non-decreasing order of distance. When it first reaches a vertex `v`, it came from some `u` that was already at its final distance `d`, so `v` gets `d + 1`. Could `v` really be closer? No: any shorter path would have gone through a vertex at distance less than `d`, and all of those were processed earlier, so `v` would have been found then.
 
-The step that argument depends on is "every edge adds exactly one to the distance". That is why BFS is only correct for **unweighted** graphs, or equivalently graphs where every edge has the same weight. Give edges different weights and the queue no longer processes vertices in distance order, and you need Dijkstra. That is [part 13](/posts/2019/06/shortest-paths/).
+The step that argument depends on is "every edge adds exactly one to the distance". That is why BFS is only correct for **unweighted** graphs, or equivalently graphs where every edge has the same weight. Give edges different weights and the queue no longer processes vertices in distance order, and you need Dijkstra. That is [part 14](/posts/2019/06/shortest-paths/).
 
 ## 5. Recovering the path
 
-Distances are usually not enough; you want the route. Keep a parent pointer, exactly as in [part 9](/posts/2018/02/dp-as-a-table/).
+Distances are usually not enough; you want the route. Keep a parent pointer, exactly as in [part 10](/posts/2018/02/dp-as-a-table/).
 
 ```python
 def bfs_path(g, start, goal):

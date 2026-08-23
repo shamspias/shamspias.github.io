@@ -10,7 +10,7 @@ tags:
   - "problem solving"
   - "monotonicity"
 series: "Problem Solving From Zero"
-seriesOrder: 5
+seriesOrder: 6
 math: true
 ---
 

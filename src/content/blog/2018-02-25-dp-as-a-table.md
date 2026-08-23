@@ -10,7 +10,7 @@ tags:
   - "problem solving"
   - "tabulation"
 series: "Problem Solving From Zero"
-seriesOrder: 9
+seriesOrder: 10
 math: true
 ---
 
@@ -25,7 +25,7 @@ Whatever the problem, ask these in order. Write the answers down before writing 
 3. **What is the base case?** The entries you can write down without looking at any other entry.
 4. **What order fills it safely?** Every entry must be computed after everything it depends on.
 
-That is the whole method. The [memoised recursion of part 8](/posts/2017/11/memoisation/) answers questions 1 to 3 and lets the recursion sort out question 4. Doing it bottom-up means answering question 4 yourself, and in exchange you get a smaller constant factor, no stack limit, and the ability to throw away rows you no longer need.
+That is the whole method. The [memoised recursion of part 9](/posts/2017/11/memoisation/) answers questions 1 to 3 and lets the recursion sort out question 4. Doing it bottom-up means answering question 4 yourself, and in exchange you get a smaller constant factor, no stack limit, and the ability to throw away rows you no longer need.
 
 ## 2. The smallest possible example
 

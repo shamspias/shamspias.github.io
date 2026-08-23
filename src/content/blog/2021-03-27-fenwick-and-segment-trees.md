@@ -12,7 +12,7 @@ tags:
   - "segment tree"
   - "problem solving"
 series: "Problem Solving From Zero"
-seriesOrder: 18
+seriesOrder: 19
 math: true
 ---
 
