@@ -1,6 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { allPosts, groupBySeries, shortDate, slugifyTag, urlOf } from '../../lib/posts';
+import { collectionPage } from '../../lib/seo';
 
 const posts = await allPosts();
 const series = groupBySeries(posts);
@@ -21,11 +22,32 @@ const BLURBS: Record<string, string> = {
   'AI Foundations':
     'A run through the classical ground: linear algebra, search, adversarial search, constraint satisfaction, logic, and planning. Written for someone starting from nothing.',
 };
+const SERIES_DESCRIPTION =
+  'Multi-part runs on agent harnesses, machine learning for biology, computer vision, ' +
+  'mixture-of-experts models, retrieval, and the classical AI foundations.';
+
+const seriesSchema = collectionPage({
+  url: '/series/',
+  name: 'Series by Shamsuddin Ahmed',
+  description: SERIES_DESCRIPTION,
+  trail: [
+    { name: 'Home', url: '/' },
+    { name: 'Series', url: '/series/' },
+  ],
+  items: series.map((s) => ({
+    name: `${s.name} (${s.posts.length} parts)`,
+    url: `/series/${slugifyTag(s.name)}/`,
+  })),
+  about: series.map((s) => s.name),
+});
+
 ---
 
 <Base
   title="Series"
-  description="Multi-part runs on agent harnesses, machine learning for biology, computer vision, mixture-of-experts models, retrieval, and the classical AI foundations."
+  description={SERIES_DESCRIPTION}
+  keywords={series.map((s) => s.name)}
+  schema={seriesSchema}
 >
   <div class="wrap page">
     <header class="page__head">

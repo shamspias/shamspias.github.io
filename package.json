@@ -9,12 +9,15 @@
     "dev": "npm run assets && astro dev",
     "start": "npm run dev",
     "assets": "node scripts/build-assets.mjs && node scripts/build-figures.mjs",
+    "og": "node scripts/build-og.mjs",
     "prebuild": "npm run assets",
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
     "sync": "astro sync",
-    "verify": "node scripts/contrast.mjs && node scripts/glyphs.mjs && node scripts/check-figures.mjs && node scripts/lint-posts.mjs"
+    "verify": "node scripts/contrast.mjs && node scripts/glyphs.mjs && node scripts/check-figures.mjs && node scripts/lint-posts.mjs",
+    "seo": "node scripts/seo.mjs",
+    "gates": "npm run build && npm run verify && npm run seo"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "^7.2.4",

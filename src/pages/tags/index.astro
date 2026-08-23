@@ -1,15 +1,34 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { allPosts, tagCounts } from '../../lib/posts';
+import { collectionPage } from '../../lib/seo';
 
 const posts = await allPosts();
 const tags = tagCounts(posts);
 const max = tags[0]?.count ?? 1;
+
+const TAGS_DESCRIPTION =
+  'Every subject written about here, from agent harnesses and LLM serving to peptides, ' +
+  'docking, pose estimation and the classical AI foundations.';
+
+const tagsSchema = collectionPage({
+  url: '/tags/',
+  name: 'Subjects written about by Shamsuddin Ahmed',
+  description: TAGS_DESCRIPTION,
+  trail: [
+    { name: 'Home', url: '/' },
+    { name: 'Subjects', url: '/tags/' },
+  ],
+  items: tags.map((t) => ({ name: `${t.tag} (${t.count})`, url: `/tags/${t.slug}/` })),
+  about: tags.slice(0, 30).map((t) => t.tag),
+});
 ---
 
 <Base
   title="Subjects"
-  description="Every subject written about here, from agent harnesses and LLM serving to peptides, docking, pose estimation and the classical AI foundations."
+  description={TAGS_DESCRIPTION}
+  keywords={tags.slice(0, 25).map((t) => t.tag)}
+  schema={tagsSchema}
 >
   <div class="wrap page">
     <header class="page__head">

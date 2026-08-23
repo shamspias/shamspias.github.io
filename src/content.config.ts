@@ -5,7 +5,13 @@ const blog = defineCollection({
   loader: glob({ base: './src/content/blog', pattern: '**/*.md' }),
   schema: z.object({
     title: z.string(),
-    description: z.string(),
+    /**
+     * A shorter title for the <title> tag and the browser tab, for posts whose
+     * headline is longer than a search result can show. The headline on the
+     * page is always `title`; this only changes what a crawler is handed.
+     */
+    seoTitle: z.string().max(62).optional(),
+    description: z.string().max(165),
     date: z.coerce.date(),
     /**
      * The canonical URL, carried over verbatim from the Jekyll site so that no

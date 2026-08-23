@@ -1,5 +1,6 @@
 ---
 title: "From One Brain to Many: Understanding Mixture of Experts (MoE) Like You're 12"
+seoTitle: "Mixture of Experts (MoE), Explained Simply"
 description: "How sparse mixture-of-experts really works: per-token routing, top-k gating, load balancing, and the memory bill you pay for the compute you save."
 date: 2025-02-08
 permalink: "/posts/2025/02/moe-explained-simply/"

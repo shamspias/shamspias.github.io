@@ -1,6 +1,6 @@
 ---
 title: "Kinetix: An Agent Harness Inside a Clinical System"
-description: "Sixty tools, twenty-nine of them mutating, inside a system that holds injury records. The Go that enforces one rule: the agent can only do what this user could already do."
+description: "Sixty tools, twenty-nine of them mutating, inside a system holding injury records. The Go that enforces one rule: the agent inherits the caller."
 date: 2026-08-20
 permalink: "/posts/2026/08/kinetix-clinical-agent/"
 tags:

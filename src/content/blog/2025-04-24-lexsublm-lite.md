@@ -1,5 +1,6 @@
 ---
 title: "LexSubLM-Lite: Lightweight Lexical Substitution That Runs Anywhere"
+seoTitle: "LexSubLM-Lite: Lexical Substitution That Runs Anywhere"
 description: "A laptop-sized toolkit for context-aware lexical substitution, and an honest look at what tiny models actually score on it."
 date: 2025-04-24
 permalink: "/posts/2025/04/lexsublm-lite/"

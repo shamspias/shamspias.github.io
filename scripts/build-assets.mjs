@@ -73,19 +73,30 @@ async function generated() {
 
   await sharp(Buffer.from(ogSvg)).png({ compressionLevel: 9 }).toFile(path.join(PUBLIC, 'og.png'));
 
+  // Everything a manifest is read for: the name and icons an installed shortcut
+  // uses, and the description and categories a store or a crawler reads off it.
   await writeFile(
     path.join(PUBLIC, 'manifest.webmanifest'),
     JSON.stringify(
       {
+        id: '/',
         name: 'Shamsuddin Ahmed',
         short_name: 'Shamsuddin',
+        description:
+          'Agent harnesses, LLM serving infrastructure, and machine learning for biology. ' +
+          'Long-form notes by Shamsuddin Ahmed.',
+        lang: 'en',
+        dir: 'ltr',
         start_url: '/',
+        scope: '/',
         display: 'browser',
         background_color: PAPER,
         theme_color: PAPER,
+        categories: ['education', 'developer', 'news'],
         icons: [
-          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
         ],
       },
       null,

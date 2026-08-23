@@ -1,3 +1,8 @@
+# Everything here is meant to be read and indexed. The only page kept out of
+# search is /cv/, and that is done with a noindex tag on the page itself rather
+# than a rule here: a disallowed page can never be crawled, so the tag telling
+# a crawler not to index it would never be seen.
+
 User-agent: *
 Allow: /
 

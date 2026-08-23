@@ -1,6 +1,6 @@
 ---
 title: "Classical Planning 101: From STRIPS Blocks to Graphplan Magic"
-description: "How STRIPS turns a to-do list into an algorithm: factored states, progression and regression, delete relaxation, planning graphs, and what a 2026 planner really does."
+description: "How STRIPS turns a to-do list into an algorithm: factored states, progression and regression, delete relaxation, planning graphs, and modern planners."
 date: 2024-01-15
 permalink: "/posts/2024/01/classical-planning/"
 tags:

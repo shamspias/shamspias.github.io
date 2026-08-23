@@ -1,5 +1,6 @@
 ---
 title: "Math for AI Made Simple: The Linear-Algebra Lego Set Behind Every Model"
+seoTitle: "Linear Algebra for AI, Made Simple"
 description: "Scalars, vectors, matrices and tensors, the five operations every neural network is made of, and the shape rules that cause most of the bugs."
 date: 2023-01-23
 permalink: "/posts/2023/01/math-for-ai-linear-algebra-basics/"

@@ -1,5 +1,6 @@
 ---
 title: "Retrieval Metrics Demystified: From BM25 Baselines to EM@5 & Answer F1"
+seoTitle: "Retrieval Metrics: BM25, EM@5 and Answer F1"
 description: "What BM25, Recall@k, answer-in-context rate and token F1 actually measure, which number to fix first, and how to compute them without fooling yourself."
 date: 2024-08-15
 permalink: "/posts/2024/08/retrieval-metrics/"

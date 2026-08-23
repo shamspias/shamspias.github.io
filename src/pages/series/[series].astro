@@ -2,7 +2,8 @@
 import type { GetStaticPaths } from 'astro';
 import Base from '../../layouts/Base.astro';
 import PostEntry from '../../components/PostEntry.astro';
-import { allPosts, groupBySeries, slugifyTag } from '../../lib/posts';
+import { allPosts, groupBySeries, plainTitle, slugifyTag, urlOf } from '../../lib/posts';
+import { ID, abs, breadcrumb, clamp, graph, itemList, person, website } from '../../lib/seo';
 
 export const getStaticPaths = (async () => {
   const posts = await allPosts();
@@ -19,12 +20,55 @@ const span =
   first && last && first !== last
     ? `${first.data.date.getUTCFullYear()}–${last.data.date.getUTCFullYear()}`
     : `${first?.data.date.getUTCFullYear() ?? ''}`;
+
+const url = `/series/${slugifyTag(name)}/`;
+const subjects = [...new Set(posts.flatMap((p) => p.data.tags))];
+
+// Trimmed to fit a snippet: the series name, its length, and the first line of
+// what it is actually about.
+const opening = posts[0]?.data.description ?? '';
+const description = clamp(
+  `${name}: ${posts.length} parts in reading order, by Shamsuddin Ahmed. ${opening}`,
+);
+
+const id = abs(url);
+const schema = graph(
+  person(),
+  website(),
+  {
+    '@type': ['CollectionPage', 'CreativeWorkSeries'],
+    '@id': id,
+    url: id,
+    name,
+    description,
+    inLanguage: 'en',
+    isPartOf: { '@id': ID.website },
+    author: { '@id': ID.person },
+    publisher: { '@id': ID.person },
+    numberOfItems: posts.length,
+    about: subjects.map((t) => ({ '@type': 'Thing', name: t })),
+    keywords: subjects.join(', '),
+    breadcrumb: { '@id': `${id}#breadcrumb` },
+    mainEntity: { '@id': `${id}#list` },
+    ...(first ? { startDate: first.data.date.toISOString().slice(0, 10) } : {}),
+    ...(last ? { endDate: last.data.date.toISOString().slice(0, 10) } : {}),
+  },
+  breadcrumb([
+    { name: 'Home', url: '/' },
+    { name: 'Series', url: '/series/' },
+    { name, url },
+  ]),
+  // A series reads forwards, so the list is ascending, unlike every other index
+  // on the site.
+  itemList(
+    id,
+    posts.map((p) => ({ name: plainTitle(p.data.title), url: urlOf(p) })),
+    { itemListOrder: 'https://schema.org/ItemListOrderAscending' },
+  ),
+);
 ---
 
-<Base
-  title={name}
-  description={`The ${name} series: ${posts.length} posts, in reading order. ${posts[0]?.data.description ?? ''}`}
->
+<Base title={name} description={description} keywords={subjects} schema={schema}>
   <div class="wrap page">
     <header class="page__head">
       <p class="label">

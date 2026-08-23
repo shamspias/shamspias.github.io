@@ -1,6 +1,6 @@
 ---
 title: "Teaching a Camera to Grade Its Own Footage"
-description: "Camera obliquity is invisible to a single lens, so the system infers it from anatomy. Banding its own error by that inference separates the regimes better than ground truth does."
+description: "Camera obliquity is invisible to one lens, so the system infers it from anatomy. Banding its own error by that estimate beats banding by ground truth."
 date: 2026-05-23
 permalink: "/posts/2026/05/camera-grades-its-own-footage/"
 tags:

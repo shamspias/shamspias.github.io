@@ -1,5 +1,6 @@
 ---
 title: "Angles Don't Lie: Measuring a Cricket Bowler's Action With a Webcam"
+seoTitle: "Measuring a Cricket Bowler’s Action With a Webcam"
 description: "Joint angles from pose estimation, event detection inside a 100-millisecond delivery swing, and the frame rate that decides what you are allowed to claim."
 date: 2026-05-02
 permalink: "/posts/2026/05/bowling-biomechanics-pose/"

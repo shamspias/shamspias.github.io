@@ -1,5 +1,6 @@
 ---
 title: "Molecular Docking Without the Jargon: A Key, a Lock, and Both of Them Wobble"
+seoTitle: "Molecular Docking Without the Jargon"
 description: "What a docking score really is, why the pose matters more than the number, six ways docking lies to you, and where 2026 co-folding models fit."
 date: 2026-04-04
 permalink: "/posts/2026/04/docking-without-jargon/"

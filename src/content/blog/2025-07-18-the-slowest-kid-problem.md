@@ -1,5 +1,6 @@
 ---
 title: "The Slowest Kid Problem: How a Super Captain Solves MoE's Biggest Headache"
+seoTitle: "The Slowest Kid Problem: MoE Stragglers, Explained"
 description: "Why a mixture-of-experts layer runs at the speed of its busiest expert, how to measure it, and when predictive prefetching actually helps."
 date: 2025-07-18
 permalink: "/posts/2025/07/slowest-kid-moe-straggler/"

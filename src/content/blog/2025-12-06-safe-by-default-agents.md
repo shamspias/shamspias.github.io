@@ -1,6 +1,6 @@
 ---
 title: "Safe by Default: Building Agents That Can't Wreck Your Data"
-description: "Read/write enforcement, principal scoping, approval gates, sandboxes and budgets: five safety properties, every one of them enforced in code instead of asked for in a prompt."
+description: "Read/write enforcement, principal scoping, approval gates, sandboxes and budgets: five safety properties, every one enforced in code, not in a prompt."
 date: 2025-12-06
 permalink: "/posts/2025/12/safe-by-default-agents/"
 tags:

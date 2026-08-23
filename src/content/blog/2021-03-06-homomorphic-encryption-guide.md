@@ -1,5 +1,6 @@
 ---
 title: "Homomorphic Encryption (HE) Explained: A Beginner’s Guide to Secure AI on Encrypted Data"
+seoTitle: "Homomorphic Encryption Explained: AI on Encrypted Data"
 description: "What homomorphic encryption really does, which scheme to pick, what a ciphertext costs in bytes and depth, and where it still loses to a trusted enclave."
 date: 2021-03-06
 permalink: "/posts/2021/03/homomorphic-encryption-guide/"

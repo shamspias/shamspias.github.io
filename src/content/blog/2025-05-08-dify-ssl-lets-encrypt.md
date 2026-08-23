@@ -1,5 +1,6 @@
 ---
 title: "Green Padlock, Zero Headache: Let’s Encrypt SSL for Self-Hosted Dify"
+seoTitle: "Let’s Encrypt SSL for Self-Hosted Dify"
 description: "Let's Encrypt certificates on a self-hosted Dify behind Nginx: the ACME flow, the nginx reload everyone forgets, and how to test without burning rate limits."
 date: 2025-05-08
 permalink: "/posts/2025/05/dify-ssl-zero-to-green/"

@@ -6,20 +6,36 @@ import Footer from '../components/Footer.astro';
 interface Props {
   title: string;
   description: string;
-  article?: { published: Date; modified?: Date; tags?: string[] };
+  article?: { published: Date; modified?: Date; tags?: string[]; section?: string };
   math?: boolean;
   noindex?: boolean;
   /** Emitted into <head>, for JSON-LD. */
   schema?: unknown;
+  /** Subject terms for this page. */
+  keywords?: readonly string[];
+  /** Keep the title as given, without the brand suffix. */
+  bareTitle?: boolean;
+  /** Omit the canonical link. Only the 404 wants this. */
+  noCanonical?: boolean;
 }
 
-const { title, description, article, math, noindex, schema } = Astro.props;
+const { title, description, article, math, noindex, schema, keywords, bareTitle, noCanonical } =
+  Astro.props;
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
-    <BaseHead title={title} description={description} article={article} math={math} noindex={noindex} />
+    <BaseHead
+      title={title}
+      description={description}
+      article={article}
+      math={math}
+      noindex={noindex}
+      keywords={keywords}
+      bareTitle={bareTitle}
+      noCanonical={noCanonical}
+    />
     {schema && <script type="application/ld+json" set:html={JSON.stringify(schema)} />}
   </head>
   <body>

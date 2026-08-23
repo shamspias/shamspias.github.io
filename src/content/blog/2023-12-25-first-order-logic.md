@@ -1,5 +1,6 @@
 ---
 title: "First-Order Logic Made Friendly: From ‘Socrates Is Mortal’ to Automatic Proofs"
+seoTitle: "First-Order Logic Made Friendly"
 description: "Quantifiers, unification, forward and backward chaining, and resolution, from Socrates to a solver that finds the proof for you."
 date: 2023-12-25
 permalink: "/posts/2023/12/first-order-logic/"

@@ -1,6 +1,6 @@
 ---
 title: "Facing, Sign, and the Error That Mirrors Everything"
-description: "Which way an athlete faces sets the sign of every sagittal angle at once. A one-bit decision, 100 out of 100 on 919 comparisons, and why sign errors are not small errors."
+description: "Which way an athlete faces sets the sign of every sagittal angle at once. One bit, 100 out of 100 on 919 comparisons, and why sign errors are not small."
 date: 2026-04-25
 permalink: "/posts/2026/04/facing-and-sign/"
 tags:

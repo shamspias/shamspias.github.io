@@ -1,5 +1,6 @@
 ---
 title: "Intelligent Agents & Search: A Baby-Steps Tour from ‘What is Rational?’ to ‘How do we find the goal?’"
+seoTitle: "Intelligent Agents and Search: A Beginner’s Tour"
 description: "What an agent actually is, how to turn a problem into a search problem, and why changing one line of priority code turns breadth-first search into A*."
 date: 2023-04-26
 permalink: "/posts/2023/04/ai-agents-search/"

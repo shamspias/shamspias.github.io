@@ -1,5 +1,6 @@
 ---
 title: "Constraint Satisfaction 101: From Sudoku Logic to Map-Coloring Zen"
+seoTitle: "Constraint Satisfaction: Sudoku and Map Colouring"
 description: "Arc consistency, backtracking with MRV and min-conflicts, explained through Sudoku and map colouring, plus what you would actually use today."
 date: 2023-09-16
 permalink: "/posts/2023/09/csp-basics/"

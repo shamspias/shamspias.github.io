@@ -1,6 +1,6 @@
 ---
 title: "What \"Accurate\" Means For a Joint Angle"
-description: "A percentage without a tolerance is not a claim. Here is the full scorecard for a video biomechanics system, by configuration, and why 10 degrees is the number that settles it."
+description: "A percentage without a tolerance is not a claim. The full scorecard for a video biomechanics system, by configuration, and why 10 degrees settles it."
 date: 2026-01-31
 permalink: "/posts/2026/01/joint-angle-accuracy/"
 tags:

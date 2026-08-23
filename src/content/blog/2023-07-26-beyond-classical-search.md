@@ -1,5 +1,6 @@
 ---
 title: "Beyond Classical Search: Hill-Climbers, Hidden Worlds & Agents That Learn on the Fly"
+seoTitle: "Beyond Classical Search: Local Search and Hidden Worlds"
 description: "Hill climbing, simulated annealing, belief states and online search: what to do when A* is the wrong tool, the world hides half of itself, or there is no map yet."
 date: 2023-07-26
 permalink: "/posts/2023/07/beyond-search/"

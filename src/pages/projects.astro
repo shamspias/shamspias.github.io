@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import { ID, abs, breadcrumb, graph, person, website } from '../lib/seo';
 
 type Project = {
   name: string;
@@ -177,11 +178,62 @@ const PLUGINS = [
   { name: 'Telegram', href: 'https://github.com/shamspias/dify-telegram', what: 'Full Telegram Bot API integration.' },
   { name: 'Slack', href: 'https://github.com/shamspias/dify-slack-bot', what: 'A class-based Slack bot for any Dify-compatible application.' },
 ];
+const PROJECTS_DESCRIPTION =
+  'Agent harnesses, machine learning for biology, sports biomechanics, agriculture AI, ' +
+  'healthcare software, and small readable Go tools. Open source where it can be.';
+
+const ALL = GROUPS.flatMap((g) => g.projects.map((p) => ({ ...p, group: g.title })));
+const KEYWORDS = [...new Set([...GROUPS.map((g) => g.title), ...ALL.map((p) => p.name)])];
+
+// Each project is software, and the ones with a repository say so, which is
+// what lets a search engine show them as code rather than as prose.
+const projectsSchema = graph(
+  person(),
+  website(),
+  {
+    '@type': 'CollectionPage',
+    '@id': abs('/projects/'),
+    url: abs('/projects/'),
+    name: 'Projects by Shamsuddin Ahmed',
+    description: PROJECTS_DESCRIPTION,
+    inLanguage: 'en',
+    isPartOf: { '@id': ID.website },
+    author: { '@id': ID.person },
+    keywords: KEYWORDS.join(', '),
+    breadcrumb: { '@id': `${abs('/projects/')}#breadcrumb` },
+    mainEntity: { '@id': `${abs('/projects/')}#list` },
+  },
+  breadcrumb([
+    { name: 'Home', url: '/' },
+    { name: 'Projects', url: '/projects/' },
+  ]),
+  {
+    '@type': 'ItemList',
+    '@id': `${abs('/projects/')}#list`,
+    numberOfItems: ALL.length,
+    itemListElement: ALL.map((p, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      item: {
+        '@type': p.href?.includes('github.com') ? 'SoftwareSourceCode' : 'CreativeWork',
+        name: p.name,
+        description: p.blurb.replace(/<[^>]+>/g, ''),
+        applicationCategory: p.group,
+        ...(p.href ? { url: p.href, codeRepository: p.href } : {}),
+        programmingLanguage: p.stack.split('·').map((t) => t.trim()),
+        author: { '@id': ID.person },
+      },
+    })),
+  },
+);
+
 ---
 
 <Base
   title="Projects"
-  description="Agent harnesses, machine learning for biology, sports biomechanics, agriculture AI, healthcare software, and small readable Go tools. Open source where it can be."
+  description={PROJECTS_DESCRIPTION}
+  keywords={KEYWORDS}
+  schema={projectsSchema}
 >
   <div class="wrap page">
     <header class="page__head">

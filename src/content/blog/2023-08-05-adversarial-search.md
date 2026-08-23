@@ -1,6 +1,7 @@
 ---
 title: "Adversarial Search 101: From Minimax to AlphaZero, How AI Plans When an Opponent Fights Back"
-description: "Minimax, alpha-beta pruning, expectiminimax and MCTS: how a program plans when something is planning against it, and what changed once neural evaluation joined the search."
+seoTitle: "Adversarial Search: From Minimax to AlphaZero"
+description: "Minimax, alpha-beta pruning, expectiminimax and MCTS: how a program plans when something is planning against it, and what neural evaluation changed."
 date: 2023-08-05
 permalink: "/posts/2023/08/adversarial-search/"
 tags:

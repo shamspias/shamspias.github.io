@@ -6,8 +6,8 @@ export const SITE = {
   title: 'Shamsuddin Ahmed',
   tagline: 'Agent harnesses, LLM infrastructure, and machine learning for biology.',
   description:
-    'Shamsuddin Ahmed is a senior software engineer in Dhaka working on agent harnesses, ' +
-    'LLM serving infrastructure, and machine learning for biology. Long-form notes on all three.',
+    'Shamsuddin Ahmed, senior software engineer in Dhaka: agent harnesses, LLM serving ' +
+    'infrastructure, and machine learning for biology. Long-form notes on all three.',
   email: 'info@shamspias.com',
   locale: 'en',
   since: 2021,

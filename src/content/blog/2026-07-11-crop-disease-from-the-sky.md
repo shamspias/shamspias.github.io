@@ -1,5 +1,6 @@
 ---
 title: "Finding Sick Plants From the Sky: DINOv2, a Linear Probe, and a Farmer With a Drone"
+seoTitle: "Crop Disease From the Sky: DINOv2 and a Linear Probe"
 description: "A frozen vision backbone, a linear probe trained on forty photos, and a three-tier fallback so that a drone survey works on day one."
 date: 2026-07-11
 permalink: "/posts/2026/07/crop-disease-from-the-sky/"

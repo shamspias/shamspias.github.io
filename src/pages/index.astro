@@ -4,34 +4,44 @@ import Base from '../layouts/Base.astro';
 import PostEntry from '../components/PostEntry.astro';
 import portrait from '../assets/shamsuddin-ahmed.png';
 import { SITE, SOCIAL } from '../consts';
-import { allPosts, groupBySeries } from '../lib/posts';
+import { allPosts, groupBySeries, plainTitle, urlOf } from '../lib/posts';
+import { ID, abs, breadcrumb, graph, itemList, person, website } from '../lib/seo';
 
 const posts = await allPosts();
 const recent = posts.slice(0, 6);
 const series = groupBySeries(posts);
 
-const schema = {
-  '@context': 'https://schema.org',
-  '@type': 'Person',
-  name: SITE.name,
-  jobTitle: 'Senior Software Engineer',
-  url: SITE.url,
-  email: `mailto:${SITE.email}`,
-  image: new URL(portrait.src, SITE.url).href,
-  address: { '@type': 'PostalAddress', addressLocality: 'Dhaka', addressCountry: 'BD' },
-  worksFor: { '@type': 'Organization', name: 'Mevrik', url: 'https://mevrik.com' },
-  founder: { '@type': 'Organization', name: 'AlgolyzerLab' },
-  sameAs: SOCIAL.filter((s) => s.href.startsWith('http')).map((s) => s.href),
-  knowsAbout: [
-    'Agent harnesses',
-    'Large language model serving',
-    'Retrieval-augmented generation',
-    'Computational biology',
-    'Computer vision',
-    'Go',
-    'Python',
-  ],
-};
+// One graph, so the person, the site and this page are stated once and pointed
+// at from every other page rather than repeated with slight differences.
+const schema = graph(
+  person(),
+  website(),
+  {
+    '@type': 'ProfilePage',
+    '@id': abs('/'),
+    url: abs('/'),
+    name: `${SITE.name} · ${SITE.role}`,
+    description: SITE.description,
+    inLanguage: 'en',
+    isPartOf: { '@id': ID.website },
+    mainEntity: { '@id': ID.person },
+    about: { '@id': ID.person },
+    breadcrumb: { '@id': `${abs('/')}#breadcrumb` },
+    hasPart: { '@id': `${abs('/')}#list` },
+    image: {
+      '@type': 'ImageObject',
+      url: new URL(portrait.src, SITE.url).href,
+      width: portrait.width,
+      height: portrait.height,
+      caption: `${SITE.name}, ${SITE.role}`,
+    },
+  },
+  breadcrumb([{ name: 'Home', url: '/' }]),
+  itemList(
+    abs('/'),
+    recent.map((p) => ({ name: plainTitle(p.data.title), url: urlOf(p) })),
+  ),
+);
 
 const NOW = [
   {

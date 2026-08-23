@@ -5,7 +5,7 @@ import sitemap from '@astrojs/sitemap';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
 import {
@@ -27,6 +27,49 @@ const readFigure = (src) => {
   }
 };
 
+/**
+ * Post permalinks and dates, read from the frontmatter so the sitemap can carry
+ * a real `lastmod` per post. Parsed here rather than through the content layer
+ * because the sitemap integration is configured before that exists.
+ */
+const POST_DATES = (() => {
+  const dir = 'src/content/blog';
+  const map = new Map();
+  for (const file of readdirSync(dir)) {
+    if (!file.endsWith('.md')) continue;
+    const raw = readFileSync(path.join(dir, file), 'utf8');
+    const block = raw.match(/^---\n([\s\S]*?)\n---/)?.[1] ?? '';
+    const permalink = block.match(/^permalink: "(.+)"$/m)?.[1];
+    const date = block.match(/^date: (.+)$/m)?.[1]?.trim().replace(/^"|"$/g, '');
+    if (permalink && date) map.set(permalink, new Date(date).toISOString());
+  }
+  if (map.size === 0) throw new Error('sitemap: no post dates found');
+  return map;
+})();
+
+const NEWEST = [...POST_DATES.values()].sort().pop();
+
+/**
+ * Tag pages holding a single post. They carry noindex, so listing them in the
+ * sitemap would be asking a crawler to fetch a page and then telling it the
+ * page does not belong in the index.
+ */
+const THIN_TAGS = (() => {
+  const dir = 'src/content/blog';
+  const counts = new Map();
+  for (const file of readdirSync(dir)) {
+    if (!file.endsWith('.md')) continue;
+    const fm = readFileSync(path.join(dir, file), 'utf8').match(/^---\n([\s\S]*?)\n---/)?.[1] ?? '';
+    const block = fm.match(/^tags:\n((?: {2}- .*\n?)+)/m)?.[1] ?? '';
+    for (const line of block.trim().split('\n').filter(Boolean)) {
+      const tag = line.replace(/^\s*-\s*/, '').replace(/^"|"$/g, '');
+      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+  }
+  const slug = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  return new Set([...counts].filter(([, n]) => n < 2).map(([t]) => `/tags/${slug(t)}/`));
+})();
+
 export default defineConfig({
   site: 'https://shamspias.com',
 
@@ -39,7 +82,26 @@ export default defineConfig({
     sitemap({
       // The CV is unlisted: reachable by anyone holding the link, absent from
       // the nav and absent from the sitemap.
-      filter: (page) => !page.includes('/404') && !page.includes('/cv'),
+      filter: (page) => {
+        const route = new URL(page).pathname;
+        return route !== '/cv/' && !route.startsWith('/404') && !THIN_TAGS.has(route);
+      },
+
+      // `lastmod` is the only field in a sitemap a crawler is documented to
+      // act on, and it is the one @astrojs/sitemap cannot know: it has no view
+      // of a post's own date. Read the dates off the frontmatter and hand each
+      // post its own; everything else moves whenever a post does, so the index
+      // pages carry the newest date on the site.
+      serialize(item) {
+        const route = new URL(item.url).pathname;
+        const stamp = POST_DATES.get(route) ?? NEWEST;
+        item.lastmod = stamp;
+        // A hint, not an instruction. Posts are the destination, the indexes
+        // exist to reach them, and the tag pages are the thinnest of the three.
+        item.priority = route === '/' ? 1 : POST_DATES.has(route) ? 0.8 : route.startsWith('/tags/') ? 0.3 : 0.5;
+        item.changefreq = POST_DATES.has(route) ? 'yearly' : 'weekly';
+        return item;
+      },
     }),
   ],
 

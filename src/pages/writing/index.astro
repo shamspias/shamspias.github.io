@@ -1,18 +1,59 @@
 ---
 import Base from '../../layouts/Base.astro';
 import PostEntry from '../../components/PostEntry.astro';
-import { allPosts, byYear, groupBySeries, slugifyTag, tagCounts } from '../../lib/posts';
+import { allPosts, byYear, groupBySeries, plainTitle, slugifyTag, tagCounts, urlOf } from '../../lib/posts';
+import { ID, abs, breadcrumb, graph, itemList, person, website } from '../../lib/seo';
 
 const posts = await allPosts();
 const years = byYear(posts);
 const series = groupBySeries(posts);
 const tags = tagCounts(posts).slice(0, 14);
+
+const subjects = tagCounts(posts).slice(0, 20).map((t) => t.tag);
+const id = abs('/writing/');
+const description =
+  'Long-form notes on agent harnesses, LLM infrastructure, machine learning for biology, ' +
+  'computer vision, and the AI foundations that sit underneath all of it.';
+
+// The blog node is the one every post points back at with isPartOf, which is
+// what ties thirty-nine separate articles together into one body of work.
+const schema = graph(
+  person(),
+  website(),
+  {
+    '@type': 'Blog',
+    '@id': ID.blog,
+    url: id,
+    name: 'Writing by Shamsuddin Ahmed',
+    description,
+    inLanguage: 'en',
+    isPartOf: { '@id': ID.website },
+    author: { '@id': ID.person },
+    publisher: { '@id': ID.person },
+    keywords: subjects.join(', '),
+    about: subjects.map((t) => ({ '@type': 'Thing', name: t })),
+    breadcrumb: { '@id': `${id}#breadcrumb` },
+    blogPost: posts.slice(0, 20).map((p) => ({
+      '@type': 'BlogPosting',
+      '@id': abs(urlOf(p)),
+      headline: plainTitle(p.data.title),
+      url: abs(urlOf(p)),
+      datePublished: p.data.date.toISOString(),
+      author: { '@id': ID.person },
+    })),
+  },
+  breadcrumb([
+    { name: 'Home', url: '/' },
+    { name: 'Writing', url: '/writing/' },
+  ]),
+  itemList(
+    id,
+    posts.map((p) => ({ name: plainTitle(p.data.title), url: urlOf(p) })),
+  ),
+);
 ---
 
-<Base
-  title="Writing"
-  description="Long-form notes on agent harnesses, LLM infrastructure, machine learning for biology, computer vision, and the AI foundations that sit underneath all of it."
->
+<Base title="Writing" description={description} keywords={subjects} schema={schema}>
   <div class="wrap page">
     <header class="page__head">
       <p class="label">{posts.length} posts &nbsp;·&nbsp; {years.length} years</p>

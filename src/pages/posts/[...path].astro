@@ -3,6 +3,7 @@ import type { GetStaticPaths } from 'astro';
 import { render } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import { SITE } from '../../consts';
+import { ID, abs, blogRef, breadcrumb, graph, ogCard, person, website } from '../../lib/seo';
 import {
   allPosts,
   formatDate,
@@ -37,7 +38,7 @@ interface Props {
 }
 
 const { post, newer, older, siblings } = Astro.props;
-const { title, description, date, tags, series, seriesOrder, math } = post.data;
+const { title, seoTitle, description, date, tags, series, seriesOrder, math } = post.data;
 
 const { Content, headings } = await render(post);
 const minutes = readingTime(post.body);
@@ -47,30 +48,77 @@ const toc = headings.filter((h: { depth: number }) => h.depth === 2);
 const showToc = toc.length >= 4;
 
 const canonical = new URL(urlOf(post), SITE.url).href;
+const card = ogCard(urlOf(post), plainTitle(title));
 
-const schema = {
-  '@context': 'https://schema.org',
-  '@type': 'BlogPosting',
-  headline: plainTitle(title),
-  description,
-  datePublished: date.toISOString(),
-  dateModified: date.toISOString(),
-  url: canonical,
-  mainEntityOfPage: { '@type': 'WebPage', '@id': canonical },
-  author: { '@type': 'Person', name: SITE.name, url: SITE.url },
-  publisher: { '@type': 'Person', name: SITE.name, url: SITE.url },
-  keywords: tags.join(', '),
-  wordCount: (post.body?.match(/\S+/g) ?? []).length,
-  inLanguage: 'en',
-  isPartOf: series ? { '@type': 'CreativeWorkSeries', name: series } : undefined,
-};
+// The trail a crawler prints under the title instead of the raw URL. A post in
+// a series belongs under that series; a loose post belongs under Writing.
+const trail = [
+  { name: 'Home', url: '/' },
+  { name: 'Writing', url: '/writing/' },
+  ...(series ? [{ name: series, url: `/series/${slugifyTag(series)}/` }] : []),
+  { name: plainTitle(title), url: urlOf(post) },
+];
+
+const schema = graph(
+  person(),
+  website(),
+  blogRef(),
+  {
+    '@type': 'BlogPosting',
+    '@id': canonical,
+    headline: plainTitle(title),
+    name: plainTitle(title),
+    description,
+    abstract: description,
+    datePublished: date.toISOString(),
+    dateModified: date.toISOString(),
+    url: canonical,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': canonical },
+    // The blog it lives in, and the series it is a part of. `isPartOf` takes
+    // either; giving it both is how a reader gets from one post to the run.
+    isPartOf: series
+      ? [
+          { '@id': ID.blog },
+          {
+            '@type': 'CreativeWorkSeries',
+            '@id': abs(`/series/${slugifyTag(series)}/`),
+            name: series,
+            url: abs(`/series/${slugifyTag(series)}/`),
+          },
+        ]
+      : { '@id': ID.blog },
+    author: { '@id': ID.person },
+    publisher: { '@id': ID.person },
+    copyrightHolder: { '@id': ID.person },
+    image: {
+      '@type': 'ImageObject',
+      url: card.url,
+      width: card.width,
+      height: card.height,
+      caption: card.alt,
+    },
+    // Both forms: `keywords` is what Google documents, `about` is what a
+    // knowledge-graph consumer can resolve to an actual subject.
+    keywords: tags.join(', '),
+    about: tags.map((t) => ({ '@type': 'Thing', name: t })),
+    articleSection: series ?? 'Writing',
+    wordCount: (post.body?.match(/\S+/g) ?? []).length,
+    timeRequired: `PT${minutes}M`,
+    inLanguage: 'en',
+    isAccessibleForFree: true,
+    breadcrumb: { '@id': `${abs(urlOf(post))}#breadcrumb` },
+    ...(series && seriesOrder ? { position: seriesOrder } : {}),
+  },
+  breadcrumb(trail),
+);
 ---
 
 <Base
-  title={plainTitle(title)}
+  title={seoTitle ?? plainTitle(title)}
   description={description}
   math={math}
-  article={{ published: date, tags: [...tags] }}
+  article={{ published: date, tags: [...tags], section: series ?? 'Writing' }}
+  keywords={tags}
   schema={schema}
 >
   <article class="wrap article">

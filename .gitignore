@@ -15,6 +15,10 @@ public/og.png
 public/manifest.webmanifest
 public/figures/
 
+# NOT ignored: public/og/ holds the per-page Open Graph cards. They are rendered
+# by `npm run og` on a machine with the right fonts and committed, because
+# librsvg resolves fonts through fontconfig and a CI runner has different ones.
+
 # environment
 .env
 .env.production
