@@ -1,6 +1,6 @@
 ---
 title: "عدّ الخطوات: ما تكلفة حلقة التكرار فعلًا"
-description: "قبل أن تفهم أي خوارزمية تحتاج عادة واحدة: عدّ كم مرة يُنفَّذ سطر واحد. هذه هي العادة، مبنية من أربعة برامج صغيرة."
+description: "قبل أن تفهم أي خوارزمية تحتاج عادة واحدة: عدّ كم مرة يُنفَّذ سطر واحد. هذه هي العادة، مبنية من أربعة برامج C++ صغيرة."
 date: 2016-02-14
 permalink: "/posts/2016/02/counting-the-steps/"
 lang: ar
@@ -22,15 +22,16 @@ math: true
 
 تُعطى قائمة أعداد ويُطلب منك مجموعها.
 
-```python
-def total(numbers):
-    running = 0
-    for n in numbers:
-        running += n
-    return running
+```cpp
+long long total(const vector<int> &v) {
+    long long sum = 0;
+    for (int x : v)
+        sum += x;
+    return sum;
+}
 ```
 
-والآن السؤال الوحيد المهم: **كم مرة يُنفَّذ السطر `running += n`؟**
+والآن السؤال الوحيد المهم: **كم مرة يُنفَّذ السطر `sum += x`؟**
 
 مرة واحدة لكل عدد. إذا كانت القائمة تحتوي ١٠ أعداد فسيُنفَّذ ١٠ مرات. وإذا كانت تحتوي مليونًا فسيُنفَّذ مليون مرة. اكتب ذلك كقاعدة، وستكون قد قلت شيئًا صحيحًا عن هذا البرنامج على كل حاسوب وُجد يومًا:
 
@@ -48,16 +49,18 @@ def total(numbers):
 
 هذه هي المحاولة الأولى الصادقة، التي يكتبها الجميع:
 
-```python
-def has_zero_pair(numbers):
-    for a in numbers:
-        for b in numbers:
-            if a is not b and a + b == 0:
-                return True
-    return False
+```cpp
+bool has_zero_pair(const vector<int> &v) {
+    int n = v.size();
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            if (i != j && v[i] + v[j] == 0)
+                return true;
+    return false;
+}
 ```
 
-كم مرة يُنفَّذ سطر المقارنة؟ لكل قيمة من قيم `a` وعددها `n`، تدور الحلقة الداخلية `n` مرة. إذن:
+كم مرة يُنفَّذ سطر المقارنة؟ لكل قيمة من قيم `i` وعددها `n`، تدور الحلقة الداخلية `n` مرة. إذن:
 
 ```
   steps  =  n × n  =  n²
@@ -102,32 +105,47 @@ def has_zero_pair(numbers):
 
 **حلقة داخل نداء مكتبة.** هذا يبدو سطرًا واحدًا:
 
-```python
-if x in numbers:      # numbers قائمة
-    ...
+```cpp
+bool present(const vector<int> &v, int x) {
+    return find(v.begin(), v.end(), x) != v.end();   // walks v: up to n steps
+}
 ```
 
-وهو ليس خطوة واحدة. بايثون يمشي في القائمة كلها باحثًا عن `x`، فتكون التكلفة حتى `n` خطوة. ضع ذلك داخل حلقة على القائمة نفسها وتكون قد كتبت $n^2$ دون أن تكتب حلقة متداخلة. استخدم `set` فيصير السطر نفسه خطوة واحدة تقريبًا:
+وهو ليس خطوة واحدة. الدالة `find` تمشي في المتجه كله باحثةً عن `x`، فتكون التكلفة حتى `n` خطوة. ضع ذلك داخل حلقة على المتجه نفسه وتكون قد كتبت $n^2$ دون أن تكتب حلقة متداخلة. حمّل القيم في مجموعة تجزئة مرة واحدة فيصير السؤال نفسه خطوة واحدة تقريبًا:
 
-```python
-seen = set(numbers)   # n خطوة، مرة واحدة
-if x in seen:         # خطوة واحدة تقريبًا، كل مرة
-    ...
+```cpp
+long long count_present(const vector<int> &v, const vector<int> &queries) {
+    unordered_set<int> seen(v.begin(), v.end());   // build the set: n steps, once
+    long long hits = 0;
+    for (int x : queries)
+        hits += seen.count(x);                     // each query: about 1 step
+    return hits;
+}
 ```
 
-**وصل النصوص داخل حلقة.** في معظم اللغات لا يمكن تمديد نصّ في موضعه، فـ `s = s + c` ينسخ النصّ بأكمله. افعل ذلك `n` مرة ويصبح مجموع النسخ $1 + 2 + \dots + n$، أي $n(n+1)/2$، وهو $n^2$ متنكّرًا.
+**بناء نصّ داخل حلقة.** هذه دقيقة، وC++ تصيبها حيث تخطئ لغات كثيرة. إعادة بناء النصّ في كل مرة تنسخ كل ما جمعته حتى الآن، ومجموع النسخ $1 + 2 + \dots + n$، أي $n(n+1)/2$، وهو $n^2$ متنكّرًا:
 
-```python
-# n² نسخًا في المجموع
-s = ''
-for c in chars:
-    s = s + c
-
-# n، لأن join ينسخ مرة واحدة
-s = ''.join(chars)
+```cpp
+string bad(const vector<char> &chars) {
+    string s;
+    for (char c : chars)
+        s = s + c;            // s + c builds a whole new string: O(n²) total
+    return s;
+}
 ```
 
-**التقطيع.** في بايثون، `numbers[1:]` يبني قائمة جديدة. والدالة الاستدعائية التي تقطّع دخلها في كل نداء تعمل أكثر بكثير ممّا يوحي به شكل الاستدعاء.
+بدلًا من ذلك أضِف في الموضع نفسه. `push_back` (و`+=`) توسّع مخزن النصّ ذاته، فتصير الحلقة كلها خطّية:
+
+```cpp
+string good(const vector<char> &chars) {
+    string s;
+    for (char c : chars)
+        s.push_back(c);       // grows in place: O(1) amortised each, O(n) total
+    return s;
+}
+```
+
+**نسخ نطاق جزئي.** أخذ "كل ما بعد العنصر الأول" كمتجه جديد، `vector<int>(v.begin() + 1, v.end())`، ينسخ تلك العناصر: $\mathcal{O}(n)$. والدالة الاستدعائية التي تفعل ذلك في كل نداء تعمل أكثر بكثير ممّا يوحي به شكل الاستدعاء. مرّر فهارس أو نطاقًا، لا نسخة.
 
 العادة التي تكشف الثلاثة: لكل سطر داخل حلقتك، اسأل *هل هذا فعلًا خطوة واحدة*. إذا كان السطر يلمس مجموعة كاملة، فهو ليس خطوة واحدة.
 
@@ -137,45 +155,53 @@ s = ''.join(chars)
 
 **النسخة الأولى: تجربة كل مقطع وجمعه.** حلقتان لاختيار البداية والنهاية، وثالثة للجمع.
 
-```python
-def best_v1(a):
-    n = len(a)
-    best = a[0]
-    for i in range(n):
-        for j in range(i, n):
-            s = 0
-            for k in range(i, j + 1):
-                s += a[k]
-            best = max(best, s)
-    return best
+```cpp
+long long best_v1(const vector<int> &a) {
+    int n = a.size();
+    long long best = a[0];
+    for (int i = 0; i < n; i++)
+        for (int j = i; j < n; j++) {
+            long long s = 0;
+            for (int k = i; k <= j; k++)
+                s += a[k];
+            best = max(best, s);
+        }
+    return best;
+}
 ```
 
 ثلاث حلقات متداخلة: $n^3$. عند $n = 5000$ يصبح ذلك $1.25 \times 10^{11}$ خطوة. أبطأ من اللازم بكثير.
 
 **النسخة الثانية: التوقّف عن إعادة الجمع.** الحلقة الثالثة هدرٌ خالص. عندما يتحرك `j` خطوة إلى اليمين، يحتاج المجموع عملية جمع واحدة، لا مرورًا جديدًا.
 
-```python
-def best_v2(a):
-    best = a[0]
-    for i in range(len(a)):
-        s = 0
-        for j in range(i, len(a)):
-            s += a[j]
-            best = max(best, s)
-    return best
+```cpp
+long long best_v2(const vector<int> &a) {
+    int n = a.size();
+    long long best = a[0];
+    for (int i = 0; i < n; i++) {
+        long long s = 0;
+        for (int j = i; j < n; j++) {
+            s += a[j];
+            best = max(best, s);
+        }
+    }
+    return best;
+}
 ```
 
 $n^2$. عند $n = 5000$ يصبح ذلك ٢٥ مليون خطوة، وهو مقبول. وعند $n = 10^6$ ليس كذلك.
 
 **النسخة الثالثة: اسأل سؤالًا أفضل.** بدلًا من "ما أفضل مقطع"، اسأل "ما أفضل مقطع *ينتهي هنا*". امشِ من اليسار إلى اليمين، وفي كل موضع لديك خياران بالضبط: تمديد المقطع الذي كنت تبنيه، أو التخلّي عنه والبدء من جديد عند هذا العنصر.
 
-```python
-def best_v3(a):
-    best = here = a[0]
-    for x in a[1:]:
-        here = max(x, here + x)     # تمديد، أو بداية جديدة
-        best = max(best, here)
-    return best
+```cpp
+long long best_v3(const vector<int> &a) {
+    long long best = a[0], here = a[0];
+    for (size_t i = 1; i < a.size(); i++) {
+        here = max((long long)a[i], here + a[i]);   // extend, or start again
+        best = max(best, here);
+    }
+    return best;
+}
 ```
 
 حلقة واحدة. $n$ خطوة. عند $n = 10^6$ يستغرق ذلك جزءًا من الألف من الثانية.

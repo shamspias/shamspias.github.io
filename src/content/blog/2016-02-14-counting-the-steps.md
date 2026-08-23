@@ -1,6 +1,6 @@
 ---
 title: "Counting the Steps: What Your Loop Actually Costs"
-description: "Before any algorithm makes sense you need one habit: counting how many times a line runs. Here is that habit, built from four small programs and a stopwatch."
+description: "Before any algorithm makes sense you need one habit: counting how many times a line runs. Here is that habit, built from four small C++ programs and a stopwatch."
 date: 2016-02-14
 permalink: "/posts/2016/02/counting-the-steps/"
 lang: en
@@ -14,7 +14,7 @@ seriesOrder: 1
 math: true
 ---
 
-*Every algorithm you will ever learn is an answer to the same question: how many times does this line run? Not "is this fast", which depends on your laptop, but "how many steps", which does not. This part builds that one habit, because nothing else in the series makes sense without it.*
+*Every algorithm you will ever learn is an answer to the same question: how many times does this line run? Not "is this fast", which depends on your laptop, but "how many steps", which does not. This part builds that one habit, because nothing else in the series makes sense without it. The code is in C++, which for our purposes is C with a standard library, and I will lean on that library as we go.*
 
 I want to start somewhere genuinely small. Not with a definition, and not with a Greek letter. With a program that adds up numbers.
 
@@ -22,17 +22,18 @@ I want to start somewhere genuinely small. Not with a definition, and not with a
 
 You are given a list of numbers and asked for their sum.
 
-```python
-def total(numbers):
-    running = 0
-    for n in numbers:
-        running += n
-    return running
+```cpp
+long long total(const vector<int> &v) {
+    long long sum = 0;
+    for (int x : v)
+        sum += x;
+    return sum;
+}
 ```
 
-Now the only question that matters: **how many times does `running += n` run?**
+Now the only question that matters: **how many times does `sum += x` run?**
 
-Once per number. If the list has 10 numbers it runs 10 times. If it has 1,000,000 it runs 1,000,000 times. Write that down as a rule and you have said something true about this program on every computer that has ever existed:
+Once per number. If the vector has 10 numbers it runs 10 times. If it has 1,000,000 it runs 1,000,000 times. Write that down as a rule and you have said something true about this program on every computer that has ever existed:
 
 ```
   steps  =  n
@@ -40,7 +41,9 @@ Once per number. If the list has 10 numbers it runs 10 times. If it has 1,000,00
 
 where `n` is how many numbers there are. That is the whole idea. Everything else in this series is that idea applied to harder programs.
 
-Notice what we did *not* do. We did not time it. Timing tells you about your laptop, the weather in the data centre, and whether Chrome was open. Counting tells you about the program.
+(The standard library already has this, and once you can count the loop you should use it: `#include <numeric>` and write `accumulate(v.begin(), v.end(), 0LL)`. It runs the same `n`-step loop; it just hides it. Knowing what it hides is the point of this post.)
+
+Notice what we did *not* do. We did not time it. Timing tells you about your laptop, the weather in the data centre, and whether your browser was open. Counting tells you about the program.
 
 ## 2. A second program that looks the same and is not
 
@@ -48,16 +51,18 @@ Now a different task. You are given a list of numbers, and asked: is there a pai
 
 Here is the honest first attempt, the one everybody writes:
 
-```python
-def has_zero_pair(numbers):
-    for a in numbers:
-        for b in numbers:
-            if a is not b and a + b == 0:
-                return True
-    return False
+```cpp
+bool has_zero_pair(const vector<int> &v) {
+    int n = v.size();
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            if (i != j && v[i] + v[j] == 0)
+                return true;
+    return false;
+}
 ```
 
-How many times does the comparison run? For each of the `n` values of `a`, the inner loop runs `n` times. So:
+How many times does the comparison run? For each of the `n` values of `i`, the inner loop runs `n` times. So:
 
 ```
   steps  =  n × n  =  n²
@@ -102,80 +107,103 @@ Counting is easy when the loops are visible. The mistakes come from steps you di
 
 **A loop inside a library call.** This looks like one line:
 
-```python
-if x in numbers:      # numbers is a list
-    ...
+```cpp
+bool present(const vector<int> &v, int x) {
+    return find(v.begin(), v.end(), x) != v.end();   // walks v: up to n steps
+}
 ```
 
-It is not one step. Python walks the list looking for `x`, so it is up to `n` steps. Put it inside a loop over the same list and you have written $n^2$ without typing a nested loop. Use a `set` and the same line becomes roughly one step:
+It is not one step. `find` walks the vector looking for `x`, so it is up to `n` steps. Put it inside a loop over the same vector and you have written $n^2$ without typing a nested loop. Load the values into a hash set once and the same question becomes roughly one step:
 
-```python
-seen = set(numbers)   # n steps, once
-if x in seen:         # about 1 step, every time
-    ...
+```cpp
+long long count_present(const vector<int> &v, const vector<int> &queries) {
+    unordered_set<int> seen(v.begin(), v.end());   // build the set: n steps, once
+    long long hits = 0;
+    for (int x : queries)
+        hits += seen.count(x);                     // each query: about 1 step
+    return hits;
+}
 ```
 
-**String concatenation in a loop.** In most languages a string cannot be extended in place, so `s = s + c` copies the whole string. Do it `n` times and the copies add up to $1 + 2 + 3 + \dots + n$, which is $n(n+1)/2$, which is $n^2$ dressed up.
+**String building in a loop.** This is a subtle one, and C++ actually gets it right where many languages do not. Rebuilding the string each time copies everything you have so far, and the copies add up to $1 + 2 + 3 + \dots + n$, which is $n(n+1)/2$, which is $n^2$ dressed up:
 
-```python
-# n² total copying
-s = ''
-for c in chars:
-    s = s + c
-
-# n, because the join copies once
-s = ''.join(chars)
+```cpp
+string bad(const vector<char> &chars) {
+    string s;
+    for (char c : chars)
+        s = s + c;            // s + c builds a whole new string: O(n²) total
+    return s;
+}
 ```
 
-**Slicing.** `numbers[1:]` in Python builds a new list. A recursive function that slices the input on every call is doing far more work than the recursion suggests.
+Append in place instead. `push_back` (and `+=`) grow the string's own buffer, so the whole loop is linear:
+
+```cpp
+string good(const vector<char> &chars) {
+    string s;
+    for (char c : chars)
+        s.push_back(c);       // grows in place: O(1) amortised each, O(n) total
+    return s;
+}
+```
+
+**Copying a subrange.** Taking "everything after the first element" as a fresh vector, `vector<int>(v.begin() + 1, v.end())`, copies those elements: $\mathcal{O}(n)$. A recursive function that does that on every call is doing far more work than the recursion suggests. Pass indices, or a range, not a copy.
 
 The habit that catches all three: for every line in your loop, ask *is this really one step*. If the line touches a whole collection, it is not.
 
 ## 5. Worked example: the largest sum of a run
 
-Here is a real problem, and the four versions I would have written in 2014, 2015, and now. The problem: given a list of numbers, find the largest possible sum of a **contiguous** run of them. For `[3, -2, 5, -1]` the answer is `6`, from `[3, -2, 5]`.
+Here is a real problem, and the three versions of it worth seeing. The problem: given a list of numbers, find the largest possible sum of a **contiguous** run of them. For `[3, -2, 5, -1]` the answer is `6`, from `[3, -2, 5]`.
 
 **Version one: try every run, add it up.** Two loops to pick the start and end, and a third to add.
 
-```python
-def best_v1(a):
-    n = len(a)
-    best = a[0]
-    for i in range(n):
-        for j in range(i, n):
-            s = 0
-            for k in range(i, j + 1):
-                s += a[k]
-            best = max(best, s)
-    return best
+```cpp
+long long best_v1(const vector<int> &a) {
+    int n = a.size();
+    long long best = a[0];
+    for (int i = 0; i < n; i++)
+        for (int j = i; j < n; j++) {
+            long long s = 0;
+            for (int k = i; k <= j; k++)
+                s += a[k];
+            best = max(best, s);
+        }
+    return best;
+}
 ```
 
 Three nested loops: $n^3$. At $n = 5000$ that is $1.25 \times 10^{11}$ steps. Far too slow.
 
 **Version two: stop re-adding.** The third loop is pure waste. As `j` moves right by one, the sum only needs one addition, not a fresh walk.
 
-```python
-def best_v2(a):
-    best = a[0]
-    for i in range(len(a)):
-        s = 0
-        for j in range(i, len(a)):
-            s += a[j]
-            best = max(best, s)
-    return best
+```cpp
+long long best_v2(const vector<int> &a) {
+    int n = a.size();
+    long long best = a[0];
+    for (int i = 0; i < n; i++) {
+        long long s = 0;
+        for (int j = i; j < n; j++) {
+            s += a[j];
+            best = max(best, s);
+        }
+    }
+    return best;
+}
 ```
 
 $n^2$. At $n = 5000$ that is 25 million steps, which is fine. At $n = 10^6$ it is not.
 
 **Version three: ask a better question.** Instead of "what is the best run", ask "what is the best run *that ends here*". Walk left to right, and at each position you have exactly two choices: extend the run you were already building, or throw it away and start fresh at this element.
 
-```python
-def best_v3(a):
-    best = here = a[0]
-    for x in a[1:]:
-        here = max(x, here + x)     # extend, or start again
-        best = max(best, here)
-    return best
+```cpp
+long long best_v3(const vector<int> &a) {
+    long long best = a[0], here = a[0];
+    for (size_t i = 1; i < a.size(); i++) {
+        here = max((long long)a[i], here + a[i]);   // extend, or start again
+        best = max(best, here);
+    }
+    return best;
+}
 ```
 
 One loop. $n$ steps. At $n = 10^6$ it is a millisecond.
@@ -213,7 +241,7 @@ If you cannot answer question one, you do not yet understand the problem. That h
 - Count how many times the innermost line runs. Do not time it; timing measures your laptop, counting measures your program.
 - $n$ and $n^2$ look equally simple on the page. At a million elements one is instant and the other takes seventeen minutes.
 - Roughly a hundred million steps per second is the budget. The input size in the problem statement tells you which algorithm is being asked for.
-- Steps hide inside innocent-looking lines: `in` on a list, string concatenation in a loop, slicing. If a line touches a whole collection, it is not one step.
+- Steps hide inside innocent-looking lines: `find` on a vector, rebuilding a string with `s = s + c`, copying a subrange. If a line touches a whole collection, it is not one step.
 - Better algorithms almost always come from spotting work being repeated and refusing to repeat it. That is the whole trick, and the rest of this series is variations on it.
 
 Next: putting a name to the growth, and why $\mathcal{O}(n)$ is a claim about the shape of a curve rather than a speed.
