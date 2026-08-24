@@ -12,82 +12,83 @@ import { ID, abs, breadcrumb, graph, itemList, person, website } from '../lib/se
  */
 
 type Cat = 'ml' | 'arch' | 'logic' | 'maths' | 'physics' | 'mind';
-type Game = { id: string; title: string; cat: Cat; emoji: string; goal: string; how: string; learn: string; tag: string };
+type Game = { id: string; title: string; cat: Cat; goal: string; how: string; learn: string; tag: string };
 
-const CATS: Record<Cat, { label: string; emoji: string; blurb: string; c: string; wash: string }> = {
-  ml: { label: 'Robot Brains', emoji: '🤖', blurb: 'Teach a computer to learn, one tiny step at a time.', c: '#2f7fe0', wash: 'rgba(47,127,224,0.14)' },
-  arch: { label: 'Inside AI', emoji: '🧠', blurb: 'Peek inside chatbots and AI and see how they really work.', c: '#8b5cf6', wash: 'rgba(139,92,246,0.14)' },
-  logic: { label: 'Puzzles', emoji: '🧩', blurb: 'Brain-teasers with one clever answer hiding inside.', c: '#12a150', wash: 'rgba(18,161,80,0.14)' },
-  maths: { label: 'Numbers', emoji: '🔢', blurb: 'Numbers, shapes, and patterns, turned into games.', c: '#e07b00', wash: 'rgba(224,123,0,0.14)' },
-  physics: { label: 'Real World', emoji: '🎈', blurb: 'Gravity, springs, and crashes you can poke and play with.', c: '#e23e6b', wash: 'rgba(226,62,107,0.14)' },
-  mind: { label: 'Your Brain', emoji: '👀', blurb: 'Test your memory, your speed, and your eyes.', c: '#d9a520', wash: 'rgba(217,165,32,0.18)' },
+const CATS: Record<Cat, { label: string; blurb: string; c: string; wash: string }> = {
+  ml: { label: 'Robot Brains', blurb: 'Teach a computer to learn, one tiny step at a time.', c: '#2f7fe0', wash: 'rgba(47,127,224,0.14)' },
+  arch: { label: 'Inside AI', blurb: 'Peek inside chatbots and AI and see how they really work.', c: '#8b5cf6', wash: 'rgba(139,92,246,0.14)' },
+  logic: { label: 'Puzzles', blurb: 'Brain-teasers with one clever answer hiding inside.', c: '#12a150', wash: 'rgba(18,161,80,0.14)' },
+  maths: { label: 'Numbers', blurb: 'Numbers, shapes, and patterns, turned into games.', c: '#e07b00', wash: 'rgba(224,123,0,0.14)' },
+  physics: { label: 'Real World', blurb: 'Gravity, springs, and crashes you can poke and play with.', c: '#e23e6b', wash: 'rgba(226,62,107,0.14)' },
+  mind: { label: 'Your Brain', blurb: 'Test your memory, your speed, and your eyes.', c: '#d9a520', wash: 'rgba(217,165,32,0.18)' },
 };
 const CAT_ORDER: Cat[] = ['ml', 'arch', 'logic', 'maths', 'physics', 'mind'];
 
 const GAMES: Game[] = [
   // --- Robot Brains (machine learning) ---
-  { id: 'gradient-descent', cat: 'ml', emoji: '🏂', title: 'Rolling Downhill', goal: 'Roll the ball to the very bottom!', how: 'Press Auto-roll. Big steps jump too far.', learn: 'This is how a computer learns: it rolls downhill to the best answer.', tag: 'gradient descent' },
-  { id: 'classify', cat: 'ml', emoji: '🍎', title: 'Draw the Line', goal: 'Split the apples from the oranges!', how: 'Move the line, or tap Let it learn.', learn: 'A computer sorts things by drawing a line between them.', tag: 'classification' },
-  { id: 'perceptron', cat: 'ml', emoji: '🔵', title: 'One Brain Cell', goal: 'Make the light match the goal!', how: 'Slide the weights, or tap Train.', learn: 'One tiny brain cell adds things up and lights up when the total is big enough.', tag: 'the neuron' },
-  { id: 'neural-net', cat: 'ml', emoji: '🧠', title: 'Teach the Brain', goal: 'Watch the brain learn the tricky pattern!', how: 'Press Train and wait a few seconds.', learn: 'Lots of brain cells together learn patterns one cell cannot. This is how AI learns.', tag: 'neural network, backpropagation' },
-  { id: 'activation', cat: 'ml', emoji: '〰️', title: 'Bendy Lines', goal: 'See the shape change!', how: 'Pick a shape and slide the dot.', learn: 'Brain cells bend their answers with curves like these.', tag: 'activation functions' },
-  { id: 'kmeans', cat: 'ml', emoji: '🎨', title: 'Find the Groups', goal: 'Sort the dots into groups!', how: 'Pick how many groups, then tap Step.', learn: 'A computer can spot groups all by itself, with no help.', tag: 'k-means clustering' },
-  { id: 'knn', cat: 'ml', emoji: '👥', title: 'Ask the Neighbours', goal: 'Guess the grey dot’s colour!', how: 'Drag the grey dot around.', learn: 'To guess something new, just ask what is closest to it.', tag: 'k-nearest neighbours' },
-  { id: 'overfit', cat: 'ml', emoji: '🎯', title: 'Just Right', goal: 'Find the line that fits just right!', how: 'Slide from simple to wiggly.', learn: 'Too simple misses it. Too wiggly memorises the wrong bits. The middle wins.', tag: 'overfitting' },
+  { id: 'gradient-descent', cat: 'ml', title: 'Rolling Downhill', goal: 'Roll the ball to the very bottom!', how: 'Press Auto-roll. Big steps jump too far.', learn: 'This is how a computer learns: it rolls downhill to the best answer.', tag: 'gradient descent' },
+  { id: 'classify', cat: 'ml', title: 'Draw the Line', goal: 'Split the apples from the oranges!', how: 'Move the line, or tap Let it learn.', learn: 'A computer sorts things by drawing a line between them.', tag: 'classification' },
+  { id: 'perceptron', cat: 'ml', title: 'One Brain Cell', goal: 'Make the light match the goal!', how: 'Slide the weights, or tap Train.', learn: 'One tiny brain cell adds things up and lights up when the total is big enough.', tag: 'the neuron' },
+  { id: 'neural-net', cat: 'ml', title: 'Teach the Brain', goal: 'Watch the brain learn the tricky pattern!', how: 'Press Train and wait a few seconds.', learn: 'Lots of brain cells together learn patterns one cell cannot. This is how AI learns.', tag: 'neural network, backpropagation' },
+  { id: 'activation', cat: 'ml', title: 'Bendy Lines', goal: 'See the shape change!', how: 'Pick a shape and slide the dot.', learn: 'Brain cells bend their answers with curves like these.', tag: 'activation functions' },
+  { id: 'kmeans', cat: 'ml', title: 'Find the Groups', goal: 'Sort the dots into groups!', how: 'Pick how many groups, then tap Step.', learn: 'A computer can spot groups all by itself, with no help.', tag: 'k-means clustering' },
+  { id: 'knn', cat: 'ml', title: 'Ask the Neighbours', goal: 'Guess the grey dot’s colour!', how: 'Drag the grey dot around.', learn: 'To guess something new, just ask what is closest to it.', tag: 'k-nearest neighbours' },
+  { id: 'overfit', cat: 'ml', title: 'Just Right', goal: 'Find the line that fits just right!', how: 'Slide from simple to wiggly.', learn: 'Too simple misses it. Too wiggly memorises the wrong bits. The middle wins.', tag: 'overfitting' },
 
   // --- Inside AI (architectures) ---
-  { id: 'softmax', cat: 'arch', emoji: '🍰', title: 'Share the Pie', goal: 'Turn the numbers into a pie of chances!', how: 'Slide the numbers and the heat.', learn: 'Computers turn scores into chances that add up to one whole.', tag: 'softmax' },
-  { id: 'attention', cat: 'arch', emoji: '👀', title: 'Who Looks at Who', goal: 'See which word looks at which!', how: 'Tap any word.', learn: 'AI reads by letting each word look at the words that matter. That is attention.', tag: 'attention' },
-  { id: 'next-token', cat: 'arch', emoji: '✍️', title: 'Finish the Sentence', goal: 'Write a sentence with the robot!', how: 'Tap a word to add it.', learn: 'A chatbot works by guessing the next word, over and over.', tag: 'language model' },
-  { id: 'state-space', cat: 'arch', emoji: '🧵', title: 'Memory Belt', goal: 'See the memory remember!', how: 'Press Play, then slide the memory.', learn: 'Some AIs keep one little memory and update it as they read.', tag: 'state space, Mamba' },
-  { id: 'model-builder', cat: 'arch', emoji: '🏗️', title: 'Build a Robot Brain', goal: 'Stack blocks and watch the size grow!', how: 'Add blocks. Make them wider.', learn: 'Bigger brains can do more, but cost a lot more to build.', tag: 'parameters, scaling' },
-  { id: 'embeddings', cat: 'arch', emoji: '🗺️', title: 'Map of Words', goal: 'Find words that live close together!', how: 'Tap a word. Try the magic button.', learn: 'Words that mean similar things sit near each other on a map.', tag: 'embeddings' },
+  { id: 'softmax', cat: 'arch', title: 'Share the Pie', goal: 'Turn the numbers into a pie of chances!', how: 'Slide the numbers and the heat.', learn: 'Computers turn scores into chances that add up to one whole.', tag: 'softmax' },
+  { id: 'attention', cat: 'arch', title: 'Who Looks at Who', goal: 'See which word looks at which!', how: 'Tap any word.', learn: 'AI reads by letting each word look at the words that matter. That is attention.', tag: 'attention' },
+  { id: 'next-token', cat: 'arch', title: 'Finish the Sentence', goal: 'Write a sentence with the robot!', how: 'Tap a word to add it.', learn: 'A chatbot works by guessing the next word, over and over.', tag: 'language model' },
+  { id: 'state-space', cat: 'arch', title: 'Memory Belt', goal: 'See the memory remember!', how: 'Press Play, then slide the memory.', learn: 'Some AIs keep one little memory and update it as they read.', tag: 'state space, Mamba' },
+  { id: 'model-builder', cat: 'arch', title: 'Build a Robot Brain', goal: 'Stack blocks and watch the size grow!', how: 'Add blocks. Make them wider.', learn: 'Bigger brains can do more, but cost a lot more to build.', tag: 'parameters, scaling' },
+  { id: 'embeddings', cat: 'arch', title: 'Map of Words', goal: 'Find words that live close together!', how: 'Tap a word. Try the magic button.', learn: 'Words that mean similar things sit near each other on a map.', tag: 'embeddings' },
 
   // --- Puzzles (logic) ---
-  { id: 'lights-out', cat: 'logic', emoji: '💡', title: 'Lights Out', goal: 'Turn off every light!', how: 'Tap a light. Its neighbours flip too.', learn: 'A puzzle about taps that cancel each other out.', tag: 'parity' },
-  { id: 'hanoi', cat: 'logic', emoji: '🗼', title: 'Tower Move', goal: 'Move the whole tower to another peg!', how: 'Tap a peg, then another. Big never on small.', learn: 'Move a tower by moving smaller towers first. Neat trick!', tag: 'recursion' },
-  { id: 'fifteen', cat: 'logic', emoji: '🔢', title: 'Sliding Puzzle', goal: 'Put the numbers in order!', how: 'Tap a tile next to the empty space.', learn: 'Slide one tile at a time until they line up.', tag: 'planning' },
-  { id: 'nim', cat: 'logic', emoji: '🪨', title: 'Last Stone Wins', goal: 'Take the very last stone!', how: 'Tap stones to take them, one pile at a time.', learn: 'A game the computer has completely figured out.', tag: 'game theory' },
-  { id: 'mastermind', cat: 'logic', emoji: '🎨', title: 'Secret Colours', goal: 'Guess the 4 hidden colours!', how: 'Pick colours, tap Check. The clues help.', learn: 'Each guess is a clue that gets you closer.', tag: 'deduction' },
-  { id: 'logic-gates', cat: 'logic', emoji: '🔌', title: 'Wire the Light', goal: 'Make the light turn on!', how: 'Flip the switches or change the box.', learn: 'Computers are built from tiny switches like AND and OR.', tag: 'boolean logic' },
-  { id: 'river-crossing', cat: 'logic', emoji: '🛶', title: 'River Crossing', goal: 'Get everyone across safely!', how: 'Tap a thing to row it over.', learn: 'Sometimes you must take things back to win. Tricky!', tag: 'planning' },
-  { id: 'missionaries', cat: 'logic', emoji: '⛵', title: 'Safe Crossing', goal: 'Get all six across, nobody eaten!', how: 'Load the boat, then tap Row.', learn: 'Every move must keep both sides safe.', tag: 'constraints' },
-  { id: 'water-jugs', cat: 'logic', emoji: '🫙', title: 'Measure Four', goal: 'Get exactly 4 litres!', how: 'Fill, empty, and pour between the jugs.', learn: 'With a 5 and a 3 you can make a 4. Cool!', tag: 'state search' },
-  { id: 'sokoban', cat: 'logic', emoji: '📦', title: 'Push the Boxes', goal: 'Push every box onto a dot!', how: 'Use the arrows. You can only push.', learn: 'Think first! You can never pull a box back.', tag: 'planning' },
-  { id: 'sudoku4', cat: 'logic', emoji: '🔡', title: 'Mini Sudoku', goal: 'Every line gets 1, 2, 3, 4!', how: 'Tap a cell to change its number.', learn: 'Each row, column, and box needs all four numbers, once each.', tag: 'constraints' },
+  { id: 'lights-out', cat: 'logic', title: 'Lights Out', goal: 'Turn off every light!', how: 'Tap a light. Its neighbours flip too.', learn: 'A puzzle about taps that cancel each other out.', tag: 'parity' },
+  { id: 'hanoi', cat: 'logic', title: 'Tower Move', goal: 'Move the whole tower to another peg!', how: 'Tap a peg, then another. Big never on small.', learn: 'Move a tower by moving smaller towers first. Neat trick!', tag: 'recursion' },
+  { id: 'fifteen', cat: 'logic', title: 'Sliding Puzzle', goal: 'Put the numbers in order!', how: 'Tap a tile next to the empty space.', learn: 'Slide one tile at a time until they line up.', tag: 'planning' },
+  { id: 'nim', cat: 'logic', title: 'Last Stone Wins', goal: 'Take the very last stone!', how: 'Tap stones to take them, one pile at a time.', learn: 'A game the computer has completely figured out.', tag: 'game theory' },
+  { id: 'mastermind', cat: 'logic', title: 'Secret Colours', goal: 'Guess the 4 hidden colours!', how: 'Pick colours, tap Check. The clues help.', learn: 'Each guess is a clue that gets you closer.', tag: 'deduction' },
+  { id: 'logic-gates', cat: 'logic', title: 'Wire the Light', goal: 'Make the light turn on!', how: 'Flip the switches or change the box.', learn: 'Computers are built from tiny switches like AND and OR.', tag: 'boolean logic' },
+  { id: 'river-crossing', cat: 'logic', title: 'River Crossing', goal: 'Get everyone across safely!', how: 'Tap a thing to row it over.', learn: 'Sometimes you must take things back to win. Tricky!', tag: 'planning' },
+  { id: 'missionaries', cat: 'logic', title: 'Safe Crossing', goal: 'Get all six across, nobody eaten!', how: 'Load the boat, then tap Row.', learn: 'Every move must keep both sides safe.', tag: 'constraints' },
+  { id: 'water-jugs', cat: 'logic', title: 'Measure Four', goal: 'Get exactly 4 litres!', how: 'Fill, empty, and pour between the jugs.', learn: 'With a 5 and a 3 you can make a 4. Cool!', tag: 'state search' },
+  { id: 'sokoban', cat: 'logic', title: 'Push the Boxes', goal: 'Push every box onto a dot!', how: 'Use the arrows. You can only push.', learn: 'Think first! You can never pull a box back.', tag: 'planning' },
+  { id: 'sudoku4', cat: 'logic', title: 'Mini Sudoku', goal: 'Every line gets 1, 2, 3, 4!', how: 'Tap a cell to change its number.', learn: 'Each row, column, and box needs all four numbers, once each.', tag: 'constraints' },
 
   // --- Numbers (maths) ---
-  { id: 'primes', cat: 'maths', emoji: '🔎', title: 'Prime Hunt', goal: 'Cross out until only primes are left!', how: 'Tap a number to cross out its multiples.', learn: 'Primes are the numbers left standing. A 2000-year-old trick.', tag: 'number theory' },
-  { id: 'times-table', cat: 'maths', emoji: '⚡', title: 'Times Race', goal: 'Get as many right in 30 seconds!', how: 'Tap the right answer, fast.', learn: 'Practise your times tables against the clock.', tag: 'mental maths' },
-  { id: 'fractions', cat: 'maths', emoji: '🍕', title: 'Pizza Fractions', goal: 'Match the slice to the fraction!', how: 'Tap the matching fraction.', learn: 'A fraction is just a slice of a whole thing.', tag: 'fractions' },
-  { id: 'guess-line', cat: 'maths', emoji: '📈', title: 'Fit the Line', goal: 'Thread the line through the dots!', how: 'Slide to tilt and lift the line.', learn: 'Find the line that best follows the dots.', tag: 'algebra' },
-  { id: 'estimate', cat: 'maths', emoji: '👁️', title: 'Guess How Many', goal: 'Guess the number of dots!', how: 'Watch them flash, then guess.', learn: 'You can feel roughly how many without counting.', tag: 'number sense' },
-  { id: 'pattern', cat: 'maths', emoji: '🔢', title: 'What Comes Next', goal: 'Find the next number!', how: 'Spot the pattern, then tap the answer.', learn: 'Find the rule and you find the next number.', tag: 'sequences' },
-  { id: 'angle', cat: 'maths', emoji: '📐', title: 'Point It', goal: 'Aim the arrow at the dot!', how: 'Slide to turn the arrow.', learn: 'Angles measure turning. Ninety is a corner.', tag: 'geometry' },
-  { id: 'derivative', cat: 'maths', emoji: '⛰️', title: 'The Slope', goal: 'Find the flat spot on the hill!', how: 'Slide the dot along the hill.', learn: 'The slope shows which way is uphill. Flat means the top or bottom.', tag: 'calculus' },
-  { id: 'integral', cat: 'maths', emoji: '📊', title: 'Fill the Space', goal: 'Fill under the curve with blocks!', how: 'Add more and more blocks.', learn: 'Lots of thin blocks add up to the space under a curve.', tag: 'calculus' },
-  { id: 'vectors', cat: 'maths', emoji: '➡️', title: 'Two Arrows', goal: 'Make the arrows point apart!', how: 'Drag the tips of the arrows.', learn: 'The dot product tells how much two arrows agree.', tag: 'linear algebra' },
-  { id: 'matrix', cat: 'maths', emoji: '🔷', title: 'Bend the Grid', goal: 'Spin and squish the square!', how: 'Slide the numbers, or tap a preset.', learn: 'Four numbers can rotate and stretch a whole picture.', tag: 'linear algebra' },
+  { id: 'primes', cat: 'maths', title: 'Prime Hunt', goal: 'Cross out until only primes are left!', how: 'Tap a number to cross out its multiples.', learn: 'Primes are the numbers left standing. A 2000-year-old trick.', tag: 'number theory' },
+  { id: 'times-table', cat: 'maths', title: 'Times Race', goal: 'Get as many right in 30 seconds!', how: 'Tap the right answer, fast.', learn: 'Practise your times tables against the clock.', tag: 'mental maths' },
+  { id: 'fractions', cat: 'maths', title: 'Pizza Fractions', goal: 'Match the slice to the fraction!', how: 'Tap the matching fraction.', learn: 'A fraction is just a slice of a whole thing.', tag: 'fractions' },
+  { id: 'guess-line', cat: 'maths', title: 'Fit the Line', goal: 'Thread the line through the dots!', how: 'Slide to tilt and lift the line.', learn: 'Find the line that best follows the dots.', tag: 'algebra' },
+  { id: 'estimate', cat: 'maths', title: 'Guess How Many', goal: 'Guess the number of dots!', how: 'Watch them flash, then guess.', learn: 'You can feel roughly how many without counting.', tag: 'number sense' },
+  { id: 'pattern', cat: 'maths', title: 'What Comes Next', goal: 'Find the next number!', how: 'Spot the pattern, then tap the answer.', learn: 'Find the rule and you find the next number.', tag: 'sequences' },
+  { id: 'angle', cat: 'maths', title: 'Point It', goal: 'Aim the arrow at the dot!', how: 'Slide to turn the arrow.', learn: 'Angles measure turning. Ninety is a corner.', tag: 'geometry' },
+  { id: 'derivative', cat: 'maths', title: 'The Slope', goal: 'Find the flat spot on the hill!', how: 'Slide the dot along the hill.', learn: 'The slope shows which way is uphill. Flat means the top or bottom.', tag: 'calculus' },
+  { id: 'integral', cat: 'maths', title: 'Fill the Space', goal: 'Fill under the curve with blocks!', how: 'Add more and more blocks.', learn: 'Lots of thin blocks add up to the space under a curve.', tag: 'calculus' },
+  { id: 'vectors', cat: 'maths', title: 'Two Arrows', goal: 'Make the arrows point apart!', how: 'Drag the tips of the arrows.', learn: 'The dot product tells how much two arrows agree.', tag: 'linear algebra' },
+  { id: 'matrix', cat: 'maths', title: 'Bend the Grid', goal: 'Spin and squish the square!', how: 'Slide the numbers, or tap a preset.', learn: 'Four numbers can rotate and stretch a whole picture.', tag: 'linear algebra' },
 
   // --- Real World (physics) ---
-  { id: 'projectile', cat: 'physics', emoji: '🎯', title: 'Cannon', goal: 'Hit the target!', how: 'Set the angle and power, then Fire.', learn: 'Gravity bends the ball into a curve.', tag: 'projectiles' },
-  { id: 'orbit', cat: 'physics', emoji: '🪐', title: 'Orbits', goal: 'Make the planet loop the star!', how: 'Drag and let go to fling it.', learn: 'An orbit is falling forever and always missing.', tag: 'gravity' },
-  { id: 'pendulum', cat: 'physics', emoji: '🕰️', title: 'Swings', goal: 'See which one swings slower!', how: 'Set the lengths, then release.', learn: 'Longer swings are slower. The weight does not matter.', tag: 'oscillation' },
-  { id: 'incline', cat: 'physics', emoji: '🛝', title: 'The Ramp', goal: 'Roll the ball down!', how: 'Change the steepness, then drop it.', learn: 'A steeper ramp means a faster roll.', tag: 'acceleration' },
-  { id: 'bounce', cat: 'physics', emoji: '🏀', title: 'Bounce Box', goal: 'Fling the balls around!', how: 'Drag to throw a ball. Add more.', learn: 'Balls swap their speed when they bump.', tag: 'collisions' },
-  { id: 'balance', cat: 'physics', emoji: '⚖️', title: 'Balance', goal: 'Balance the see-saw!', how: 'Tap left or right to drop a weight.', learn: 'Weights far from the middle push harder than near ones.', tag: 'torque' },
-  { id: 'spring', cat: 'physics', emoji: '🪀', title: 'Springy', goal: 'Make the block bounce!', how: 'Drag the block aside and let go.', learn: 'A stiffer spring bounces faster.', tag: 'oscillation' },
-  { id: 'collide', cat: 'physics', emoji: '🚕', title: 'Cart Crash', goal: 'Smash the carts together!', how: 'Set the weights, then Launch.', learn: 'A heavy cart barely moves when a light one hits it.', tag: 'momentum' },
+  { id: 'projectile', cat: 'physics', title: 'Cannon', goal: 'Hit the target!', how: 'Set the angle and power, then Fire.', learn: 'Gravity bends the ball into a curve.', tag: 'projectiles' },
+  { id: 'orbit', cat: 'physics', title: 'Orbits', goal: 'Make the planet loop the star!', how: 'Drag and let go to fling it.', learn: 'An orbit is falling forever and always missing.', tag: 'gravity' },
+  { id: 'pendulum', cat: 'physics', title: 'Swings', goal: 'See which one swings slower!', how: 'Set the lengths, then release.', learn: 'Longer swings are slower. The weight does not matter.', tag: 'oscillation' },
+  { id: 'incline', cat: 'physics', title: 'The Ramp', goal: 'Roll the ball down!', how: 'Change the steepness, then drop it.', learn: 'A steeper ramp means a faster roll.', tag: 'acceleration' },
+  { id: 'bounce', cat: 'physics', title: 'Bounce Box', goal: 'Fling the balls around!', how: 'Drag to throw a ball. Add more.', learn: 'Balls swap their speed when they bump.', tag: 'collisions' },
+  { id: 'balance', cat: 'physics', title: 'Balance', goal: 'Balance the see-saw!', how: 'Tap left or right to drop a weight.', learn: 'Weights far from the middle push harder than near ones.', tag: 'torque' },
+  { id: 'spring', cat: 'physics', title: 'Springy', goal: 'Make the block bounce!', how: 'Drag the block aside and let go.', learn: 'A stiffer spring bounces faster.', tag: 'oscillation' },
+  { id: 'collide', cat: 'physics', title: 'Cart Crash', goal: 'Smash the carts together!', how: 'Set the weights, then Launch.', learn: 'A heavy cart barely moves when a light one hits it.', tag: 'momentum' },
 
   // --- Your Brain (mind) ---
-  { id: 'simon', cat: 'mind', emoji: '🎵', title: 'Simon Says', goal: 'Repeat the pattern!', how: 'Watch it, then tap it back.', learn: 'It gets one longer every time. How far can you go?', tag: 'memory' },
-  { id: 'memory-match', cat: 'mind', emoji: '🃏', title: 'Memory Match', goal: 'Find all the matching pairs!', how: 'Flip two cards. A match stays.', learn: 'Remember where each picture is hiding.', tag: 'recall' },
-  { id: 'reaction', cat: 'mind', emoji: '⏱️', title: 'Fast Tap', goal: 'Tap the moment it turns green!', how: 'Wait for green, then tap fast.', learn: 'People take about a fifth of a second to react.', tag: 'reflex' },
-  { id: 'stroop', cat: 'mind', emoji: '🌈', title: 'Colour Trick', goal: 'Tap the ink colour, not the word!', how: 'Look at the colour, ignore the word.', learn: 'Your brain wants to read the word. Tricky!', tag: 'attention' },
-  { id: 'binary', cat: 'mind', emoji: '🔟', title: 'Robot Numbers', goal: 'Make the target number!', how: 'Flip switches so they add up.', learn: 'Computers count with just on and off.', tag: 'binary' },
+  { id: 'simon', cat: 'mind', title: 'Simon Says', goal: 'Repeat the pattern!', how: 'Watch it, then tap it back.', learn: 'It gets one longer every time. How far can you go?', tag: 'memory' },
+  { id: 'memory-match', cat: 'mind', title: 'Memory Match', goal: 'Find all the matching pairs!', how: 'Flip two cards. A match stays.', learn: 'Remember where each picture is hiding.', tag: 'recall' },
+  { id: 'reaction', cat: 'mind', title: 'Fast Tap', goal: 'Tap the moment it turns green!', how: 'Wait for green, then tap fast.', learn: 'People take about a fifth of a second to react.', tag: 'reflex' },
+  { id: 'stroop', cat: 'mind', title: 'Colour Trick', goal: 'Tap the ink colour, not the word!', how: 'Look at the colour, ignore the word.', learn: 'Your brain wants to read the word. Tricky!', tag: 'attention' },
+  { id: 'binary', cat: 'mind', title: 'Robot Numbers', goal: 'Make the target number!', how: 'Flip switches so they add up.', learn: 'Computers count with just on and off.', tag: 'binary' },
 ];
 
 const COUNT = GAMES.length;
+const postSlug = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 const searchStr = (g: Game) => `${g.title} ${g.goal} ${g.tag} ${CATS[g.cat].label} ${g.learn} ${g.how}`.toLowerCase();
 
 const DESCRIPTION =
@@ -216,7 +217,6 @@ const surprisedSchema = graph(
             style={`--cat:${CATS[game.cat].c};--catwash:${CATS[game.cat].wash}`}
           >
             <div class="gamecard__bar">
-              <span class="gamecard__emoji" aria-hidden="true">{game.emoji}</span>
               <h3 class="gamecard__title">{game.title}</h3>
               <span class="gamecard__pill">{CATS[game.cat].label}</span>
             </div>
@@ -230,6 +230,7 @@ const surprisedSchema = graph(
               <p>{game.learn}</p>
               <p class="gamecard__grown">Grown-up name: {game.tag}</p>
             </details>
+            <a class="gamecard__post" href={`/posts/2026/08/${postSlug(game.title)}/`}>Read: how it works and what it teaches</a>
           </article>
         ))
       }
@@ -302,7 +303,6 @@ const surprisedSchema = graph(
     .gamecard:hover { box-shadow: 0 12px 34px -18px rgba(0, 0, 0, 0.4); transform: translateY(-3px); }
     .gamecard.is-hidden { display: none; }
     .gamecard__bar { display: flex; align-items: center; gap: var(--s-2); margin-bottom: var(--s-2); }
-    .gamecard__emoji { font-size: 1.6rem; line-height: 1; }
     .gamecard__title {
       font-family: var(--face-display); font-size: var(--t-lg); font-weight: 700;
       letter-spacing: var(--tr-snug); margin: 0; flex: 1 1 auto;
@@ -336,6 +336,19 @@ const surprisedSchema = graph(
       font-family: var(--face-mono); font-size: var(--t-2xs); color: var(--fg-faint);
       text-transform: uppercase; letter-spacing: var(--tr-wide);
     }
+
+    .gamecard__post {
+      display: inline-block;
+      margin-top: var(--s-3);
+      align-self: flex-start;
+      font-size: var(--t-sm);
+      font-weight: 600;
+      color: var(--cat, var(--accent));
+      text-decoration: none;
+      border-bottom: 2px solid transparent;
+      transition: border-color var(--dur-fast) var(--ease);
+    }
+    .gamecard__post:hover { border-color: var(--cat, var(--accent)); }
 
     .arcade-empty { margin-top: var(--s-6); color: var(--fg-muted); font-size: var(--t-base); }
     .arcade-pager { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--s-2); margin-top: var(--s-7); }
@@ -505,9 +518,9 @@ const surprisedSchema = graph(
     .surprised .g-bank { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: var(--s-3); border: 2px dashed var(--rule-strong); border-radius: 14px; min-height: 140px; }
     .surprised .g-bank.here { border-style: solid; border-color: var(--accent); background: var(--accent-wash); }
     .surprised .g-bank-label { font-family: var(--face-mono); font-size: var(--t-xs); text-transform: uppercase; letter-spacing: var(--tr-wide); color: var(--fg-faint); }
-    .surprised .g-riv { font-size: var(--t-2xl); border: none; background: none; cursor: default; padding: 2px; border-radius: 8px; }
+    .surprised .g-riv { font-size: var(--t-sm); font-weight: 600; border: 2px solid var(--rule); background: var(--bg); color: var(--fg); cursor: default; padding: 0.35em 0.6em; border-radius: 999px; }
     .surprised .g-riv.can { cursor: pointer; }
-    .surprised .g-riv.can:hover { background: var(--bg-sunken); }
+    .surprised .g-riv.can:hover { border-color: var(--accent); color: var(--accent); }
     .surprised .g-mc-count { font-size: var(--t-lg); letter-spacing: 2px; min-height: 1.4em; }
     .surprised .g-mc-boat { display: flex; align-items: center; justify-content: center; font-size: var(--t-lg); padding: 0 var(--s-2); }
 
@@ -523,7 +536,9 @@ const surprisedSchema = graph(
     .surprised .g-sok-cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: var(--t-lg); border-radius: 4px; background: var(--bg-sunken); }
     .surprised .g-sok-cell.wall { background: var(--rule-strong); }
     .surprised .g-sok-cell.target { color: var(--accent); font-weight: 700; }
-    .surprised .g-sok-cell.box.on { background: #dcfce7; }
+    .surprised .g-sok-cell.player { background: var(--accent); border-radius: 50%; }
+    .surprised .g-sok-cell.box { background: #b8825a; border-radius: 5px; box-shadow: inset 0 0 0 2px rgba(0,0,0,0.18); }
+    .surprised .g-sok-cell.box.on { background: #22a35a; }
     .surprised .g-dpad { display: grid; grid-template-columns: repeat(3, 2.8em); gap: 5px; justify-content: center; margin-top: var(--s-3); }
     .surprised .g-dpad .g-btn { padding: 0.45em 0; text-align: center; }
 

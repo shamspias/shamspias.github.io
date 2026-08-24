@@ -1589,7 +1589,7 @@ reg('simon', (stage) => {
 
 /* Memory match -------------------------------------------------------------- */
 reg('memory-match', (stage) => {
-  const FACES = ['🍓', '🌟', '🐙', '🎈', '🍀', '🌈', '🦊', '🍄'];
+  const FACES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
   let deck = [],
     open = [],
     matched = new Set(),
@@ -2668,7 +2668,7 @@ reg('embeddings', (stage) => {
 
 /* River crossing: wolf, goat, cabbage -------------------------------------- */
 reg('river-crossing', (stage) => {
-  const ITEMS = { farmer: '\u{1F9D1}‍\u{1F33E}', wolf: '\u{1F43A}', goat: '\u{1F410}', cabbage: '\u{1F96C}' };
+  const ITEMS = { farmer: 'You', wolf: 'Wolf', goat: 'Goat', cabbage: 'Cabbage' };
   let pos = { farmer: 'L', wolf: 'L', goat: 'L', cabbage: 'L' };
   let over = false;
   const status = note();
@@ -2738,11 +2738,11 @@ reg('missionaries', (stage) => {
     const mkBank = (b, side) => {
       const bank = el('div', { class: 'g-bank' + (boatSide === side ? ' here' : '') });
       bank.append(el('div', { class: 'g-bank-label' }, side === 'L' ? 'Start' : 'Goal'));
-      bank.append(el('div', { class: 'g-mc-count' }, '\u{1F464}'.repeat(b.m) || '-'));
-      bank.append(el('div', { class: 'g-mc-count' }, '\u{1F479}'.repeat(b.c) || '-'));
+      bank.append(el('div', { class: 'g-mc-count' }, ('M '.repeat(b.m)).trim() || '-'));
+      bank.append(el('div', { class: 'g-mc-count' }, ('C '.repeat(b.c)).trim() || '-'));
       return bank;
     };
-    view.append(mkBank(L, 'L'), el('div', { class: 'g-mc-boat' }, `\u{1F6F6} ${'\u{1F464}'.repeat(load.m)}${'\u{1F47F}'.repeat(load.c)}`), mkBank(R, 'R'));
+    view.append(mkBank(L, 'L'), el('div', { class: 'g-mc-boat' }, 'Boat ' + (('M '.repeat(load.m) + 'C '.repeat(load.c)).trim() || 'empty')), mkBank(R, 'R'));
     if (!over) status.textContent = `Boat at ${boatSide === 'L' ? 'start' : 'goal'}. Load 1 or 2, never let cannibals outnumber missionaries.`;
   };
   const controls = el('div', { class: 'g-bar' });
@@ -2875,8 +2875,8 @@ reg('sokoban', (stage) => {
         let cls = 'g-sok-cell',
           txt = '';
         if (ch === '#') cls += ' wall';
-        else if (isP) { cls += ' player'; txt = '\u{1F642}'; }
-        else if (ch === '$') { cls += tgt ? ' box on' : ' box'; txt = '\u{1F4E6}'; }
+        else if (isP) { cls += ' player'; txt = ''; }
+        else if (ch === '$') { cls += tgt ? ' box on' : ' box'; txt = ''; }
         else if (tgt) { cls += ' target'; txt = '·'; }
         board.append(el('div', { class: cls }, txt));
       }
