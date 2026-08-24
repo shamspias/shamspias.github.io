@@ -225,7 +225,7 @@ reg('lights-out', (stage) => {
   const scramble = () => {
     grid = new Array(N * N).fill(false);
     // Apply random real taps, so the board is always solvable.
-    for (let k = 0; k < 8; k++) tap(randInt(0, N - 1), randInt(0, N - 1));
+    for (let k = 0; k < 5; k++) tap(randInt(0, N - 1), randInt(0, N - 1));
     // tap() drew already; ensure a clean redraw
     draw();
   };
@@ -305,13 +305,13 @@ reg('hanoi', (stage) => {
     button('Restart', () => reset()),
   );
   stage.append(wrap, sizes, status);
-  reset(4);
+  reset(3);
   return {};
 });
 
 /* 15 Puzzle ----------------------------------------------------------------- */
 reg('fifteen', (stage) => {
-  const N = 4;
+  const N = 3;
   let tiles = [];
   let moves = 0;
   const status = note();
@@ -333,11 +333,11 @@ reg('fifteen', (stage) => {
       }
     });
     if (solved() && moves > 0) {
-      status.textContent = `Ordered in ${moves} moves.`;
+      status.textContent = `Done in ${moves} moves!`;
       status.classList.add('win');
     } else {
       status.classList.remove('win');
-      status.textContent = `Slide the tiles into order, 1 to 15. Moves ${moves}.`;
+      status.textContent = `Put the numbers in order. Moves ${moves}.`;
     }
   };
   const blankAt = () => tiles.indexOf(0);
@@ -930,7 +930,7 @@ reg('pendulum', (stage) => {
     v1 = 0;
     v2 = 0;
   };
-  status.textContent = 'Two pendulums, different lengths. Longer means slower. Mass never enters the period.';
+  status.textContent = 'Two swings, different lengths. Longer swings are slower.';
   const s1 = slider('Left length', 20, 90, L1 * 100, (v) => (L1 = v / 100), '%');
   const s2 = slider('Right length', 20, 90, L2 * 100, (v) => (L2 = v / 100), '%');
   stage.append(s1.node, s2.node, bar(button('Pull back and release', push)), status);
@@ -982,7 +982,7 @@ reg('incline', (stage) => {
     ctx.textAlign = 'left';
     ctx.fillText(`angle ${deg}°   a = g·sin θ = ${a.toFixed(2)} m/s²`, 12, H - 12);
   }
-  status.textContent = 'Steeper ramp, larger acceleration. It is g times the sine of the angle.';
+  status.textContent = 'Steeper ramp, faster roll!';
   const s = slider('Ramp angle', 5, 80, deg, (v) => { deg = v; }, '°');
   stage.append(s.node, bar(button('Drop the ball', reset)), status);
   reset();
@@ -1136,7 +1136,7 @@ reg('balance', (stage) => {
     drawStack(right, 1);
     ctx.restore();
     if (Math.abs(net) < 0.5 && (Object.keys(left).length || Object.keys(right).length)) {
-      status.textContent = 'Balanced. Torque left equals torque right: weight times distance.';
+      status.textContent = 'Balanced! Far weights push as hard as heavy ones.';
       status.classList.add('win');
     } else {
       status.classList.remove('win');
@@ -1833,15 +1833,15 @@ reg('gradient-descent', (stage) => {
     if (!isFinite(x) || Math.abs(x) > 3) {
       x = clamp(x, -1.4, 1.4);
       auto = false;
-      status.textContent = 'Diverged! The steps were too big and it flew out of the valley. Lower the learning rate.';
+      status.textContent = 'Oops, too big a step! It flew out. Make the learning rate smaller.';
       status.classList.remove('win');
     } else if (Math.abs(g) < 0.03) {
-      status.textContent = `Found the bottom at x = ${x.toFixed(2)}. That is what "learning" is: rolling downhill on the error.`;
+      status.textContent = 'Reached the bottom! That is how a computer learns: roll to the lowest spot.';
       status.classList.add('win');
       auto = false;
     } else {
       status.classList.remove('win');
-      status.textContent = `Rolling downhill. Loss ${L(x).toFixed(3)}, slope ${dL(x).toFixed(2)}.`;
+      status.textContent = 'Rolling down the hill...';
     }
     draw();
   };
@@ -1871,7 +1871,7 @@ reg('gradient-descent', (stage) => {
     ctx.fill();
   }
   const s = slider('Learning rate', 2, 120, lr * 100, (v) => (lr = v / 100), '%');
-  status.textContent = 'This ball is a model learning. Each step rolls it down the error curve. Watch the learning rate.';
+  status.textContent = 'This ball is like a computer learning. Each step rolls it lower. Try Auto-roll!';
   stage.append(
     s.node,
     bar(
@@ -1945,7 +1945,7 @@ reg('classify', (stage) => {
     }
     const a = acc();
     status.classList.toggle('win', a === 1);
-    status.textContent = a === 1 ? 'Perfect split! Every dot is on its own side.' : `${Math.round(a * 100)}% separated. Turn and shift the line, or let it learn.`;
+    status.textContent = a === 1 ? 'Perfect split! Every dot is on its own side.' : `${Math.round(a * 100)}% sorted. Move the line, or tap Let it learn.`;
   };
   const learn = () => {
     // a few perceptron passes, then read the weights back into the sliders
@@ -1969,7 +1969,7 @@ reg('classify', (stage) => {
   };
   const sA = slider('Turn', 0, 100, ((angle + Math.PI) / (2 * Math.PI)) * 100, (v) => { angle = (v / 100) * 2 * Math.PI - Math.PI; draw(); });
   const sB = slider('Shift', 0, 100, ((bias + 1) / 2) * 100, (v) => { bias = (v / 100) * 2 - 1; draw(); });
-  status.textContent = 'Blue apples, pink oranges. Move the line so each kind is on its own side. That line is the model.';
+  status.textContent = 'Blue apples, pink oranges. Move the line so each kind is on one side.';
   stage.append(sA.node, sB.node, bar(button('Let it learn', learn), button('New dots', gen)), status);
   gen();
   return {};
@@ -2001,7 +2001,7 @@ reg('perceptron', (stage) => {
       );
     }
     status.classList.toggle('win', right === 4);
-    status.textContent = right === 4 ? `Solved. This one neuron now computes ${gate}.` : `${right} of 4 rows right. Tune the weights, or press Train.`;
+    status.textContent = right === 4 ? `Yes! The brain cell learned ${gate}.` : `${right} of 4 right. Slide the weights, or tap Train.`;
   };
   const train = () => {
     for (let e = 0; e < 30; e++)
@@ -2022,7 +2022,7 @@ reg('perceptron', (stage) => {
   const sW2 = slider('Weight 2', 0, 100, w2 * 25 + 50, (v) => { w2 = (v - 50) / 25; draw(); });
   const sB = slider('Bias', 0, 100, b * 25 + 50, (v) => { b = (v - 50) / 25; draw(); });
   const gateBar = bar(el('span', { class: 'g-note' }, 'Target:'), ...Object.keys(GATES).map((g) => button(g, () => { gate = g; draw(); })));
-  status.textContent = 'A neuron adds up its inputs times weights. If the total clears zero, it fires. Make it match the gate.';
+  status.textContent = 'This one brain cell adds things up and lights up. Make it match the goal.';
   stage.append(table, sW1.node, sW2.node, sB.node, gateBar, bar(button('Train it', train)), status);
   draw();
   return {};
@@ -2103,9 +2103,9 @@ reg('neural-net', (stage) => {
     }
     const l = loss();
     status.classList.toggle('win', l < 0.02);
-    status.textContent = l < 0.02 ? `Solved XOR after ${epoch} rounds. The hidden layer bent the space until a line could split it.` : `Training. Round ${epoch}, error ${l.toFixed(3)}. Watch the colours carve out the corners.`;
+    status.textContent = l < 0.02 ? `Done! The brain learned it after ${epoch} rounds. See how the colours bent.` : `Learning... round ${epoch}. Watch the colours find the corners.`;
   }
-  status.textContent = 'One straight line cannot solve this. A hidden layer can. Press Train and watch it learn XOR.';
+  status.textContent = 'One line cannot split these. A brain with a hidden layer can. Press Train!';
   stage.append(
     bar(
       button('Train', () => { training = !training; }),
@@ -2156,7 +2156,7 @@ reg('activation', (stage) => {
     ctx.beginPath();
     ctx.arc(px(xv), py(fn(xv)), 7, 0, 7);
     ctx.fill();
-    status.textContent = `${name}(${xv.toFixed(1)}) = ${fn(xv).toFixed(2)}. This is the "should the neuron fire, and how much" curve.`;
+    status.textContent = `${name}(${xv.toFixed(1)}) = ${fn(xv).toFixed(2)}. This curve decides how much the brain cell fires.`;
   };
   const s = slider('Input x', -40, 40, xv * 10, (v) => { xv = v / 10; draw(); });
   const fbar = bar(...Object.keys(FN).map((n) => button(n, () => { name = n; draw(); })));
@@ -2184,7 +2184,7 @@ reg('kmeans', (stage) => {
     pts.forEach((p) => (p.c = -1));
     draw();
     status.classList.remove('win');
-    status.textContent = `${K} centroids dropped. Press Step: colour each dot by its nearest, then slide centroids to the middle.`;
+    status.textContent = `${K} centres dropped. Tap Step to sort the dots into groups.`;
   };
   const step = () => {
     pts.forEach((p) => {
@@ -2204,8 +2204,8 @@ reg('kmeans', (stage) => {
       }
     });
     draw();
-    if (moved < 0.01) { status.textContent = 'Settled. The centroids stopped moving; the machine found the groups on its own.'; status.classList.add('win'); }
-    else status.textContent = 'Dots recoloured, centroids nudged toward their group. Keep stepping.';
+    if (moved < 0.01) { status.textContent = 'Done! The computer found the groups all by itself.'; status.classList.add('win'); }
+    else status.textContent = 'Dots sorted, centres moved. Keep tapping Step.';
   };
   const draw = () => {
     const { ctx } = c;
@@ -2278,7 +2278,7 @@ reg('knn', (stage) => {
     ctx.arc(f.x(q.x), f.y(q.y), 10, 0, 7);
     ctx.fill();
     ctx.stroke();
-    status.textContent = `Its ${K} nearest neighbours vote: this point is ${pred ? 'pink' : 'blue'}. Drag it around and change K.`;
+    status.textContent = `Its ${K} closest neighbours say: ${pred ? 'pink' : 'blue'}. Drag it!`;
   };
   drag(c.wrap, {
     down: (p) => moveQ(p),
@@ -2290,7 +2290,7 @@ reg('knn', (stage) => {
     draw();
   };
   const s = slider('K neighbours', 1, 9, K, (v) => { K = v % 2 ? v : v + 1; draw(); });
-  status.textContent = 'The grey point is new. It copies the majority label of its K closest neighbours. Drag it.';
+  status.textContent = 'The grey dot is new. It copies its closest neighbours. Drag it around!';
   stage.append(s.node, bar(button('New dots', gen)), status);
   gen();
   return {};
@@ -2338,10 +2338,10 @@ reg('overfit', (stage) => {
     const testErr = test.reduce((s, p) => s + (clamp(polyval(coef, p.x), -3, 3) - p.y) ** 2, 0) / test.length;
     const over = testErr > 0.05 && deg > 6;
     status.classList.toggle('win', testErr < 0.02);
-    status.textContent = `Degree ${deg}. Fit on the dots: ${trainErr.toFixed(3)}. On unseen points: ${testErr.toFixed(3)}. ` + (over ? 'Too wiggly: it memorised the noise.' : deg < 2 ? 'Too stiff: it misses the shape.' : 'Nicely general.');
+    status.textContent = `Level ${deg}. ` + (over ? 'Too wiggly! It memorised the wobbles.' : deg < 2 ? 'Too stiff! It misses the shape.' : 'Just right!');
   };
   const s = slider('Model complexity', 1, 11, deg, (v) => { deg = v; draw(); });
-  status.textContent = 'The grey line is the real pattern; blue dots are noisy samples. Simple underfits, complex memorises the noise.';
+  status.textContent = 'The grey line is the real shape. Find a fit that follows it, not the wobbles.';
   stage.append(s.node, bar(button('New sample', gen)), status);
   gen();
   return {};
@@ -2371,11 +2371,11 @@ reg('softmax', (stage) => {
       );
     });
     const top = probs.indexOf(Math.max(...probs));
-    status.textContent = `Scores become choices that add to 100%. Low temperature is confident (${names[top]} wins); high is random.`;
+    status.textContent = `Scores become chances that add to 100%. Low heat picks a favourite (${names[top]}); high heat shares it out.`;
   };
   const sliders = logits.map((v, i) => slider(`Score ${names[i]}`, -30, 30, v * 10, (nv) => { logits[i] = nv / 10; draw(); }));
   const st = slider('Temperature', 20, 300, temp * 100, (v) => { temp = v / 100; draw(); }, '%');
-  status.textContent = 'Softmax turns raw scores into probabilities. It is the last step of almost every classifier and language model.';
+  status.textContent = 'This turns scores into chances that add up to a whole. Slide and watch!';
   stage.append(bars, ...sliders.map((s) => s.node), st.node, status);
   draw();
   return {};
@@ -2409,9 +2409,9 @@ reg('attention', (stage) => {
       );
     });
     const ranked = toks.map(([w2], i) => ({ w2, s: i === query ? -1 : w[i] })).filter((r) => r.s > 0).sort((a, b) => b.s - a.s);
-    status.textContent = `"${toks[query][0]}" looks most at "${ranked[0]?.w2}"${ranked[1] ? ` and "${ranked[1].w2}"` : ''}. That weighted lookup is attention.`;
+    status.textContent = `"${toks[query][0]}" looks most at "${ranked[0]?.w2}"${ranked[1] ? ` and "${ranked[1].w2}"` : ''}. That is attention!`;
   };
-  status.textContent = 'Click any word. It becomes the question, and the others light up by how much it should pay attention to them.';
+  status.textContent = 'Tap any word. The others light up by how much it looks at them.';
   stage.append(row, status);
   draw();
   return {};
@@ -2444,7 +2444,7 @@ reg('next-token', (stage) => {
     const m = model.get(last);
     choices.replaceChildren();
     if (!m) {
-      status.textContent = 'The model has never seen a word follow that one. Start over to write another line.';
+      status.textContent = 'The robot ran out of words. Tap Start over.';
       return;
     }
     const total = [...m.values()].reduce((a, b) => a + b, 0);
@@ -2458,7 +2458,7 @@ reg('next-token', (stage) => {
         ),
       );
     });
-    status.textContent = 'This is all a language model does: guess the next word from the last one. Pick one to keep writing.';
+    status.textContent = 'A chatbot just guesses the next word, again and again. Tap one!';
   };
   stage.append(sentence, choices, bar(button('Start over', () => { words = []; draw(); })), status);
   draw();
@@ -2489,7 +2489,7 @@ reg('state-space', (stage) => {
     if (idx >= seq.length) {
       const remembers = state > 0.05;
       status.classList.toggle('win', true);
-      status.textContent = `Sequence done. The state still reads ${state.toFixed(2)}: it ${remembers ? 'still remembers' : 'has forgotten'} the early spikes. Raise decay to remember longer.`;
+      status.textContent = `Done! The memory ${remembers ? 'still remembers' : 'forgot'} the early flashes. More memory remembers longer.`;
     }
   }
   function draw() {
@@ -2526,10 +2526,10 @@ reg('state-space', (stage) => {
     ctx.fillStyle = t.faint;
     ctx.font = '12px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('pink = input token   blue = the running memory (state)', 16, 16);
+    ctx.fillText('pink = words coming in    blue = the memory', 16, 16);
   }
   const s = slider('Memory (decay)', 30, 96, decay * 100, (v) => (decay = v / 100), '%');
-  status.textContent = 'Instead of looking at every word like attention, a state model keeps one running summary. Press Play.';
+  status.textContent = 'This AI keeps one little memory and updates it. Press Play!';
   stage.append(s.node, bar(button('Play', () => { reset(); status.classList.remove('win'); }), button('Reset', reset)), status);
   reset();
   draw();
@@ -2575,12 +2575,12 @@ reg('model-builder', (stage) => {
     readout.replaceChildren(
       el('div', { class: 'g-readout-big tnum' }, fmt(p) + ' parameters'),
       el('div', { class: 'g-readout-cls' }, `Size class: ${cls}`),
-      el('div', { class: 'g-readout-can' }, 'It could probably: ' + can),
+      el('div', { class: 'g-readout-can' }, 'It could maybe: ' + can),
     );
-    status.textContent = `${layers.length} layers, ${fmt(p)} parameters. Every layer you widen multiplies the count. That is why big models cost so much.`;
+    status.textContent = `${layers.length} blocks, ${fmt(p)} parts. Wider blocks add a LOT more. Big brains cost more!`;
   };
   const add = bar(el('span', { class: 'g-note' }, 'Add:'), ...Object.keys(KINDS).map((k) => button(k, () => { layers.push({ kind: KINDS[k], w: 256 }); draw(); }, 'g-mini')));
-  status.textContent = 'Stack layers to build a model. Watch the parameter counter, and what the machine might be able to do.';
+  status.textContent = 'Stack blocks to build a robot brain. Watch it grow, and see what it could do!';
   stage.append(readout, list, add, bar(button('Clear', () => { layers = []; draw(); })), status);
   draw();
   return {};
@@ -2637,7 +2637,7 @@ reg('embeddings', (stage) => {
       ctx.stroke();
       ctx.fillText('king - man + woman', f.x(analogy[0]), f.y(analogy[1]) + 20);
     }
-    status.textContent = `"${sel}" sits nearest ${near.join(', ')}. Words that mean similar things land close together.`;
+    status.textContent = `"${sel}" is closest to ${near.join(', ')}. Similar words sit near each other!`;
   };
   drag(c.wrap, {
     down: (p) => {
@@ -2651,12 +2651,12 @@ reg('embeddings', (stage) => {
       if (bd < 900) { sel = best; analogy = null; draw(); }
     },
   });
-  status.textContent = 'A map of meaning. Tap a word to see its nearest neighbours. Try the famous analogy below.';
+  status.textContent = 'A map of words. Close together means similar meaning. Tap one!';
   stage.append(bar(button('king - man + woman = ?', () => {
     analogy = [WORDS.king[0] - WORDS.man[0] + WORDS.woman[0], WORDS.king[1] - WORDS.man[1] + WORDS.woman[1]];
     sel = 'queen';
     draw();
-    status.textContent = 'The arrow lands right on "queen". Meaning has directions you can add and subtract.';
+    status.textContent = 'Magic! king minus man plus woman lands on queen.';
   })), status);
   draw();
   return {};
@@ -2963,7 +2963,7 @@ reg('sudoku4', (stage) => {
         );
       }
     if (valid()) { status.textContent = 'Every row, column, and box has 1 to 4. Solved!'; status.classList.add('win'); }
-    else { status.classList.remove('win'); status.textContent = 'Fill the grid so each row, column, and 2x2 box holds 1, 2, 3, 4. Click a cell to change it.'; }
+    else { status.classList.remove('win'); status.textContent = 'Each row, column, and box needs 1, 2, 3, 4. Tap a cell.'; }
   };
   stage.append(board, bar(button('New puzzle', gen)), status);
   gen();
@@ -3012,10 +3012,10 @@ reg('derivative', (stage) => {
     ctx.fill();
     const flat = Math.abs(m) < 0.08;
     status.classList.toggle('win', flat);
-    status.textContent = `Slope here = ${m.toFixed(2)}. ` + (flat ? 'Flat: this is a peak or valley, exactly where gradient descent wants to stop.' : m > 0 ? 'Going uphill.' : 'Going downhill.');
+    status.textContent = `Steepness = ${m.toFixed(2)}. ` + (flat ? 'Flat! This is the top or bottom.' : m > 0 ? 'Going uphill.' : 'Going downhill.');
   };
   const s = slider('Point x', -150, 150, x0 * 100, (v) => { x0 = v / 100; draw(); });
-  status.textContent = 'The pink line is the slope of the curve at the blue dot. That slope is the derivative, and it drives all training.';
+  status.textContent = 'The pink line shows how steep the hill is at the dot. Slide it!';
   stage.append(s.node, status);
   draw();
   return {};
@@ -3058,10 +3058,10 @@ reg('integral', (stage) => {
     for (let x = A; x < B; x += 0.001) truth += f(x + 0.0005) * 0.001;
     const err = Math.abs(approx - truth);
     status.classList.toggle('win', err < 0.01);
-    status.textContent = `${n} rectangles estimate the area at ${approx.toFixed(3)}. The true area is ${truth.toFixed(3)}. More slices, less error.`;
+    status.textContent = `${n} blocks guess ${approx.toFixed(3)}. The real space is ${truth.toFixed(3)}. Add more blocks!`;
   };
   const s = slider('Rectangles', 2, 40, n, (v) => { n = v; draw(); });
-  status.textContent = 'The area under a curve is a sum of thin rectangles. Add more and the estimate closes in. That is integration.';
+  status.textContent = 'Fill the space under the curve with blocks. More blocks, better guess!';
   stage.append(s.node, status);
   draw();
   return {};
@@ -3105,7 +3105,7 @@ reg('vectors', (stage) => {
     const ma = Math.hypot(a.x, a.y),
       mb = Math.hypot(b.x, b.y);
     const ang = (Math.acos(clamp(dot / (ma * mb || 1), -1, 1)) * 180) / Math.PI;
-    status.textContent = `Dot product ${dot.toFixed(2)}, angle ${ang.toFixed(0)}°. ` + (Math.abs(dot) < 0.04 ? 'At 90° the dot product is zero: the vectors ignore each other.' : dot > 0 ? 'Positive: they point the same way. This is how attention scores similarity.' : 'Negative: they point apart.');
+    status.textContent = `Agreement ${dot.toFixed(2)}, angle ${ang.toFixed(0)}°. ` + (Math.abs(dot) < 0.04 ? 'At a right angle they ignore each other.' : dot > 0 ? 'Pointing the same way.' : 'Pointing apart.');
     status.classList.toggle('win', Math.abs(dot) < 0.04);
   };
   drag(c.wrap, {
@@ -3125,7 +3125,7 @@ reg('vectors', (stage) => {
     sel.y = clamp(f.iy(p.y), -1, 1);
     draw();
   };
-  status.textContent = 'Drag the two arrows. The dot product measures how much they point the same way. It is the heart of attention.';
+  status.textContent = 'Drag the two arrows. See how much they agree.';
   stage.append(status);
   draw();
   return {};
@@ -3176,7 +3176,7 @@ reg('matrix', (stage) => {
     drawB(bx, BLUE);
     drawB(by, MINT);
     const det = m[0] * m[3] - m[1] * m[2];
-    status.textContent = `Determinant ${det.toFixed(2)}: the shape's area is scaled by ${Math.abs(det).toFixed(2)}${det < 0 ? ', and flipped' : ''}. A neural layer is a matrix like this.`;
+    status.textContent = `The square's size changed by ${Math.abs(det).toFixed(2)} times${det < 0 ? ', and flipped over' : ''}.`;
   };
   const names = ['a', 'b', 'c', 'd'];
   const sl = m.map((v, i) => slider(names[i], -20, 20, v * 10, (nv) => { m[i] = nv / 10; draw(); }));
@@ -3187,7 +3187,7 @@ reg('matrix', (stage) => {
     button('Reset', () => setM([1, 0, 0, 1])),
   );
   const setM = (nm) => { m = nm.slice(); sl.forEach((s, i) => s.set(m[i] * 10)); draw(); };
-  status.textContent = 'A 2x2 matrix bends space. Change its four numbers and watch the square rotate, stretch, and shear.';
+  status.textContent = 'Four numbers bend the whole square. Try the presets!';
   stage.append(...sl.map((s) => s.node), presets, status);
   draw();
   return {};
@@ -3258,7 +3258,7 @@ reg('spring', (stage) => {
     x = clamp((p.x - W * 0.5) / (W * 0.3), -1, 1);
   };
   const s = slider('Stiffness', 2, 30, k, (v2) => (k = v2));
-  status.textContent = 'Pull the block and let go. A stiffer spring snaps back faster. Period depends on stiffness and mass, never amplitude.';
+  status.textContent = 'Pull the block and let go. A stiffer spring bounces faster.';
   stage.append(s.node, status);
   draw();
   return { pause: loop.stop, resume: loop.start };
@@ -3323,7 +3323,7 @@ reg('collide', (stage) => {
   }
   const s1 = slider('Blue mass', 1, 9, m1, (v) => { m1 = v; reset(); });
   const s2 = slider('Pink mass', 1, 9, m2, (v) => { m2 = v; reset(); });
-  status.textContent = 'Two carts collide and bounce elastically. A heavy one barely notices a light one. Momentum never changes.';
+  status.textContent = 'Smash the carts! A heavy one barely moves when a light one hits it.';
   stage.append(s1.node, s2.node, bar(button('Launch', reset)), status);
   reset();
   draw();
