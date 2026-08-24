@@ -190,10 +190,10 @@ const surprisedSchema = graph(
         />
       </div>
       <div class="arcade-chips" role="tablist" aria-label="Pick a kind of game">
-        <button type="button" class="arcade-chip" data-cat="all" data-label="All games" aria-pressed="true">🎮 All</button>
+        <button type="button" class="arcade-chip" data-cat="all" data-label="All games" aria-pressed="true">All</button>
         {CAT_ORDER.map((key) => (
           <button type="button" class="arcade-chip" data-cat={key} data-label={CATS[key].label} aria-pressed="false">
-            {CATS[key].emoji} {CATS[key].label}
+            {CATS[key].label}
           </button>
         ))}
       </div>
@@ -218,7 +218,7 @@ const surprisedSchema = graph(
             <div class="gamecard__bar">
               <span class="gamecard__emoji" aria-hidden="true">{game.emoji}</span>
               <h3 class="gamecard__title">{game.title}</h3>
-              <span class="gamecard__pill">{CATS[game.cat].emoji} {CATS[game.cat].label}</span>
+              <span class="gamecard__pill">{CATS[game.cat].label}</span>
             </div>
             <p class="gamecard__goal">{game.goal}</p>
             <div class="gamecard__stage" data-stage>

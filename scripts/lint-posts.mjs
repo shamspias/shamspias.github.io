@@ -37,7 +37,7 @@ for (const f of files) {
   permalinks.add(lang === 'en' ? link : `/${lang}${link}`);
 }
 const OTHER_PAGES = new Set([
-  '/', '/writing/', '/projects/', '/series/', '/tags/', '/cv/', '/rss.xml', '/llms.txt',
+  '/', '/writing/', '/projects/', '/series/', '/tags/', '/cv/', '/surprised/', '/rss.xml', '/llms.txt',
   ...LOCALES.flatMap((l) => [`/${l}/`, `/${l}/writing/`, `/${l}/series/`, `/${l}/tags/`]),
 ]);
 
