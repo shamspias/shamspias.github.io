@@ -112,8 +112,10 @@ for (const file of files) {
     if (/^#{1,6}\s/.test(l) && EMOJI.test(l)) report(file, 'emoji', `heading line ${i + 1}: ${l.trim().slice(0, 60)}`);
   });
 
-  // 5. internal links resolve
-  for (const [, href] of body.matchAll(/\]\((\/[^)\s]*)\)/g)) {
+  // 5. internal links resolve. Scanned over the prose only: a fenced example
+  // or an inline snippet may legitimately show a path that is not a page on
+  // this site, and `stripped` is the body with both already removed.
+  for (const [, href] of stripped.matchAll(/\]\((\/[^)\s]*)\)/g)) {
     const clean = href.split('#')[0];
     const sectionish = /^\/(bn\/|ar\/)?(tags|series|figures)\//.test(clean);
     if (!permalinks.has(clean) && !OTHER_PAGES.has(clean) && !sectionish) {

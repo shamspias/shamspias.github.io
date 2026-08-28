@@ -18,7 +18,9 @@ import path from 'node:path';
 import {
   ACCENT,
   INK,
+  bar,
   barsH,
+  dot,
   dualSeries,
   eyebrow,
   funnel,
@@ -29,6 +31,7 @@ import {
   rule,
   svg,
   text,
+  wrapText,
 } from './figures/kit.mjs';
 
 const OUT = path.resolve(import.meta.dirname, '..', 'public', 'figures');
@@ -355,6 +358,135 @@ function bowlingAngles() {
     body: `${eyebrow(0, 13, 'The four angles measured at front-foot contact')}\n<g transform="translate(0,28)">\n${body}\n</g>`,
   });
 }
+
+/* ====================================================================== *
+ * Open Knowledge Format
+ * ====================================================================== */
+
+/* The whole argument for a shared format is arithmetic: four producers and
+   four consumers are sixteen private integrations, or eight if they agree on
+   one file layout first. Wires are the only honest way to draw that, because
+   the point is the count of lines, not a quantity. */
+function okfWiring() {
+  const w = 760;
+  const title = 'Why a shared format at all: sixteen wires, or eight';
+  const sources = ['wiki pages', 'data catalog', 'code comments', 'dashboards'];
+  const agents = ['chat assistant', 'coding agent', 'search index', 'analyst bot'];
+  const boxW = 118, boxH = 30, step = 44, top = 56;
+  const rowY = (i) => top + i * step;
+  const mid = (i) => rowY(i) + boxH / 2;
+
+  const node = (x, i, label, o = {}) => [
+    bar(x, rowY(i), boxW, boxH, { fill: INK, opacity: 0.05, stroke: INK, strokeOpacity: 0.26, ...o }),
+    text(x + 9, rowY(i) + 19, label, { size: 10.5, opacity: 0.8 }),
+  ].join('\n');
+
+  const out = [eyebrow(0, 13, title)];
+
+  /* Left: every consumer reads every producer in that producer's own shape. */
+  out.push(eyebrow(0, 36, 'one integration per pair'));
+  sources.forEach((s, i) => out.push(node(0, i, s)));
+  agents.forEach((a, i) => out.push(node(232, i, a)));
+  for (let i = 0; i < sources.length; i++) {
+    for (let j = 0; j < agents.length; j++) {
+      out.push(rule(118, mid(i), 232, mid(j), { opacity: 0.16 }));
+    }
+  }
+  out.push(text(0, 250, '4 x 4 = 16 wires to write and keep alive', { size: 11.5, opacity: 0.62 }));
+
+  /* Right: the same eight boxes, with the format in the middle. */
+  const ox = 400;
+  out.push(eyebrow(ox, 36, 'one integration per side'));
+  sources.forEach((s, i) => out.push(node(ox, i, s)));
+  agents.forEach((a, i) => out.push(node(ox + 242, i, a)));
+  const hubX = ox + 160, hubY = rowY(1) + 8, hubW = 64, hubH = 74;
+  out.push(bar(hubX, hubY, hubW, hubH, { fill: ACCENT, opacity: 0.1, stroke: ACCENT, strokeOpacity: 0.6 }));
+  out.push(text(hubX + hubW / 2, hubY + 36, 'OKF', { anchor: 'middle', size: 12, weight: 600, fill: ACCENT }));
+  out.push(text(hubX + hubW / 2, hubY + 52, 'files', { anchor: 'middle', size: 10.5, fill: ACCENT, opacity: 0.7 }));
+  sources.forEach((_, i) => out.push(rule(ox + boxW, mid(i), hubX, hubY + hubH / 2, { opacity: 0.3 })));
+  agents.forEach((_, i) => out.push(rule(hubX + hubW, hubY + hubH / 2, ox + 242, mid(i), { opacity: 0.3 })));
+  out.push(text(ox, 250, '4 + 4 = 8 wires, and the format is the contract', { size: 11.5, fill: ACCENT, opacity: 0.9 }));
+
+  return svg({ w, h: 266, title, body: out.join('\n') });
+}
+
+/* One file, annotated. A reader who sees this once can write OKF, which is the
+   entire claim the format makes about itself, so the figure has to be the file
+   and not a diagram of the file. */
+function okfAnatomy() {
+  const w = 760;
+  const title = 'One concept file, line by line';
+  const boxW = 464;
+  const top = 44;
+  const lineH = 21;
+  const annX = 496;
+
+  const rows = [
+    { t: '---', fm: true },
+    { t: 'type: BigQuery Table', fm: true, note: 'the one field OKF insists on', accent: true },
+    { t: 'title: Customer Orders', fm: true, note: 'a name a person would say' },
+    { t: 'description: One row per order.', fm: true, note: 'one sentence, for previews' },
+    { t: 'resource: https://console.../orders', fm: true, note: 'where the real thing lives' },
+    { t: 'tags: [sales, revenue]', fm: true },
+    { t: 'generated: { by: agent, at: ... }', fm: true, note: 'who wrote it, and when' },
+    { t: 'verified: { by: human:sam, at: ... }', fm: true, note: 'who checked it, and when' },
+    { t: '---', fm: true },
+    { t: '# Schema' },
+    { t: '| order_id | STRING | Order id. |' },
+    { t: 'Joins [customers](/tables/customers.md).', note: 'a link is a relationship' },
+  ];
+
+  const out = [eyebrow(0, 13, title)];
+  const fmCount = rows.filter((r) => r.fm).length;
+  out.push(bar(0, top - 6, boxW, fmCount * lineH + 4, { fill: INK, opacity: 0.05 }));
+  out.push(bar(0, top - 2 + fmCount * lineH, boxW, (rows.length - fmCount) * lineH + 2, { fill: INK, opacity: 0.02 }));
+  out.push(text(annX, top + 8, 'FRONTMATTER: yaml, for machines', { size: 10.5, track: 1.4, opacity: 0.5 }));
+  out.push(text(annX, top + 8 + fmCount * lineH, 'BODY: markdown, for people', { size: 10.5, track: 1.4, opacity: 0.5 }));
+
+  rows.forEach((r, i) => {
+    const y = top + 8 + i * lineH;
+    out.push(text(14, y, r.t, { size: 11, opacity: r.accent ? 1 : 0.78, fill: r.accent ? ACCENT : INK, weight: r.accent ? 600 : 400 }));
+    if (r.note) {
+      out.push(rule(boxW + 6, y - 4, annX - 8, y - 4, { opacity: 0.22 }));
+      out.push(text(annX, y, r.note, { size: 10.5, opacity: 0.6, fill: r.accent ? ACCENT : INK }));
+    }
+  });
+
+  const h = top + 8 + rows.length * lineH + 10;
+  return svg({ w, h, title, body: out.join('\n') });
+}
+
+figures['okf-wiring.svg'] = okfWiring();
+figures['okf-anatomy.svg'] = okfAnatomy();
+
+/* Trust is not a score in OKF, it is a tier a reader derives from one optional
+   field. Three rows, because there are exactly three. */
+figures['okf-trust-tiers.svg'] = layers({
+  title: 'Three trust tiers, read straight off the verified field',
+  inflow: 'one optional frontmatter field: verified',
+  outflow: 'a signal for the reader, never a permission check',
+  rows: [
+    { n: '1', label: 'Unverified', detail: 'no verified field at all', note: 'usable, but nobody vouched for it' },
+    { n: '2', label: 'Machine confirmed', detail: 'verified by an agent or a process', note: 'a job checked it against the source' },
+    { n: '3', label: 'Human reviewed', detail: 'verified by an actor with the human: prefix', note: 'a person put their name on it', accent: true },
+  ],
+});
+
+/* The attested-computation loop, in the order a consumer meets it. Six steps
+   is two too many for box drawing once each step needs a note. */
+figures['okf-attestation.svg'] = layers({
+  title: 'What an attested computation adds: a number you can check',
+  inflow: '"what was revenue in 2026?"',
+  outflow: 'the number, plus evidence of the job that produced it',
+  rows: [
+    { n: '1', label: 'Discover', detail: 'find the Attested Computation concept', note: 'by its type field' },
+    { n: '2', label: 'Load', detail: 'read the contract and the computation', note: 'frontmatter, then the code fence' },
+    { n: '3', label: 'Parameterize', detail: 'the agent fills only the declared holes', note: 'year = 2026, and nothing else' },
+    { n: '4', label: 'Execute', detail: 'the executor runs it, returns a receipt', note: 'job id, the query that really ran' },
+    { n: '5', label: 'Attest', detail: 'plain code judges the receipt', note: 'no model gets a vote here', accent: true },
+    { n: '6', label: 'Gate', detail: 'refuse to show a number that failed', note: 'or one past its stale_after' },
+  ],
+});
 
 figures['helical-wheel.svg'] = helicalWheel();
 figures['scaffold-split.svg'] = scaffoldSplit();
