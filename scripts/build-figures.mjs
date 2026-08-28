@@ -26,6 +26,7 @@ import {
   funnel,
   groupedBarsH,
   layers,
+  lineChart,
   lollipop,
   path as svgPath,
   rule,
@@ -646,6 +647,123 @@ figures['graphrag-context-tokens.svg'] = barsH({
     { label: 'Level 2 communities', value: 565720, note: '969 reports' },
     { label: 'Level 1 communities', value: 225756, note: '367 reports' },
     { label: 'Root communities', value: 26657, note: '34 reports, 2.6% of the text', accent: true },
+  ],
+});
+
+/* The parsing argument is impossible to make in prose, because the damage is
+   visual: a table that survives as a grid can be queried, and the same table
+   flattened into a sentence cannot. Two panels of the same page. */
+function parsingTwoWays() {
+  const w = 760;
+  const title = 'The same page, parsed two ways';
+  const out = [eyebrow(0, 13, title)];
+  const top = 60;
+
+  out.push(eyebrow(0, 38, 'text dump'));
+  const dump = [
+    'Segment revenue 2024 2025 Product',
+    '412 501 Services 188 211 Total 600',
+    '712 see note 7 for the restatement',
+  ];
+  dump.forEach((l, i) => out.push(text(0, top + 4 + i * 22, l, { size: 11, opacity: 0.7 })));
+  out.push(text(0, top + 92, 'rows and columns are gone', { size: 10.5, opacity: 0.55 }));
+  out.push(text(0, top + 112, 'nothing knows which page it was on', { size: 10.5, opacity: 0.55 }));
+
+  out.push(eyebrow(400, 38, 'structure-aware parse'));
+  const cols = [400, 512, 604, 696];
+  const rows = ['Segment,2024,2025', 'Product,412,501', 'Services,188,211', 'Total,600,712'];
+  rows.forEach((r, i) => {
+    const y = top - 12 + i * 26;
+    const cells = r.split(',');
+    if (i === 0) out.push(bar(cols[0], y, cols[3] + 56 - cols[0], 26, { fill: INK, opacity: 0.06 }));
+    out.push(rule(cols[0], y + 26, cols[3] + 56, y + 26, { opacity: 0.16 }));
+    cells.forEach((c, j) =>
+      out.push(text(j === 0 ? cols[0] + 6 : cols[j] + 46, y + 17, c, {
+        size: 11,
+        anchor: j === 0 ? 'start' : 'end',
+        opacity: i === 0 ? 0.85 : 0.72,
+        weight: i === 0 ? 600 : 400,
+      })),
+    );
+  });
+  out.push(rule(cols[0], top - 12, cols[0], top + 92, { opacity: 0.16 }));
+  out.push(text(400, top + 112, 'cells keep their row, column and page', { size: 10.5, opacity: 0.55, fill: ACCENT }));
+
+  const h = top + 150;
+  out.push(rule(0, h - 30, w, h - 30, { opacity: 0.16 }));
+  out.push(text(0, h - 10, 'Only one of these can answer: what were services in 2025?', { size: 11.5, opacity: 0.62 }));
+  return svg({ w, h, title, body: out.join('\n') });
+}
+
+figures['parsing-two-ways.svg'] = parsingTwoWays();
+
+/* Docling's pipeline, in the order a page meets it. Each stage is a place the
+   document can lose something a retriever later needs. */
+figures['docling-pipeline.svg'] = layers({
+  title: 'What has to happen before a retriever ever sees the text',
+  inflow: 'a 200-page PDF nobody can query',
+  outflow: 'text a retriever can index, with page numbers still attached',
+  rows: [
+    { n: '1', label: 'Read', detail: 'open the file, page by page', note: 'PDF, DOCX, PPTX, HTML, images' },
+    { n: '2', label: 'Layout', detail: 'find the blocks and their reading order', note: 'a model trained on DocLayNet' },
+    { n: '3', label: 'Tables', detail: 'recover rows, columns and spans', note: 'the TableFormer model' },
+    { n: '4', label: 'Text', detail: 'OCR when there is no text layer to read', note: 'or one VLM for the whole page' },
+    { n: '5', label: 'Assemble', detail: 'one document object, with provenance', note: 'body tree, texts, tables, pictures', accent: true },
+    { n: '6', label: 'Export', detail: 'markdown, HTML, DocTags or lossless JSON', note: 'now chunk it by structure' },
+  ],
+});
+
+/* Vector memory is arithmetic, not opinion, and the arithmetic is published:
+   these are Elasticsearch's own per-vector formulas at 1,024 dimensions with
+   the HNSW graph (m=16) included. The graph is the small term, which is why
+   tuning it saves nothing and quantising saves everything. */
+figures['vector-memory.svg'] = barsH({
+  title: 'RAM for one million 1,024-dimension vectors, HNSW graph included',
+  labelW: 250,
+  unit: ' GiB',
+  decimals: 2,
+  rows: [
+    { label: 'float32, the default', value: 3.87, note: '4 bytes per dimension' },
+    { label: 'int8 scalar quantised', value: 1.02, note: '1 byte per dimension, plus 4' },
+    { label: 'int4', value: 0.54, note: 'half a byte, plus 4' },
+    { label: 'binary, with rescoring', value: 0.19, note: '1 bit, plus 14 bytes', accent: true },
+  ],
+});
+
+/* The trade nobody looks at: on the same million vectors, an inverted-file
+   index is a hundredth of the graph's memory and more accurate, and pays for
+   it in latency. Every number is from Faiss's own published measurements. */
+figures['index-memory-tradeoff.svg'] = barsH({
+  title: 'Index memory on one million SIFT vectors, beyond the 512 MB of vectors',
+  labelW: 234,
+  unit: ' MB',
+  decimals: 0,
+  rows: [
+    { label: 'HNSW graph', value: 796, note: '0.081 s per query, recall 0.820' },
+    { label: 'IVF, 16,384 lists', value: 8, note: '0.538 s per query, recall 0.898', accent: true },
+  ],
+});
+
+/* The k in reciprocal rank fusion, as the paper that introduced it actually
+   measured it. Bars of near-identical length are the finding: the constant
+   the whole industry ships is not the peak, and the choice barely matters. */
+figures['rrf-k-sweep.svg'] = barsH({
+  title: 'Mean average precision against the RRF constant, from the 2009 paper',
+  labelW: 96,
+  decimals: 4,
+  max: 0.22,
+  rows: [
+    { label: 'k = 0', value: 0.2072, note: 'no smoothing at all' },
+    { label: 'k = 10', value: 0.2123 },
+    { label: 'k = 20', value: 0.2134 },
+    { label: 'k = 30', value: 0.2139 },
+    { label: 'k = 40', value: 0.2138 },
+    { label: 'k = 50', value: 0.2144 },
+    { label: 'k = 60', value: 0.2145, note: 'the value everyone ships' },
+    { label: 'k = 70', value: 0.2146 },
+    { label: 'k = 80', value: 0.2147, note: 'the actual peak', accent: true },
+    { label: 'k = 90', value: 0.2145 },
+    { label: 'k = 100', value: 0.2142 },
   ],
 });
 
