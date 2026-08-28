@@ -2,8 +2,8 @@
 title: "Open Knowledge Format, Explained in Plain Words"
 seoTitle: "Open Knowledge Format (OKF), Explained Simply"
 description: "OKF is a folder of markdown files that tells an AI agent what your data means, who wrote it, who checked it, and when it stops being true."
-date: 2026-08-28
-permalink: "/posts/2026/08/open-knowledge-format/"
+date: 2026-07-18
+permalink: "/posts/2026/07/open-knowledge-format/"
 lang: en
 tags:
   - "OKF"
@@ -13,6 +13,8 @@ tags:
   - "metadata"
   - "beginner"
   - "open-source"
+series: "Retrieval and RAG"
+seriesOrder: 5
 math: false
 ---
 
@@ -213,3 +215,6 @@ The deeper habit underneath it is the one I keep coming back to: writing down wh
 - `sources`, `generated`, `verified`, `status` and `stale_after` answer where it came from, who wrote it, who checked it, and when to stop believing it. Trust is derived from those, never stored as a score.
 - An Attested Computation carries the blessed query plus a receipt and a checker, so a number can be proved to have come from the sanctioned computation instead of the agent's imagination.
 - It is early, it is not retrieval, it is not permissions, and a bundle from outside your company is untrusted text like any other. Start with five files anyway.
+
+*This is part 5 of the retrieval series, and the odd one out: every earlier part builds structure out of a corpus, and this one writes it down on purpose. [Part 2](/posts/2024/12/knowledge-graphs-for-rag/) extracts a graph, [part 4](/posts/2025/09/pageindex-vectorless-rag/) borrows the document's own contents page, and [part 3](/posts/2025/05/rag-retrieval-benchmark/) is how you would tell whether any of it helped.*
+

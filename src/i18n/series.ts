@@ -79,8 +79,10 @@ const SERIES: Record<string, Blurbs> = {
   },
   'Retrieval and RAG': {
     en:
-      'Which retrieval numbers actually matter, and a reproducible way to find out which stack to ' +
-      'build on.',
+      'Which retrieval numbers actually matter, a reproducible way to find out which stack to ' +
+      'build on, and then the three ways to give a model structure it can navigate: a graph built ' +
+      'by extraction, a tree borrowed from the document itself, and knowledge written down by ' +
+      'hand in a format anything can read.',
   },
   'AI Foundations': {
     en:

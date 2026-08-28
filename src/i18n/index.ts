@@ -9,9 +9,9 @@ import {
   isLocale,
   type Locale,
 } from './config';
-import { STRINGS, num, type Strings } from './strings';
+import { STRINGS, num, yearNum, type Strings } from './strings';
 
-export { DEFAULT_LOCALE, LOCALES, LOCALE_META, isLocale, STRINGS, num };
+export { DEFAULT_LOCALE, LOCALES, LOCALE_META, isLocale, STRINGS, num, yearNum };
 export type { Locale, Strings };
 
 /** The interface strings for one language. */

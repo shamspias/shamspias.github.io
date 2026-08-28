@@ -488,6 +488,167 @@ figures['okf-attestation.svg'] = layers({
   ],
 });
 
+/* ====================================================================== *
+ * Retrieval and RAG
+ * ====================================================================== */
+
+/* PageIndex retrieves by walking a document's own table of contents, so the
+   figure has to be the walk: which subtrees the model opens, which it prunes
+   unread, and how few pages survive. An indented tree is the shape the reader
+   already knows from a book. */
+function pageIndexTree() {
+  const w = 760;
+  const title = 'One question walking a document tree';
+  const rows = [
+    { d: 0, label: 'Annual Report 2023', pages: 'pp. 1 to 214', open: true, note: 'the tree, not the text' },
+    { d: 1, label: 'Supervision and Regulation', pages: 'pp. 5 to 21', open: false },
+    { d: 1, label: 'Financial Stability', pages: 'pp. 21 to 31', open: true },
+    { d: 2, label: 'Monitoring Financial Vulnerabilities', pages: 'pp. 22 to 28', open: true, hit: true, note: 'read these 7 pages' },
+    { d: 2, label: 'International Cooperation', pages: 'pp. 28 to 31', open: false },
+    { d: 1, label: 'Monetary Policy', pages: 'pp. 31 to 75', open: false },
+    { d: 1, label: 'Statistical Tables', pages: 'pp. 180 to 214', open: false },
+  ];
+  const top = 54, rowH = 32, indent = 26, pagesX = 462, askX = 496, noteX = 604;
+  const out = [eyebrow(0, 13, title)];
+  out.push(eyebrow(0, 36, 'section'));
+  out.push(eyebrow(pagesX, 36, 'pages', { anchor: 'end' }));
+  out.push(eyebrow(askX, 36, 'look inside?'));
+
+  rows.forEach((r, i) => {
+    const y = top + i * rowH;
+    const x = 8 + r.d * indent;
+    const colour = r.hit ? ACCENT : INK;
+    // The connector is drawn from the row above at the parent's indent, which
+    // is what makes the nesting readable without boxes.
+    if (r.d > 0) {
+      const px = 8 + (r.d - 1) * indent + 5;
+      out.push(rule(px, y - rowH + 6, px, y - 4, { opacity: 0.22 }));
+      out.push(rule(px, y - 4, x - 4, y - 4, { opacity: 0.22 }));
+    }
+    out.push(text(x, y, r.label, {
+      size: 11.5,
+      opacity: r.open ? (r.hit ? 1 : 0.88) : 0.42,
+      fill: colour,
+      weight: r.hit ? 600 : 400,
+    }));
+    out.push(text(pagesX, y, r.pages, { size: 10.5, anchor: 'end', opacity: r.open ? 0.6 : 0.32 }));
+    out.push(text(askX, y, r.open ? 'yes' : 'no', {
+      size: 10.5, track: 1.2, caps: true,
+      fill: r.open ? ACCENT : INK,
+      opacity: r.open ? 0.9 : 0.4,
+    }));
+    if (r.note) out.push(text(noteX, y, r.note, { size: 10.5, opacity: 0.55, fill: colour }));
+  });
+
+  const foot = top + rows.length * rowH + 12;
+  out.push(rule(0, foot - 20, w, foot - 20, { opacity: 0.16 }));
+  out.push(text(0, foot + 2, '214 pages in the document, 7 pages in the prompt, and a route you can print', { size: 11.5, opacity: 0.62 }));
+  return svg({ w, h: foot + 14, title, body: out.join('\n') });
+}
+
+figures['pageindex-tree.svg'] = pageIndexTree();
+
+/* The published OSS benchmark, with cost kept beside accuracy because reading
+   either alone sells the method. Every figure is from the benchmark's own
+   table; the last three points cost twenty-two times the first ninety-seven. */
+figures['pageindex-cost-accuracy.svg'] = barsH({
+  title: 'PageIndex OSS benchmark: 62 text questions over 34 PDFs',
+  unit: '%',
+  decimals: 1,
+  max: 100,
+  labelW: 214,
+  rows: [
+    { label: 'luna, no reasoning', value: 85.5, note: '$0.0031 per question' },
+    { label: 'luna, medium', value: 91.9, note: '$0.0038' },
+    { label: 'luna, high', value: 96.8, note: '$0.0036', accent: true },
+    { label: 'terra, medium', value: 98.4, note: '$0.0303' },
+    { label: 'terra, high', value: 100.0, note: '$0.0325' },
+    { label: 'sol, medium', value: 100.0, note: '$0.0810', accent: true },
+  ],
+});
+
+/* GraphRAG's index is a graph, and the thing that makes it work is not the
+   graph but what sits on top of it: a hierarchy of LLM-written reports, one
+   per community, that can be read without asking a question at all. Nodes and
+   rings on the left, the report hierarchy they produce on the right. */
+function graphCommunities() {
+  const w = 760;
+  const title = 'What the index actually is: clusters, then reports about clusters';
+  // A fixed seed, because a figure that redraws differently on every build is
+  // a figure nobody can review.
+  let seed = 11;
+  const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+  const clusters = [
+    { x: 96, y: 118 }, { x: 268, y: 96 }, { x: 108, y: 244 }, { x: 286, y: 236 },
+  ];
+  const nodes = clusters.flatMap((c, ci) =>
+    Array.from({ length: 6 }, () => ({
+      ci,
+      x: c.x + (rnd() - 0.5) * 74,
+      y: c.y + (rnd() - 0.5) * 70,
+    })),
+  );
+  const out = [eyebrow(0, 13, title)];
+  out.push(eyebrow(0, 36, 'entities and relationships'));
+  out.push(eyebrow(470, 36, 'one report per community'));
+
+  // Edges: dense inside a cluster, sparse between them. That contrast is the
+  // whole reason community detection finds anything.
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const same = nodes[i].ci === nodes[j].ci;
+      if (same ? rnd() < 0.5 : rnd() < 0.02) {
+        out.push(rule(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y, { opacity: same ? 0.26 : 0.3, dash: same ? null : '3 3' }));
+      }
+    }
+  }
+  clusters.forEach((c) =>
+    out.push(`  <circle cx="${c.x}" cy="${c.y}" r="60" stroke="${ACCENT}" stroke-opacity="0.5" stroke-dasharray="4 4" fill="none"/>`),
+  );
+  nodes.forEach((n) => out.push(dot(n.x, n.y, 4.4, { fill: INK, opacity: 0.7 })));
+
+  // The report hierarchy: four leaf communities, merged upward twice. Row
+  // labels sit in their own gutter so no connector ever crosses a word.
+  const box = (x, y, bw, label) =>
+    [bar(x, y, bw, 24, { fill: ACCENT, opacity: 0.1, stroke: ACCENT, strokeOpacity: 0.5 }),
+     text(x + bw / 2, y + 16, label, { size: 10.5, anchor: 'middle', fill: ACCENT, opacity: 0.95 })].join('\n');
+
+  const leafY = 66, midY = 158, rootY = 250, labelX = 512;
+  const leafX = [520, 580, 640, 700];
+  leafX.forEach((x, i) => out.push(box(x, leafY, 52, `C${i + 1}`)));
+  out.push(box(526, midY, 100, 'merged'));
+  out.push(box(646, midY, 100, 'merged'));
+  out.push(box(556, rootY, 160, 'root report'));
+  leafX.forEach((x, i) => out.push(rule(x + 26, leafY + 24, i < 2 ? 576 : 696, midY, { opacity: 0.3 })));
+  out.push(rule(576, midY + 24, 636, rootY, { opacity: 0.3 }));
+  out.push(rule(696, midY + 24, 636, rootY, { opacity: 0.3 }));
+
+  out.push(text(labelX, leafY + 16, 'one per cluster', { size: 10.5, anchor: 'end', opacity: 0.55 }));
+  out.push(text(labelX, midY + 16, 'summarised again', { size: 10.5, anchor: 'end', opacity: 0.55 }));
+  out.push(text(labelX, rootY + 16, 'the whole corpus', { size: 10.5, anchor: 'end', opacity: 0.55 }));
+
+  const h = 330;
+  out.push(text(0, h - 8, 'A global question is answered from the reports, never from the raw text', { size: 11.5, opacity: 0.62 }));
+  return svg({ w, h, title, body: out.join('\n') });
+}
+
+figures['graphrag-communities.svg'] = graphCommunities();
+
+/* The paper's Table 3, which is the number that decides whether any of this is
+   affordable: answering from root reports reads 2.6% of the corpus, and the
+   quality it gives up is small. Every value is from the Podcast dataset row. */
+figures['graphrag-context-tokens.svg'] = barsH({
+  title: 'Tokens read to answer one global question, Podcast corpus',
+  labelW: 236,
+  rows: [
+    { label: 'Source text, summarised', value: 1014611, note: '1,669 chunks, the whole corpus' },
+    { label: 'Level 3 communities', value: 746100, note: '1,310 reports' },
+    { label: 'Level 2 communities', value: 565720, note: '969 reports' },
+    { label: 'Level 1 communities', value: 225756, note: '367 reports' },
+    { label: 'Root communities', value: 26657, note: '34 reports, 2.6% of the text', accent: true },
+  ],
+});
+
 figures['helical-wheel.svg'] = helicalWheel();
 figures['scaffold-split.svg'] = scaffoldSplit();
 figures['bowling-angles.svg'] = bowlingAngles();

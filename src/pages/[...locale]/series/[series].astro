@@ -4,7 +4,7 @@ import Base from '../../../layouts/Base.astro';
 import PostEntry from '../../../components/PostEntry.astro';
 import { allPosts, groupBySeries, plainTitle, slugifyTag, urlOf } from '../../../lib/posts';
 import { ID, abs, breadcrumb, clamp, graph, itemList, person, website } from '../../../lib/seo';
-import { LOCALES, localeParam, localise, num, t, type Locale } from '../../../i18n';
+import { LOCALES, localeParam, localise, t, yearNum, type Locale } from '../../../i18n';
 import { seriesBlurb } from '../../../i18n/series';
 
 // One page per series per language, and only where that language has posts in
@@ -53,9 +53,9 @@ const first = posts[0];
 const last = posts[posts.length - 1];
 const span =
   first && last && first !== last
-    ? `${num(locale, first.data.date.getUTCFullYear())}–${num(locale, last.data.date.getUTCFullYear())}`
+    ? `${yearNum(locale, first.data.date.getUTCFullYear())}–${yearNum(locale, last.data.date.getUTCFullYear())}`
     : first
-      ? num(locale, first.data.date.getUTCFullYear())
+      ? yearNum(locale, first.data.date.getUTCFullYear())
       : '';
 
 const url = localise(`/series/${slugifyTag(name)}/`, locale);

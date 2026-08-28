@@ -258,6 +258,10 @@ export default defineConfig({
     '/non-menu-page/': '/',
     '/talkmap/': '/',
     '/talkmap.html': '/',
+    // Published in August 2026 and moved into the Retrieval and RAG series,
+    // which put it in its true month. The old address was live, so it stays
+    // alive.
+    '/posts/2026/08/open-knowledge-format/': '/posts/2026/07/open-knowledge-format/',
   },
 
   image: {

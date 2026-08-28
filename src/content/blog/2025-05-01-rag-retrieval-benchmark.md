@@ -13,11 +13,11 @@ tags:
   - "benchmarks"
   - "AI foundations"
 series: "Retrieval and RAG"
-seriesOrder: 2
+seriesOrder: 3
 math: true
 ---
 
-*Part 2 of the retrieval series. Part 1 was the vocabulary. This is the workshop: how to put
+*Part 3 of the retrieval series. Part 1 was the vocabulary, part 2 was the graph. This is the workshop: how to put
 sparse, dense, hybrid and late-interaction retrieval on the same corpus, score them with one
 number you can defend, and pick the one to ship. I have revised it since 2025, because two of
 the things I originally recommended are not what I would do now.*
@@ -462,4 +462,6 @@ leaderboard, but to make "I think this is better" into a claim somebody can chec
 - At low traffic the always-on index memory, not the compute, is your bill. Quantise.
 
 *Part 1, [Retrieval Metrics Demystified](/posts/2024/08/retrieval-metrics/), covers the metrics
-this harness prints. Read it first if nDCG@10 and Recall@50 are not yet second nature.*
+this harness prints. Read it first if nDCG@10 and Recall@50 are not yet second nature. Later parts leave similarity behind
+altogether: [part 4](/posts/2025/09/pageindex-vectorless-rag/) walks a document's own table of
+contents, and [part 5](/posts/2026/07/open-knowledge-format/) writes the knowledge down by hand.*

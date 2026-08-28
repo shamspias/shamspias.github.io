@@ -13,6 +13,17 @@ export const num = (locale: Locale, n: number): string =>
     numberingSystem: LOCALE_META[locale].numerals,
   }).format(n);
 
+/**
+ * A year in the language's own digits, ungrouped. `num` puts a thousands
+ * separator in, which is right for a count of posts and wrong for a year:
+ * a series spanning 2024 to 2026 was rendering as "2,024-2,026".
+ */
+export const yearNum = (locale: Locale, n: number): string =>
+  new Intl.NumberFormat(LOCALE_META[locale].tag, {
+    numberingSystem: LOCALE_META[locale].numerals,
+    useGrouping: false,
+  }).format(n);
+
 
 type Strings = {
   /* chrome */

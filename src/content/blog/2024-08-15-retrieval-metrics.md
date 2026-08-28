@@ -18,7 +18,7 @@ seriesOrder: 1
 math: true
 ---
 
-*Part 1 of two. A retrieval-augmented system has two hops, and almost every team I have watched
+*Part 1 of the retrieval series. A retrieval-augmented system has two hops, and almost every team I have watched
 debug one was measuring the pair as a single blurred number. This post separates them, defines
 the metrics honestly, including the one in the title that is usually named wrong, and says which
 one to fix first.*
@@ -415,6 +415,7 @@ the corrected version; prefer it over the notebook's.
 - BLEU and ROUGE for RAG answers are the advice to drop. Use F1 and exact match for spans, a
   calibrated judge for prose.
 
-*Part 2 builds the harness that runs all of this across sparse, dense, hybrid and
-late-interaction retrievers, and adds latency and cost to the scorecard: [A Field Guide and
-Benchmark for Similarity Search in RAG](/posts/2025/05/rag-retrieval-benchmark/).*
+*What comes next in this series: [part 2](/posts/2024/12/knowledge-graphs-for-rag/) is about the
+questions these metrics cannot even be asked about, the ones with no passage to recall, and
+[part 3](/posts/2025/05/rag-retrieval-benchmark/) builds the harness that runs all of this across
+sparse, dense, hybrid and late-interaction retrievers, with latency and cost on the scorecard.*
