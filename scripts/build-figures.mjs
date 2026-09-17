@@ -955,6 +955,345 @@ figures['bank-story.svg'] = layers({
   ],
 });
 
+/* ---- Part 3, the story pictures. Drawn, not charted, because each one is
+   a scene: a building, a crowd, a row of doors, a broom, scissors, a book.
+   Colour rules as everywhere else: ink at opacities, the accent only on the
+   thing the sentence beside the picture is about. ---- */
+
+const BANGLA = 'Kohinoor Bangla, Nirmala UI, Vrinda, Noto Sans Bengali, sans-serif';
+/* A text node in a face that has Bengali glyphs. The kit's text() is mono on
+   purpose; this is the one place the figures need another script. */
+const bangla = (x, y, str, o = {}) => {
+  const { size = 12, anchor = 'start', fill = INK, opacity = 1, weight = 400 } = o;
+  const safe = String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return `  <text x="${x}" y="${y}" text-anchor="${anchor}" font-family="${BANGLA}" font-size="${size}" font-weight="${weight}" stroke="none" fill="${fill}" fill-opacity="${opacity}">${safe}</text>`;
+};
+const person = (x, y, o = {}) => {
+  const { colour = INK, opacity = 0.7, scale = 1 } = o;
+  const s = scale;
+  return [
+    `  <circle cx="${x}" cy="${y}" r="${7 * s}" stroke="${colour}" stroke-opacity="${opacity}" stroke-width="1.6" fill="none"/>`,
+    svgPath(`M${x},${y + 7 * s} L${x},${y + 30 * s} M${x - 11 * s},${y + 17 * s} L${x + 11 * s},${y + 17 * s} M${x},${y + 30 * s} L${x - 9 * s},${y + 46 * s} M${x},${y + 30 * s} L${x + 9 * s},${y + 46 * s}`, { colour, opacity, width: 1.6 }),
+  ].join('\n');
+};
+const seeded = (seed) => () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+
+/* The model as a building. Seven of the 94 floors, 32 cells standing for the
+   128 rooms on each, eight lit per floor for the same token, never the same
+   eight twice. Everything unlit is still on the payroll. */
+function schoolOfExperts() {
+  const w = 760;
+  const title = 'One question walks up the school';
+  const floors = ['floor 94', 'floor 93', 'floor 92', null, 'floor 3', 'floor 2', 'floor 1'];
+  const top = 44, rowH = 30, x0 = 150, cell = 14, gap = 4, n = 32;
+  const rnd = seeded(3);
+  const out = [eyebrow(0, 13, title)];
+  floors.forEach((f, i) => {
+    const y = top + i * rowH;
+    if (!f) {
+      out.push(text(x0 + (n * (cell + gap)) / 2, y + 12, '· · · eighty-seven more floors · · ·', { size: 10, anchor: 'middle', opacity: 0.4, track: 1 }));
+      return;
+    }
+    out.push(text(x0 - 12, y + 11, f, { size: 10.5, anchor: 'end', opacity: 0.55, track: 1, caps: true }));
+    const lit = new Set();
+    while (lit.size < 8) lit.add(Math.floor(rnd() * n));
+    for (let c = 0; c < n; c++) {
+      const x = x0 + c * (cell + gap);
+      const on = lit.has(c);
+      out.push(bar(x, y, cell, cell, { fill: on ? ACCENT : INK, opacity: on ? 0.9 : 0.07, stroke: on ? null : INK, strokeOpacity: 0.16 }));
+    }
+  });
+  // The token climbing the stairwell on the left.
+  const bottom = top + floors.length * rowH;
+  out.push(svgPath(`M40,${bottom + 4} L40,${top + 2}`, { colour: ACCENT, opacity: 0.6, width: 1.4, dash: '3 4' }));
+  out.push(svgPath(`M35,${top + 9} L40,${top + 1} L45,${top + 9}`, { colour: ACCENT, opacity: 0.6, width: 1.4 }));
+  floors.forEach((f, i) => {
+    if (!f) return;
+    const y = top + i * rowH + 7;
+    out.push(rule(40, y, 52, y, { opacity: 0.5, colour: ACCENT }));
+  });
+  out.push(text(0, bottom + 24, 'one token: balance', { size: 11, fill: ACCENT, opacity: 0.9 }));
+  out.push(text(x0, bottom + 24, '8 rooms awake for this token on each floor, 120 asleep, all 128 in memory', { size: 11, opacity: 0.6 }));
+  out.push(text(x0, bottom + 42, 'the next token wakes a different eight. so does the next floor.', { size: 11, opacity: 0.6 }));
+  return svg({ w, h: bottom + 56, title, body: out.join('\n') });
+}
+
+/* Salary day as a cloakroom. Each conversation is a backpack of 0.79 GB, the
+   node is the room they have to fit in, and a thousand of them do not. */
+function salaryDayCrowd() {
+  const w = 760;
+  const title = 'One customer brought a backpack. A thousand brought a thousand.';
+  const out = [eyebrow(0, 13, title)];
+
+  // Left: one customer and the backpack.
+  out.push(eyebrow(0, 40, 'the demo'));
+  out.push(person(40, 76));
+  out.push(bar(64, 92, 20, 24, { fill: ACCENT, opacity: 0.75 }));
+  out.push(text(94, 102, '0.79 GB', { size: 11.5, fill: ACCENT, weight: 600 }));
+  out.push(text(94, 118, 'one conversation,', { size: 10.5, opacity: 0.6 }));
+  out.push(text(94, 133, '4,096 tokens', { size: 10.5, opacity: 0.6 }));
+
+  // Middle: a thousand of them.
+  out.push(eyebrow(250, 40, 'salary day, 10:03'));
+  const gx = 250, gy = 54, cols = 50, rows = 20, step = 5;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      out.push(dot(gx + c * step, gy + r * step, 1.5, { opacity: 0.45 }));
+    }
+  }
+  out.push(text(gx, gy + rows * step + 22, '1,000 conversations in flight', { size: 11, opacity: 0.7 }));
+  out.push(text(gx, gy + rows * step + 38, 'each carrying 0.79 GB of KV cache', { size: 11, opacity: 0.7 }));
+
+  // Right: the cloakroom. 1 GB is 0.2 px, the floor is y = 240.
+  const cx = 540, cw = 100, floor = 240, px = 0.2;
+  const weights = 235 * px, packs = 789 * px, node = 640 * px;
+  out.push(bar(cx, floor - weights, cw, weights, { fill: INK, opacity: 0.16 }));
+  out.push(bar(cx, floor - weights - packs, cw, packs, { fill: ACCENT, opacity: 0.8 }));
+  out.push(rule(cx - 8, floor - node, cx + cw + 8, floor - node, { opacity: 0.6, dash: '3 4' }));
+  out.push(rule(cx - 8, floor, cx + cw + 8, floor, { opacity: 0.4 }));
+  out.push(text(cx + cw + 14, floor - 6, 'weights', { size: 10.5, opacity: 0.6 }));
+  out.push(text(cx + cw + 14, floor - 21, '235 GB', { size: 11.5, weight: 600, opacity: 0.75 }));
+  out.push(text(cx + cw + 14, floor - node + 4, 'the node, 640 GB', { size: 10.5, opacity: 0.7 }));
+  out.push(text(cx + cw + 14, floor - weights - packs + 12, 'backpacks', { size: 10.5, fill: ACCENT, opacity: 0.85 }));
+  out.push(text(cx + cw + 14, floor - weights - packs + 28, '789 GB', { size: 11.5, fill: ACCENT, weight: 600 }));
+  out.push(text(cx, floor + 18, 'the cloakroom, drawn to scale', { size: 10.5, opacity: 0.5 }));
+  return svg({ w, h: 268, title, body: out.join('\n') });
+}
+
+/* The myth is four doors with subjects on them. The reality is a grid where
+   the same word knocks on different doors on every floor. */
+function poetsHome() {
+  const w = 760;
+  const title = 'What everyone imagines, and what the router actually does';
+  const out = [eyebrow(0, 13, title)];
+
+  out.push(eyebrow(0, 40, 'the myth'));
+  const doors = ['maths', 'poetry', 'cooking', 'money'];
+  doors.forEach((d, i) => {
+    const x = 10 + i * 84, y = 56, sent = d === 'poetry' || d === 'cooking';
+    out.push(bar(x, y, 62, 92, { fill: INK, opacity: sent ? 0.03 : 0.07, stroke: sent ? ACCENT : INK, strokeOpacity: sent ? 0.7 : 0.3 }));
+    out.push(dot(x + 50, y + 50, 2.2, { opacity: 0.5 }));
+    out.push(text(x + 31, y + 108, d, { size: 10, anchor: 'middle', track: 1.3, caps: true, opacity: sent ? 0.9 : 0.6, fill: sent ? ACCENT : INK }));
+    if (sent) out.push(text(x + 31, y + 30, 'go home', { size: 9.5, anchor: 'middle', fill: ACCENT, opacity: 0.9, track: 0.8 }));
+  });
+  out.push(text(0, 196, 'one room per subject; send two home', { size: 11, opacity: 0.6 }));
+
+  out.push(eyebrow(400, 40, 'the reality'));
+  const tokens = ['what', 'is', 'my', 'balance', '?'];
+  const gx = 400, cellW = 26, cellH = 16, gap = 4, cols = 10;
+  tokens.forEach((t, i) => {
+    const hero = t === 'balance';
+    out.push(text(gx + 20 + i * 62, 66, t, { size: 11.5, fill: hero ? ACCENT : INK, opacity: hero ? 1 : 0.55, weight: hero ? 600 : 400 }));
+  });
+  const rnd = seeded(9);
+  const floorsY = [82, 112, 142];
+  floorsY.forEach((y, f) => {
+    // Every token picks two rooms; only "balance" is drawn in the accent.
+    const picks = tokens.map(() => {
+      const a = Math.floor(rnd() * cols);
+      let b = Math.floor(rnd() * cols);
+      if (b === a) b = (a + 3) % cols;
+      return [a, b];
+    });
+    const hero = new Set(picks[3]);
+    const others = new Set(picks.flatMap((p, i) => (i === 3 ? [] : p)));
+    for (let c = 0; c < cols; c++) {
+      const x = gx + c * (cellW + gap);
+      const isHero = hero.has(c), isOther = others.has(c) && !isHero;
+      out.push(bar(x, y, cellW, cellH, {
+        fill: isHero ? ACCENT : INK, opacity: isHero ? 0.9 : isOther ? 0.3 : 0.06,
+        stroke: isHero ? null : INK, strokeOpacity: 0.16,
+      }));
+    }
+    out.push(text(gx + cols * (cellW + gap) + 8, y + 12, `floor ${f + 1}`, { size: 10, opacity: 0.5, track: 1, caps: true }));
+  });
+  out.push(text(400, 180, 'balance: two rooms per floor, never the same two', { size: 11, fill: ACCENT, opacity: 0.9 }));
+  out.push(text(400, 196, 'other words knock elsewhere; nobody owns a subject', { size: 11, opacity: 0.6 }));
+  return svg({ w, h: 212, title, body: out.join('\n') });
+}
+
+/* The usage table for one floor, then the same floor after the broom. The
+   numbers are a sketch of the shape, not a measurement; the shape is the
+   point, seven busy rooms and five that a month of traffic barely opened. */
+function usageBroom() {
+  const w = 760;
+  const title = 'One floor, a month of bank questions, then the broom';
+  const usage = [92, 61, 6, 100, 2, 1, 47, 1, 7, 68, 3, 44, 1, 27, 1, 74];
+  const gone = new Set([4, 5, 7, 12, 14]);
+  const out = [eyebrow(0, 13, title)];
+
+  out.push(eyebrow(0, 40, 'tokens that woke each room, per thousand'));
+  const top = 54, rowH = 12, gap = 4, bx = 40, maxW = 260;
+  usage.forEach((u, i) => {
+    const y = top + i * (rowH + gap);
+    const g = gone.has(i);
+    out.push(text(bx - 8, y + 10, `E${i}`, { size: 9.5, anchor: 'end', opacity: g ? 0.95 : 0.55, fill: g ? ACCENT : INK }));
+    out.push(bar(bx, y, Math.max(2, (u / 100) * maxW), rowH, { fill: g ? ACCENT : INK, opacity: g ? 0.85 : 0.18 }));
+    out.push(text(bx + Math.max(2, (u / 100) * maxW) + 6, y + 10, g ? `${u}, swept` : String(u), { size: 9.5, opacity: g ? 0.95 : 0.55, fill: g ? ACCENT : INK }));
+  });
+
+  out.push(eyebrow(420, 40, 'the same floor, after'));
+  const cx0 = 420, cw = 76, ch = 40, cg = 8;
+  for (let i = 0; i < 16; i++) {
+    const x = cx0 + (i % 4) * (cw + cg), y = top + Math.floor(i / 4) * (ch + cg);
+    const g = gone.has(i);
+    if (g) {
+      out.push(`  <rect x="${x}" y="${y}" width="${cw}" height="${ch}" fill="none" stroke="${ACCENT}" stroke-opacity="0.5" stroke-dasharray="3 3"/>`);
+      out.push(text(x + cw / 2, y + 24, 'gone', { size: 10, anchor: 'middle', fill: ACCENT, opacity: 0.8, track: 1, caps: true }));
+    } else {
+      out.push(bar(x, y, cw, ch, { fill: INK, opacity: 0.06, stroke: INK, strokeOpacity: 0.3 }));
+      out.push(text(x + cw / 2, y + 24, `E${i}`, { size: 11, anchor: 'middle', opacity: 0.7 }));
+    }
+  }
+  const gy = top + 4 * (ch + cg) + 14;
+  out.push(text(cx0, gy, '11 rooms left; the router picks its top 8 from 11', { size: 11, opacity: 0.7 }));
+  out.push(text(cx0, gy + 17, '5 rooms of memory freed here, and on every floor', { size: 11, opacity: 0.7 }));
+  const h = top + 16 * (rowH + gap) + 12;
+  return svg({ w, h, title, body: out.join('\n') });
+}
+
+/* The word for savings, as three tokenizers actually cut it. The pieces are
+   the real output of each model's tokenizer.json, measured for the post. */
+function banglaConfetti() {
+  const w = 760;
+  const title = 'The word for savings, cut three ways';
+  const cuts = [
+    { name: 'Gemma 3 4B', pieces: ['সে', 'ভি', 'ংস'], bn: true },
+    { name: 'Qwen3 4B', pieces: ['à¦¸', 'à§ĩ', 'à¦Ń', 'à¦¿à¦', 'Ĥ', 'à¦¸'], bn: false },
+    { name: 'Llama 3.2 3B', pieces: ['à¦', '¸', 'à§ĩ', 'à¦', 'Ń', 'à¦¿à¦', 'Ĥ', 'à¦', '¸'], bn: false, accent: true },
+  ];
+  const out = [eyebrow(0, 13, title)];
+  out.push(bangla(0, 62, 'সেভিংস', { size: 30, weight: 600 }));
+  out.push(text(140, 50, 'six letters, one word, what a customer types', { size: 11, opacity: 0.6 }));
+  out.push(text(140, 66, 'the router never sees it whole', { size: 11, opacity: 0.6 }));
+
+  const rnd = seeded(21);
+  cuts.forEach((c, r) => {
+    const y = 104 + r * 62;
+    out.push(text(0, y + 15, c.name, { size: 10.5, track: 1.2, caps: true, opacity: c.accent ? 0.95 : 0.55, fill: c.accent ? ACCENT : INK }));
+    let x = 132;
+    c.pieces.forEach((p) => {
+      const bw = c.bn ? 40 : 10 + p.length * 8;
+      out.push(bar(x, y, bw, 24, { fill: c.accent ? ACCENT : INK, opacity: c.accent ? 0.12 : 0.06, stroke: c.accent ? ACCENT : INK, strokeOpacity: c.accent ? 0.6 : 0.3 }));
+      if (c.bn) out.push(bangla(x + bw / 2, y + 17, p, { size: 12, anchor: 'middle' }));
+      else out.push(text(x + bw / 2, y + 16, p, { size: 11, anchor: 'middle', opacity: 0.85 }));
+      // Each piece is routed on its own.
+      const e = Math.floor(rnd() * 128);
+      out.push(rule(x + bw / 2, y + 24, x + bw / 2, y + 32, { opacity: 0.3 }));
+      out.push(text(x + bw / 2, y + 43, `E${e}`, { size: 8.5, anchor: 'middle', opacity: 0.45 }));
+      x += bw + 10;
+    });
+    out.push(text(w, y + 16, `${c.pieces.length} pieces`, { size: 11.5, anchor: 'end', weight: c.accent ? 600 : 400, fill: c.accent ? ACCENT : INK, opacity: c.accent ? 1 : 0.6 }));
+  });
+  const h = 104 + cuts.length * 62 + 4;
+  out.push(text(0, h - 6, 'every piece knocks on its own eight doors per floor; none of them is the word', { size: 11, opacity: 0.6 }));
+  return svg({ w, h: h + 10, title, body: out.join('\n') });
+}
+
+/* Four stations, left to right: the questions, the teacher with the fee
+   schedule open, the checkers, the student reading the book. */
+function answerBook() {
+  const w = 760;
+  const title = 'The head teacher writes the answer book';
+  const out = [eyebrow(0, 13, title)];
+  const y0 = 70, boxH = 84;
+
+  // 1. the stack of question cards
+  for (let i = 2; i >= 0; i--) {
+    out.push(bar(0 + i * 6, y0 - i * 6, 132, 72, { fill: INK, opacity: 0.05, stroke: INK, strokeOpacity: 0.3 }));
+  }
+  out.push(text(10, y0 + 22, 'minimum balance?', { size: 10.5, opacity: 0.8 }));
+  out.push(text(10, y0 + 40, 'card swallowed?', { size: 10.5, opacity: 0.8 }));
+  out.push(bangla(10, y0 + 60, 'সর্বনিম্ন ব্যালেন্স?', { size: 11, opacity: 0.8 }));
+  out.push(eyebrow(0, y0 + 100, '9,000 questions'));
+
+  const arrow = (x1, x2, y) => [
+    rule(x1, y, x2, y, { opacity: 0.4 }),
+    svgPath(`M${x2 - 6},${y - 4} L${x2},${y} L${x2 - 6},${y + 4}`, { opacity: 0.4, width: 1.2 }),
+  ].join('\n');
+
+  // 2. the teacher
+  out.push(arrow(150, 186, y0 + 36));
+  out.push(bar(190, y0 - 6, 168, boxH, { fill: INK, opacity: 0.06, stroke: INK, strokeOpacity: 0.35 }));
+  out.push(text(202, y0 + 18, 'the 235B teacher', { size: 11.5, weight: 600, opacity: 0.85 }));
+  out.push(text(202, y0 + 36, 'reads the fee schedule,', { size: 10.5, opacity: 0.6 }));
+  out.push(text(202, y0 + 51, 'writes the answer', { size: 10.5, opacity: 0.6 }));
+  out.push(bar(318, y0 - 18, 44, 30, { fill: ACCENT, opacity: 0.1, stroke: ACCENT, strokeOpacity: 0.6 }));
+  out.push(text(340, y0 - 4, 'RAG', { size: 9.5, anchor: 'middle', fill: ACCENT, opacity: 0.9, track: 1 }));
+  out.push(text(340, y0 + 8, '§ 4.2', { size: 9, anchor: 'middle', fill: ACCENT, opacity: 0.8 }));
+  out.push(eyebrow(190, y0 + 100, 'all week, one at a time'));
+
+  // 3. the checkers
+  out.push(arrow(362, 398, y0 + 36));
+  const cx = 402;
+  ['ok', 'ok', 'drop', 'ok'].forEach((v, i) => {
+    const y = y0 - 4 + i * 20;
+    const bad = v === 'drop';
+    out.push(bar(cx, y, 118, 15, { fill: bad ? ACCENT : INK, opacity: bad ? 0.14 : 0.06, stroke: bad ? ACCENT : INK, strokeOpacity: bad ? 0.6 : 0.25 }));
+    out.push(text(cx + 8, y + 11, `answer ${i + 1}`, { size: 9.5, opacity: 0.6 }));
+    out.push(text(cx + 110, y + 11, v, { size: 9.5, anchor: 'end', fill: bad ? ACCENT : INK, opacity: bad ? 0.95 : 0.6, track: 1, caps: true }));
+  });
+  out.push(eyebrow(cx, y0 + 100, 'checked by people'));
+
+  // 4. the student
+  out.push(arrow(524, 560, y0 + 36));
+  out.push(bar(564, y0 + 6, 196, 60, { fill: ACCENT, opacity: 0.08, stroke: ACCENT, strokeOpacity: 0.6 }));
+  out.push(text(576, y0 + 30, 'the 4B student', { size: 11.5, weight: 600, fill: ACCENT }));
+  out.push(text(576, y0 + 48, 'reads the checked book', { size: 10.5, fill: ACCENT, opacity: 0.8 }));
+  out.push(eyebrow(564, y0 + 100, 'LoRA, one 24 GB card'));
+
+  out.push(rule(0, y0 + 120, w, y0 + 120, { opacity: 0.16 }));
+  out.push(text(0, y0 + 140, 'The student never meets a question the teacher did not answer first, and a person did not check.', { size: 11, opacity: 0.62 }));
+  return svg({ w, h: y0 + 152, title, body: out.join('\n') });
+}
+
+/* Salary day, second attempt: the crowd, the cheap cards, and the one in
+   twenty that goes up to the big model. */
+function whatTheyShipped() {
+  const w = 760;
+  const title = 'Salary day, second attempt';
+  const out = [eyebrow(0, 13, title)];
+
+  const gx = 0, gy = 50, cols = 40, rows = 25, step = 4.6;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) out.push(dot(gx + c * step, gy + r * step, 1.4, { opacity: 0.45 }));
+  }
+  out.push(text(gx, gy + rows * step + 20, '1,000 customers at 10:03', { size: 11, opacity: 0.7 }));
+
+  // the cards
+  const cx = 250, cy = 48;
+  for (let i = 0; i < 4; i++) {
+    const y = cy + i * 32;
+    out.push(bar(cx, y, 200, 24, { fill: ACCENT, opacity: 0.1, stroke: ACCENT, strokeOpacity: 0.6 }));
+    out.push(text(cx + 10, y + 16, 'student, 9 GB', { size: 10.5, fill: ACCENT, opacity: 0.95 }));
+    out.push(text(cx + 190, y + 16, '24 GB card', { size: 9.5, anchor: 'end', fill: ACCENT, opacity: 0.6 }));
+  }
+  out.push(rule(gx + cols * step + 6, gy + 60, cx - 6, gy + 60, { opacity: 0.4 }));
+  out.push(svgPath(`M${cx - 12},${gy + 56} L${cx - 6},${gy + 60} L${cx - 12},${gy + 64}`, { opacity: 0.4, width: 1.2 }));
+  out.push(text(cx, cy + 4 * 32 + 12, 'add cards the way a branch adds tellers', { size: 10.5, opacity: 0.6 }));
+
+  // 19 in 20 answered
+  out.push(text(cx, cy + 4 * 32 + 40, '19 in 20: answered in Bangla, under 2 seconds', { size: 11, fill: ACCENT, weight: 600 }));
+
+  // the big model, top right
+  out.push(bar(520, 48, 240, 56, { fill: INK, opacity: 0.06, stroke: INK, strokeOpacity: 0.35 }));
+  out.push(text(532, 70, 'the big model', { size: 11.5, weight: 600, opacity: 0.85 }));
+  out.push(text(532, 88, 'one node, one customer at a time', { size: 10.5, opacity: 0.6 }));
+  out.push(rule(cx + 200, cy + 12, 520, 76, { opacity: 0.4, dash: '3 3' }));
+  out.push(text(520, 124, '1 in 20 goes up to it,', { size: 10.5, opacity: 0.6 }));
+  out.push(text(520, 140, 'the questions not in the book', { size: 10.5, opacity: 0.6 }));
+
+  return svg({ w, h: 220, title, body: out.join('\n') });
+}
+
+figures['school-of-experts.svg'] = schoolOfExperts();
+figures['salary-day-crowd.svg'] = salaryDayCrowd();
+figures['poets-home.svg'] = poetsHome();
+figures['usage-broom.svg'] = usageBroom();
+figures['bangla-confetti.svg'] = banglaConfetti();
+figures['answer-book.svg'] = answerBook();
+figures['what-they-shipped.svg'] = whatTheyShipped();
+
 
 /* ---------------------------------------------------------------------- */
 

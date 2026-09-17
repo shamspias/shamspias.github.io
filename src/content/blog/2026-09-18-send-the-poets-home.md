@@ -57,6 +57,18 @@ anything else. Mr. Karim said the word "synergy" and nobody flinched. It was tha
 
 It was a demo with one customer.
 
+Before the story goes wrong, here is what they had rented, drawn as the building it behaves
+like. Part 1 explained it properly; this is the picture to keep in your head.
+
+![A building of seven floors standing in for 94, each floor a row of 32 cells standing for 128 rooms, eight cells lit in the accent on every floor and never the same eight, with a dashed arrow climbing the left side labelled one token, balance](/figures/school-of-experts.svg "The model is a school with 94 floors and 128 rooms on each. One word walks up the stairs, and on every floor a different eight rooms wake up to deal with it. The other 120 rooms are asleep. They still take up the building.")
+
+Every floor is a layer. Every room is an expert, and there are 128 of them on each floor. When
+a token, say the word "balance", arrives on a floor, the router (think of it as the floor
+manager) wakes exactly eight rooms and lets the other 120 sleep. On the next floor, a different
+eight. For the next token, a different eight again. That is why the model is cheap to run for
+one customer: 22B parameters do the work while 235B sit in memory. The sleeping rooms are not
+free. They are just quiet.
+
 ---
 
 ## 2. Week 4. Salary day
@@ -80,6 +92,10 @@ customer. For Qwen3-235B-A22B the arithmetic is public: 94 layers, 4 key-value h
 dimensions, two bytes per number, so one token costs $2 \times 94 \times 4 \times 128 \times 2
 = 192{,}512$ bytes, and one conversation holding 4,096 tokens of context and history keeps
 0.79 GB on the card. One customer is nothing. Look at a thousand.
+
+![Left, one stick figure with a small accent box marked 0.79 GB; middle, a grid of a thousand dots labelled 1,000 conversations in flight; right, a cloakroom drawn to scale with a grey block of 235 GB of weights, an accent stack of 789 GB of backpacks on top, and a dashed line at 640 GB marking the node](/figures/salary-day-crowd.svg "Each customer arrives with a 0.79 GB backpack, which is their conversation so far. The cloakroom holds 640 GB and the weights are already in it. A thousand backpacks do not fit, and no arrangement of the coats will change that.")
+
+The picture is drawn to scale, and the bars below are the same arithmetic with the numbers on.
 
 ![Three bars of GPU memory for Qwen3-235B-A22B: weights at fp8 235 GB, KV cache for 100 conversations 79 GB, KV cache for 1,000 conversations 789 GB, with a dashed line at 640 GB marking one eight-card node](/figures/salary-day.svg "The weights were never the problem. A thousand conversations in flight at 4,096 tokens each need 789 GB of cache beside 235 GB of weights, and the node has 640.")
 
@@ -124,6 +140,8 @@ surprise: "we do not observe obvious patterns in the assignment of experts based
 What it found instead was structural. At layer 15, between 23.6% and 28.4% of consecutive
 tokens went to the same expert, against 12.5% if the router were rolling dice.
 
+![Left, four doors labelled maths, poetry, cooking and money, the poetry and cooking doors outlined in the accent with a go home tag; right, the sentence what is my balance above three floors of ten rooms, with the two rooms the word balance wakes lit on each floor in a different place](/figures/poets-home.svg "The myth on the left: one room per subject, so send two of them home. The reality on the right: the word balance wakes two rooms on floor 1, two different rooms on floor 2, two more on floor 3, and the other words in the sentence are knocking elsewhere the whole time. There is no door marked poetry.")
+
 So there is no poetry expert to send home. But Rafi said something else, and it is the
 sentence that made the next three weeks happen. "There is no poetry expert. But there *is* a
 usage table."
@@ -131,20 +149,7 @@ usage table."
 Run a month of the bank's real traffic through the model and count. For every layer, how many
 tokens did each expert see, and with what weight?
 
-```
-one MoE layer, 16 experts, a month of bank questions (illustrative)
-
- E0  ████████████████████████████        E8  ██
- E1  ██████████████████                  E9  ████████████████████
- E2  ██                                  E10 ▌
- E3  ██████████████████████████████      E11 ██████████████
- E4  ▌                                   E12 ▏
- E5  ▏                                   E13 ████████
- E6  ██████████████                      E14 ▎
- E7  ▏                                   E15 ██████████████████████
-
- seven experts did most of the work. five barely woke up.
-```
+![Left, sixteen horizontal bars of how many tokens per thousand woke each room on one floor, five of them tiny and marked swept in the accent; right, the same floor as a four by four grid with five rooms drawn as dotted outlines labelled gone](/figures/usage-broom.svg "One floor, one month, one broom. Seven rooms did nearly all the work; five were opened by about one token in a thousand. Sweep those five and the floor manager still has eleven rooms to choose eight from. The numbers are a sketch of the shape, not a measurement; the shape is what every real usage table looks like.")
 
 Those five are what you can delete. They may or may not be "about" anything. It does not
 matter. On this traffic the router almost never picked them, so removing them changes almost
@@ -352,6 +357,13 @@ ask, wrote each in English and in Bangla, and counted tokens with three small mo
 `tokenizer.json`. Small models, because they come back in the next section, but the shape is
 the same at every size.
 
+Start with one word, the Bangla word for "savings", six letters long, and watch three pairs of
+scissors go at it.
+
+![The Bangla word for savings in large type, then three rows: Gemma 3 cuts it into three syllable pieces, Qwen3 into six byte fragments, Llama 3.2 into nine, each piece with an arrow down to a different expert number](/figures/bangla-confetti.svg "The same word, as each tokenizer actually cuts it. Gemma 3 sees three syllables. Qwen3 and Llama 3.2 see six and nine pieces that are not letters in any language, and each piece is routed on its own. These are the real pieces from each model's tokenizer.json, not a drawing of the idea.")
+
+Now the same thing for six whole questions, counted.
+
 ![Grouped bars, three tokenizers: English is 118 tokens for all three, Bangla is 120 tokens on Gemma 3, 468 on Qwen3 and 534 on Llama 3.2](/figures/bangla-tokens.svg "Six banking questions, 106 English words and 83 Bangla words, counted with each model's own tokenizer.json. The English bars are identical. The Bangla bars are the same sentences, in a different alphabet.")
 
 In English the three agree: 118 tokens for 106 words. In Bangla, Gemma 3's 262,000-entry
@@ -425,6 +437,8 @@ need one that knows *these*, in Bangla, and knows to hand over when it does not.
 
 Rafi looked at the whiteboard for a while, and then at the big model, which was still sitting
 on its node, perfect, one customer at a time. And the two ideas met.
+
+![Four stations left to right: a stack of question cards marked 9,000 questions, a box for the 235B teacher with a small RAG tag reading section 4.2, four answer rows checked by people with one marked drop, and an accent box for the 4B student reading the checked book](/figures/answer-book.svg "The head teacher answers every question with the fee schedule open, people read the answers and throw out the wrong ones, and the student learns from what is left. The student never meets a question the teacher did not answer first.")
 
 Do not shrink the school. Ask the head teacher, the big model, to write the answer to every
 question a customer could ask: in Bangla, in English, in the mix people actually type, using
@@ -633,8 +647,6 @@ rite of passage.
 
 ## 8. Week 8. What they shipped
 
-![Seven boxes, one per week of the story: the biggest brain, salary day, the meeting, pruning, the Bangla demo, the answer book, the student](/figures/bank-story.svg "The whole story in one look. The two accented rows are the two bad days, which were also the only days anything was learned.")
-
 The student went live on the first of the following month. Gemma 3 4B, trained on eleven
 thousand checked rows, served at 8 bits because 4 bits had cost it two points in Bangla and
 Tania would not have it. Nine gigabytes of weights, so every 24 GB card holds a full copy with
@@ -643,6 +655,8 @@ a branch adds tellers. The KV cache that broke the node in week 4 is a fraction 
 per conversation on a 4B model, and it is spread across cheap cards instead of stacked on
 expensive ones.
 
+![Left, a grid of a thousand dots for the customers; middle, four accent cards each labelled student, 9 GB on a 24 GB card, with the line 19 in 20 answered in Bangla under 2 seconds; right, a grey box for the big model, one node, one customer at a time, joined by a dashed line reading 1 in 20 goes up to it](/figures/what-they-shipped.svg "Salary day, second attempt. The crowd hits a row of cheap cards, each holding a whole copy of the student. Nineteen in twenty are answered there. The twentieth goes up the stairs to the big model, which now has exactly the job it was good at in the demo.")
+
 The big model did not go home. It sits on its node, one customer at a time, exactly the job it
 was good at in the demo, and the student hands over to it for the questions that are not in
 the book. About one conversation in twenty goes up. The rest never leave the card.
@@ -650,6 +664,10 @@ the book. About one conversation in twenty goes up. The rest never leave the car
 At three minutes past ten, a thousand people asked whether their salary had arrived. It had.
 The bot said so, in Bangla, in under two seconds, and Tania's phones stayed quiet. Mr. Karim
 did not say "synergy." He said "hm," but the good kind.
+
+And here is the whole eight weeks in one look, for anyone who skipped to the end.
+
+![Seven boxes, one per week of the story: the biggest brain, salary day, the meeting, pruning, the Bangla demo, the answer book, the student](/figures/bank-story.svg "The whole story in one look. The two accented rows are the two bad days, which were also the only days anything was learned.")
 
 ---
 
