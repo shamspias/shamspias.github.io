@@ -74,8 +74,9 @@ const SERIES: Record<string, Blurbs> = {
   },
   'Mixture of Experts': {
     en:
-      'How sparse expert models route a token, and what to do about the one expert that holds ' +
-      'everyone else up.',
+      'How sparse expert models route a token, what to do about the one expert that holds ' +
+      'everyone else up, and how to shrink one for a single job: delete the experts your traffic ' +
+      'never wakes, or have the big model teach a small one, and how to tell which.',
   },
   'Retrieval and RAG': {
     en:

@@ -17,7 +17,7 @@ seriesOrder: 1
 math: true
 ---
 
-*Part 1 of two. What a mixture-of-experts model actually does to a single token, why "one expert
+*Part 1 of three. What a mixture-of-experts model actually does to a single token, why "one expert
 per subject" is the comfortable lie in every MoE explainer including my own first draft of this
 one, and the memory bill you pay for the compute you save.*
 
@@ -464,4 +464,7 @@ explainer](https://huggingface.co/blog/moe) for a good second pass over the same
 
 *Part 2 takes the cost I glossed over here, all-to-all communication, and asks what happens when
 one expert is slower than the rest: [the slowest kid
-problem](/posts/2025/07/slowest-kid-moe-straggler/).*
+problem](/posts/2025/07/slowest-kid-moe-straggler/). And
+[part 3](/posts/2026/09/expert-pruning-or-student-model/) asks what a bank that needs one job
+done can delete from a model like this, and when it should stop deleting and teach a small
+model instead.*

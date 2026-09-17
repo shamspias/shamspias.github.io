@@ -771,6 +771,154 @@ figures['helical-wheel.svg'] = helicalWheel();
 figures['scaffold-split.svg'] = scaffoldSplit();
 figures['bowling-angles.svg'] = bowlingAngles();
 
+/* ====================================================================== *
+ * Mixture of Experts
+ * ====================================================================== */
+
+/* Part 3. The pruning recipe, in the order the work happens. Six steps, each
+   with a note, which is past what box drawing carries. The two accented rows
+   are the ones that decide whether the pruned model is any good. */
+figures['expert-pruning-recipe.svg'] = layers({
+  title: 'Expert pruning, in the order the work happens',
+  inflow: 'one MoE model, the whole school, and a month of real bank traffic',
+  outflow: 'the same model, minus the experts your traffic never woke',
+  rows: [
+    { n: '1', label: 'Collect', detail: 'real questions in every language and intent, no answers', note: 'a few hundred thousand tokens is plenty' },
+    { n: '2', label: 'Trace', detail: 'run it once, log which experts each token used, per layer', note: 'router logits and gate weights, every layer' },
+    { n: '3', label: 'Score', detail: 'how often chosen, how much weight, how much it changed y', note: 'frequency, gate x activation, or reconstruction' },
+    { n: '4', label: 'Choose', detail: 'keep the top experts per layer; never touch shared experts', note: 'the keep-count can differ by layer', accent: true },
+    { n: '5', label: 'Rewire and heal', detail: 'router picks top-k among survivors; short LoRA fine-tune', note: 'a few thousand steps on your own data' },
+    { n: '6', label: 'Verify', detail: 'held-out questions, each language, against the full model', note: 'the step people skip, and the one that matters', accent: true },
+  ],
+});
+
+/* Part 3. Lu et al. (2024), Table 3. The same model, the same number of
+   experts removed, and the only thing that changes between the plain and the
+   accented bar is which text the pruner watched while deciding. */
+figures['pruning-calibration-gsm8k.svg'] = barsH({
+  title: 'Mixtral 8x7B on GSM8K after expert pruning, by what the pruner watched',
+  unit: '%',
+  decimals: 2,
+  max: 70,
+  labelW: 236,
+  rows: [
+    { label: 'All 8 experts', value: 58.61, note: 'nothing removed' },
+    { label: 'Keep 6, watched web text', value: 41.02, note: 'C4' },
+    { label: 'Keep 6, watched maths', value: 51.25, note: 'MATH train set', accent: true },
+    { label: 'Keep 4, watched web text', value: 24.87, note: 'C4' },
+    { label: 'Keep 4, watched maths', value: 37.07, note: 'MATH train set', accent: true },
+  ],
+});
+
+/* Part 3. Measured here with each model's own tokenizer.json on six banking
+   questions, each written in English and in Bangla. The English bars are the
+   same length in every row, which is the point: the model did not get
+   worse at English, it got a different alphabet. */
+figures['bangla-tokens.svg'] = groupedBarsH({
+  title: 'Tokens for six banking questions, the same six in English and in Bangla',
+  seriesLabels: ['English, 106 words', 'Bangla, 83 words'],
+  max: 560,
+  labelW: 214,
+  rows: [
+    { label: 'Gemma 3 4B, 262k vocabulary', values: [118, 120], accent: true },
+    { label: 'Qwen3 4B, 152k vocabulary', values: [118, 468] },
+    { label: 'Llama 3.2 3B, 128k vocabulary', values: [118, 534] },
+  ],
+});
+
+/* Part 3. The teacher-student recipe. Seven steps, and the two accented
+   rows are the checks: grading the teacher's answers, and comparing the
+   student with the teacher afterwards. Everything else is plumbing. */
+figures['teacher-student-recipe.svg'] = layers({
+  title: 'Teacher and student, in the order the work happens',
+  inflow: 'every question a customer might ask, written down first',
+  outflow: 'a 4B model that answers your questions the way the big one did',
+  rows: [
+    { n: '1', label: 'Ask', detail: 'thousands of questions: logs, paraphrases, both languages', note: 'the dataset is the product; spend here' },
+    { n: '2', label: 'Answer', detail: 'the big model answers, with the same RAG the student gets', note: 'same retrieved context, same prompt shape' },
+    { n: '3', label: 'Check', detail: 'grade every answer; drop anything wrong or unverified', note: 'a second model, then people on a sample', accent: true },
+    { n: '4', label: 'Build', detail: 'question, retrieved context, answer, in the serving format', note: 'plus refusals and hand-offs' },
+    { n: '5', label: 'Pick', detail: 'a 2B to 4B model whose tokenizer handles your language', note: 'measure tokens per word before anything else' },
+    { n: '6', label: 'Train', detail: 'LoRA on the student, a few epochs, low learning rate', note: 'one 24 GB GPU is enough' },
+    { n: '7', label: 'Compare', detail: 'held-out questions, student against teacher, per language', note: 'then quantise, and test again', accent: true },
+  ],
+});
+
+/* Part 3. Bytes per parameter is arithmetic, and the two pruned rows use the
+   reductions Lu et al. measured on this exact model. The student rows are the
+   argument: pruning takes you from one node to one node; a student takes you
+   to one card. */
+figures['memory-ladder.svg'] = barsH({
+  title: 'Weights you must hold in memory, in gigabytes',
+  unit: ' GB',
+  decimals: 0,
+  labelW: 268,
+  rows: [
+    { label: 'Mixtral 8x7B, all 8 experts, bf16', value: 93, note: '46.7B parameters' },
+    { label: 'Mixtral 8x7B, 6 of 8 experts', value: 71, note: '24% smaller' },
+    { label: 'Mixtral 8x7B, 4 of 8 experts', value: 49, note: '48% smaller' },
+    { label: 'Gemma 3 4B student, bf16', value: 9, note: 'one consumer GPU', accent: true },
+    { label: 'Gemma 3 4B student, 4-bit', value: 3, note: 'a laptop', accent: true },
+  ],
+});
+
+/* Part 3. Three questions, asked in order, and where each answer sends you.
+   A flowchart is the one shape a decision has; the reader should be able to
+   put a finger on the top box and follow it down without reading the post. */
+function chooseYourRoute() {
+  const w = 760;
+  const title = 'Which route, decided by three questions';
+  const qW = 392, qH = 62, oX = 460, oW = 300, step = 110, top = 44;
+  const rows = [
+    {
+      q: 'Does the job need the whole model?', d: 'open-ended questions, many subjects, hard reasoning',
+      side: 'yes', down: 'no',
+      o: 'Keep the big model', on: 'prune lightly, heal, verify',
+    },
+    {
+      q: 'How much smaller must it get?', d: 'compare the weights to the memory you actually have',
+      side: '2 to 4x', down: '10x or more',
+      o: 'Prune experts', on: 'calibrate on your traffic, every language',
+    },
+    {
+      q: 'Can you write down the questions?', d: 'thousands of them, with a teacher to answer each',
+      side: 'no', down: 'yes',
+      o: 'Prune hard, or pick a smaller MoE', on: 'no answers to write, but expect a heal step',
+    },
+  ];
+  const out = [eyebrow(0, 13, title)];
+
+  const box = (x, y, bw, bh, label, note, accent) => [
+    bar(x, y, bw, bh, {
+      fill: accent ? ACCENT : INK, opacity: accent ? 0.1 : 0.05,
+      stroke: accent ? ACCENT : INK, strokeOpacity: accent ? 0.55 : 0.24,
+    }),
+    text(x + 14, y + 24, label, { size: 11.5, weight: 600, fill: accent ? ACCENT : INK, opacity: accent ? 0.98 : 0.85 }),
+    text(x + 14, y + 42, note, { size: 10.5, opacity: 0.58, fill: accent ? ACCENT : INK }),
+  ].join('\n');
+
+  rows.forEach((r, i) => {
+    const y = top + i * step;
+    out.push(box(0, y, qW, qH, r.q, r.d, false));
+    out.push(box(oX, y, oW, qH, r.o, r.on, false));
+    // Sideways: the answer that leaves the ladder.
+    out.push(rule(qW, y + qH / 2, oX, y + qH / 2, { opacity: 0.3 }));
+    out.push(text((qW + oX) / 2, y + qH / 2 - 6, r.side, { size: 10, anchor: 'middle', track: 1.2, caps: true, opacity: 0.6 }));
+    // Down: the answer that asks the next question.
+    out.push(rule(14, y + qH, 14, y + step, { opacity: 0.3 }));
+    out.push(svgPath(`M10,${y + step - 7} L14,${y + step} L18,${y + step - 7}`, { opacity: 0.3, width: 1.2 }));
+    out.push(text(24, y + qH + 30, r.down, { size: 10, track: 1.2, caps: true, opacity: 0.6 }));
+  });
+
+  const y = top + rows.length * step;
+  out.push(box(0, y, qW, qH, 'Teach a student', 'pick it by tokenizer; quantise last; test every language', true));
+  const h = y + qH + 14;
+  return svg({ w, h, title, body: out.join('\n') });
+}
+
+figures['choose-your-route.svg'] = chooseYourRoute();
+
+
 /* ---------------------------------------------------------------------- */
 
 await mkdir(OUT, { recursive: true });

@@ -390,6 +390,8 @@ where I do not have a number, I have told you how to get yours.
 - Cheapest real win on a workstation, before any of this: quantise the experts to 4 bits and cut
   the traffic fourfold.
 
-*That closes the mixture-of-experts series.
-[Part 1](/posts/2025/02/moe-explained-simply/) covers routing, gating and sparsity from scratch
-if you want the foundations under all of this.*
+*[Part 1](/posts/2025/02/moe-explained-simply/) covers routing, gating and sparsity from scratch
+if you want the foundations under all of this. [Part
+3](/posts/2026/09/expert-pruning-or-student-model/) asks what a bank that needs one job done
+can delete from a model like this, and when it should stop deleting and teach a small model
+instead.*
