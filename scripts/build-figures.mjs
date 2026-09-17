@@ -918,6 +918,43 @@ function chooseYourRoute() {
 
 figures['choose-your-route.svg'] = chooseYourRoute();
 
+/* Part 3. Salary day, as arithmetic. Qwen3-235B-A22B has 94 layers and 4
+   key-value heads of 128 dimensions, so one token of KV cache is
+   2 x 94 x 4 x 128 x 2 bytes, 192,512 bytes, and one conversation holding
+   4,096 tokens keeps 0.79 GB of it on the GPU. The weights are the small
+   bar, which is the surprise the story turns on. */
+figures['salary-day.svg'] = barsH({
+  title: 'What a thousand conversations in flight need in GPU memory, Qwen3-235B-A22B',
+  unit: ' GB',
+  decimals: 0,
+  max: 900,
+  labelW: 262,
+  threshold: { at: 640, label: 'one node, 8 x 80 GB' },
+  rows: [
+    { label: 'Weights, fp8', value: 235, note: '235B parameters, one byte each' },
+    { label: 'KV cache, 100 conversations', value: 79, note: '4,096 tokens each, bf16' },
+    { label: 'KV cache, 1,000 conversations', value: 789, note: 'the same, ten times over', accent: true },
+  ],
+});
+
+/* Part 3. The eight weeks, so a reader can hold the whole story in one
+   look before any of it is explained. The two accented rows are the two
+   bad days, which are also the two days anything was learned. */
+figures['bank-story.svg'] = layers({
+  title: 'Eight weeks at the bank, in the order it happened',
+  inflow: 'a demo that went too well',
+  outflow: 'a 4B student on cheap cards, and the big model kept for the hard ones',
+  rows: [
+    { n: '1', label: 'Week 1. The biggest brain', detail: 'rent the largest open MoE there is; the demo is perfect', note: 'one customer at a time' },
+    { n: '2', label: 'Week 4. Salary day', detail: 'a thousand customers at once; memory, latency, then anger', note: 'weights plus KV cache beat one node', accent: true },
+    { n: '3', label: 'Week 5. The meeting', detail: '"send the poets home"; no poets, but a usage table', note: 'part 1, section 4' },
+    { n: '4', label: 'Week 6. Pruning', detail: 'delete the experts traffic never wakes; English tests pass', note: 'memory down by a quarter, or half' },
+    { n: '5', label: 'Week 6. The Bangla demo', detail: 'the pruned, quantised model answers in confetti', note: 'no expert holds a language', accent: true },
+    { n: '6', label: 'Week 7. The answer book', detail: 'the big model answers every question; people check them', note: 'the dataset is the product' },
+    { n: '7', label: 'Week 8. The student', detail: 'a 4B model trained on the checked book, tested in Bangla', note: '9 GB of weights on a 24 GB card' },
+  ],
+});
+
 
 /* ---------------------------------------------------------------------- */
 
